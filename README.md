@@ -39,6 +39,27 @@ Demo logins (development only):
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
+## Vercel
+
+Import `https://github.com/bsbagencys-byte/BSBPAYROLL` as a Next.js project. Framework preset: Next.js. Build command: `npm run build`. Output: default.
+
+Set these environment variables in the Vercel project (Production). Never prefix the service role key with `NEXT_PUBLIC_`.
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_JWT_SECRET
+NEXT_PUBLIC_APP_URL
+SESSION_SECRET
+NEXT_PUBLIC_DEMO_MODE=false
+AUTH_EMAIL_DOMAIN=auth.bsbpayroll.internal
+```
+
+`NEXT_PUBLIC_APP_URL` must be the live Vercel URL (for example `https://your-app.vercel.app`). After the first deploy, add that domain in Supabase Auth redirect URLs.
+
+Demo mode is for local preview only. Production must use real Supabase credentials and `NEXT_PUBLIC_DEMO_MODE=false`.
+
 ## Routes
 
 - `/login` username + password
