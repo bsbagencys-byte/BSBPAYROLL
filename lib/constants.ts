@@ -48,6 +48,9 @@ export const PERMISSIONS = [
   { code: "payroll.view", group: "Payroll", label: "View payroll" },
   { code: "payroll.process", group: "Payroll", label: "Process payroll" },
   { code: "settings.manage", group: "Settings", label: "Manage settings" },
+  { code: "biometric.view", group: "Biometric", label: "View biometric devices and punches" },
+  { code: "biometric.manage", group: "Biometric", label: "Manage biometric devices" },
+  { code: "biometric.mapping", group: "Biometric", label: "Map device users to employees" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -71,6 +74,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "organization.designation.manage",
     "attendance.view",
     "settings.manage",
+    "biometric.view",
+    "biometric.manage",
+    "biometric.mapping",
   ],
   PAYROLL: [
     "organization.view",
@@ -79,9 +85,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "attendance.view",
     "payroll.view",
     "payroll.process",
+    "biometric.view",
   ],
   ACCOUNTANT: ["organization.view", "employee.view", "payroll.view"],
-  MANAGER: ["organization.view", "user.view", "employee.view", "attendance.view"],
+  MANAGER: ["organization.view", "user.view", "employee.view", "attendance.view", "biometric.view"],
   EMPLOYEE: ["organization.view", "employee.view", "attendance.view"],
 };
 
@@ -90,7 +97,7 @@ export const NAV_ITEMS = [
   { href: "/employees", label: "Employees", icon: "Users", enabled: true, phase: 2 },
   { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: false, phase: 4 },
   { href: "/leave", label: "Leave", icon: "Palmtree", enabled: false, phase: 5 },
-  { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: false, phase: 3 },
+  { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: true, phase: 3 },
   { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: false, phase: 7 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 10 },
   { href: "/compliance", label: "Compliance", icon: "ShieldCheck", enabled: false, phase: 9 },
@@ -213,6 +220,8 @@ export const PUBLIC_ROUTES = [
   "/forgot-password",
   "/reset-password",
   "/unauthorized",
+  "/api/biometric/push",
+  "/api/biometric/webhook",
 ];
 
 export const PASSWORD_POLICY = {
@@ -226,3 +235,82 @@ export const LOGIN_RATE_LIMIT = {
   windowMs: 15 * 60 * 1000,
   maxAttempts: 8,
 };
+
+export const BIOMETRIC_RATE_LIMIT = {
+  windowMs: 60 * 1000,
+  maxAttempts: 120,
+};
+
+export const BIOMETRIC_VENDORS = ["ESSL", "GENERIC"] as const;
+export type BiometricVendor = (typeof BIOMETRIC_VENDORS)[number];
+
+export const BIOMETRIC_VENDOR_LABELS: Record<BiometricVendor, string> = {
+  ESSL: "eSSL / ZKTeco",
+  GENERIC: "Generic JSON",
+};
+
+export const DEVICE_CONNECTION_MODES = ["PUSH", "WEBHOOK", "SIMULATOR"] as const;
+export type DeviceConnectionMode = (typeof DEVICE_CONNECTION_MODES)[number];
+
+export const DEVICE_CONNECTION_LABELS: Record<DeviceConnectionMode, string> = {
+  PUSH: "Cloud push",
+  WEBHOOK: "Webhook",
+  SIMULATOR: "Simulator",
+};
+
+export const DEVICE_STATUSES = ["PENDING", "ACTIVE", "DISABLED", "OFFLINE"] as const;
+export type DeviceStatus = (typeof DEVICE_STATUSES)[number];
+
+export const DEVICE_STATUS_LABELS: Record<DeviceStatus, string> = {
+  PENDING: "Pending",
+  ACTIVE: "Active",
+  DISABLED: "Disabled",
+  OFFLINE: "Offline",
+};
+
+export const PUNCH_DIRECTIONS = ["IN", "OUT", "UNKNOWN"] as const;
+export type PunchDirection = (typeof PUNCH_DIRECTIONS)[number];
+
+export const PUNCH_DIRECTION_LABELS: Record<PunchDirection, string> = {
+  IN: "In",
+  OUT: "Out",
+  UNKNOWN: "Unknown",
+};
+
+export const BIOMETRIC_EVENT_STATUSES = [
+  "RECEIVED",
+  "NORMALIZED",
+  "MAPPED",
+  "UNMAPPED",
+  "DUPLICATE",
+  "REJECTED",
+] as const;
+export type BiometricEventStatus = (typeof BIOMETRIC_EVENT_STATUSES)[number];
+
+export const BIOMETRIC_SOURCES = ["PUSH", "WEBHOOK", "SIMULATOR"] as const;
+export type BiometricSource = (typeof BIOMETRIC_SOURCES)[number];
+
+export const VERIFICATION_MODES = ["FINGER", "CARD", "PIN", "PASSWORD", "OTHER", "UNKNOWN"] as const;
+export type VerificationMode = (typeof VERIFICATION_MODES)[number];
+
+export const TIMEZONE_OFFSETS: Record<string, string> = {
+  "Asia/Kolkata": "+05:30",
+  "Asia/Dubai": "+04:00",
+  "Asia/Singapore": "+08:00",
+  UTC: "+00:00",
+  "America/New_York": "-05:00",
+  "Europe/London": "+00:00",
+};
+
+export const BIOMETRIC_NAV = [
+  { href: "/biometric", label: "Overview" },
+  { href: "/biometric/devices/new", label: "Add device" },
+  { href: "/biometric/mapping", label: "Identity mapping" },
+  { href: "/biometric/punches", label: "Punches" },
+  { href: "/biometric/live", label: "Live" },
+  { href: "/biometric/logs", label: "Logs" },
+  { href: "/biometric/simulator", label: "Simulator" },
+] as const;
+
+export const DEMO_ESSL_DEVICE_ID = "b1111111-1111-1111-1111-111111111111";
+export const DEMO_ESSL_DEVICE_TOKEN = "demo-essl-ho-token";

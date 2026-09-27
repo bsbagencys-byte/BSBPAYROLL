@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     default: "BSB Payroll",
     template: "%s | BSB Payroll",
   },
-  description: "Multi-tenant payroll operations platform. Phase 1 foundation.",
+  description: "Multi-tenant payroll operations platform. Phase 1–3 foundation with biometric ingest.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

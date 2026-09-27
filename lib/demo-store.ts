@@ -1,6 +1,11 @@
 import { cookies } from "next/headers";
 import type {
+  AttendancePunch,
   AuditLog,
+  BiometricDevice,
+  BiometricIdentityMap,
+  BiometricNormalizedEvent,
+  BiometricRawEvent,
   Branch,
   Department,
   Designation,
@@ -22,11 +27,14 @@ import type {
 import {
   DEFAULT_EMPLOYMENT_TYPES,
   DEFAULT_ROLE_PERMISSIONS,
+  DEMO_ESSL_DEVICE_ID,
+  DEMO_ESSL_DEVICE_TOKEN,
   PERMISSIONS,
   ROLE_LABELS,
   type PermissionCode,
   type RoleCode,
 } from "@/lib/constants";
+import { sha256, tokenHint } from "@/lib/biometric/hash";
 
 const SESSION_COOKIE = "bsb_demo_session";
 
@@ -211,6 +219,11 @@ export type DemoStore = {
   audit: AuditLog[];
   passwords: Record<string, string>;
   pendingReset: Record<string, { token: string; expiresAt: number }>;
+  biometricDevices: BiometricDevice[];
+  biometricIdentityMaps: BiometricIdentityMap[];
+  biometricRawEvents: BiometricRawEvent[];
+  biometricNormalizedEvents: BiometricNormalizedEvent[];
+  attendancePunches: AttendancePunch[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -578,11 +591,76 @@ function createStore(): DemoStore {
     audit: [] as AuditLog[],
     passwords: { ...DEMO_PASSWORDS },
     pendingReset: {} as Record<string, { token: string; expiresAt: number }>,
+    biometricDevices: [
+      {
+        id: DEMO_ESSL_DEVICE_ID,
+        organization_id: ORG_ID,
+        name: "HO eSSL Gate",
+        vendor: "ESSL",
+        serial_number: "ESSL-HO-001",
+        model: "X990",
+        firmware: "6.60",
+        connection_mode: "PUSH",
+        branch_id: BRANCH_ID,
+        location_id: LOCATION_ID,
+        timezone: "Asia/Kolkata",
+        token_hash: sha256(DEMO_ESSL_DEVICE_TOKEN),
+        token_hint: tokenHint(DEMO_ESSL_DEVICE_TOKEN),
+        status: "ACTIVE",
+        last_seen_at: null,
+        last_error: null,
+        created_by: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+    ],
+    biometricIdentityMaps: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        device_id: DEMO_ESSL_DEVICE_ID,
+        device_user_id: "1001",
+        employee_id: EMPLOYEE_ADMIN_ID,
+        status: "ACTIVE",
+        created_by: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        device_id: DEMO_ESSL_DEVICE_ID,
+        device_user_id: "1002",
+        employee_id: EMPLOYEE_HR_ID,
+        status: "ACTIVE",
+        created_by: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        device_id: DEMO_ESSL_DEVICE_ID,
+        device_user_id: "1003",
+        employee_id: EMPLOYEE_STAFF_ID,
+        status: "ACTIVE",
+        created_by: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+    ],
+    biometricRawEvents: [] as BiometricRawEvent[],
+    biometricNormalizedEvents: [] as BiometricNormalizedEvent[],
+    attendancePunches: [] as AttendancePunch[],
   };
 }
 
 export function getDemoStore(): DemoStore {
-  if (!globalStore.__bsbDemo || !("employees" in globalStore.__bsbDemo)) {
+  if (
+    !globalStore.__bsbDemo ||
+    !("employees" in globalStore.__bsbDemo) ||
+    !("biometricDevices" in globalStore.__bsbDemo)
+  ) {
     globalStore.__bsbDemo = createStore();
   }
   return globalStore.__bsbDemo;

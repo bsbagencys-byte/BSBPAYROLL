@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PREFIXES = ["/login", "/forgot-password", "/reset-password", "/unauthorized"];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/unauthorized",
+  "/api/biometric/push",
+  "/api/biometric/webhook",
+];
 
 function isPublicPath(pathname: string) {
   if (pathname === "/") return true;

@@ -1,9 +1,16 @@
 import type {
+  BiometricEventStatus,
+  BiometricSource,
+  BiometricVendor,
+  DeviceConnectionMode,
+  DeviceStatus,
   DocumentType,
   EmployeeStatus,
   Gender,
   PermissionCode,
+  PunchDirection,
   RoleCode,
+  VerificationMode,
 } from "@/lib/constants";
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -315,3 +322,174 @@ export interface ActionResult<T = undefined> {
   errors?: Record<string, string[]>;
   data?: T;
 }
+
+export interface BiometricDevice {
+  id: string;
+  organization_id: string;
+  name: string;
+  vendor: BiometricVendor;
+  serial_number: string;
+  model: string | null;
+  firmware: string | null;
+  connection_mode: DeviceConnectionMode;
+  branch_id: string | null;
+  location_id: string | null;
+  timezone: string;
+  token_hash: string;
+  token_hint: string;
+  status: DeviceStatus;
+  last_seen_at: string | null;
+  last_error: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BiometricIdentityMap {
+  id: string;
+  organization_id: string;
+  device_id: string;
+  device_user_id: string;
+  employee_id: string;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BiometricRawEvent {
+  id: string;
+  organization_id: string | null;
+  device_id: string | null;
+  vendor: BiometricVendor | string | null;
+  source: BiometricSource;
+  payload: Record<string, unknown>;
+  payload_hash: string;
+  received_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  status: BiometricEventStatus;
+  error_message: string | null;
+}
+
+export interface BiometricNormalizedEvent {
+  id: string;
+  organization_id: string;
+  device_id: string;
+  raw_event_id: string;
+  vendor: BiometricVendor | string;
+  device_user_id: string;
+  punched_at: string;
+  punched_at_local: string | null;
+  timezone: string;
+  direction: PunchDirection;
+  verification_mode: VerificationMode;
+  work_code: string | null;
+  payload_hash: string;
+  status: BiometricEventStatus;
+  created_at: string;
+}
+
+export interface AttendancePunch {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  device_id: string;
+  normalized_event_id: string;
+  punched_at: string;
+  punched_at_local: string | null;
+  timezone: string;
+  direction: PunchDirection;
+  verification_mode: VerificationMode;
+  source: BiometricSource;
+  created_at: string;
+}
+
+export interface BiometricDeviceListItem {
+  id: string;
+  name: string;
+  vendor: BiometricVendor;
+  serialNumber: string;
+  model: string | null;
+  connectionMode: DeviceConnectionMode;
+  branchName: string | null;
+  locationName: string | null;
+  timezone: string;
+  status: DeviceStatus;
+  lastSeenAt: string | null;
+  lastError: string | null;
+  tokenHint: string;
+}
+
+export interface IdentityMapListItem {
+  id: string;
+  deviceId: string;
+  deviceName: string;
+  vendor: BiometricVendor;
+  deviceUserId: string;
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  status: "ACTIVE" | "DISABLED";
+  updatedAt: string;
+}
+
+export interface PunchListItem {
+  id: string;
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  deviceId: string;
+  deviceName: string;
+  punchedAt: string;
+  punchedAtLocal: string | null;
+  timezone: string;
+  direction: PunchDirection;
+  verificationMode: VerificationMode;
+  source: BiometricSource;
+}
+
+export interface UnmappedEventListItem {
+  id: string;
+  deviceId: string;
+  deviceName: string;
+  vendor: BiometricVendor | string;
+  deviceUserId: string;
+  punchedAt: string;
+  direction: PunchDirection;
+  status: BiometricEventStatus;
+}
+
+export interface BiometricLogListItem {
+  id: string;
+  receivedAt: string;
+  vendor: BiometricVendor | string | null;
+  source: BiometricSource;
+  status: BiometricEventStatus;
+  deviceName: string | null;
+  errorMessage: string | null;
+}
+
+export interface NormalizedPunchInput {
+  vendor: BiometricVendor | string;
+  deviceSerial: string | null;
+  deviceUserId: string;
+  punchedAt: Date;
+  punchedAtLocal: string | null;
+  timezone: string;
+  direction: PunchDirection;
+  verificationMode: VerificationMode;
+  workCode: string | null;
+}
+
+export interface AdapterParseResult {
+  ok: true;
+  events: NormalizedPunchInput[];
+}
+
+export interface AdapterParseError {
+  ok: false;
+  error: string;
+}
+
+export type AdapterResult = AdapterParseResult | AdapterParseError;
