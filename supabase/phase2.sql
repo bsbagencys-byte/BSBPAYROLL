@@ -19,7 +19,7 @@ from public.roles r
 cross join public.permissions p
 where r.organization_id is null
   and r.code in ('SUPER_ADMIN', 'ADMIN')
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
@@ -31,7 +31,7 @@ join public.permissions p on p.code in (
   'settings.manage'
 )
 where r.organization_id is null and r.code = 'HR'
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- Extend existing org structure tables
@@ -385,7 +385,7 @@ drop policy if exists employee_docs_storage_select on storage.objects;
 create policy employee_docs_storage_select on storage.objects
   for select using (
     bucket_id = 'employee-documents'
-    and (storage.foldername(name))[1] in (select id::text from public.current_org_ids())
+    and ((storage.foldername(name))[1])::uuid in (select public.current_org_ids())
     and public.has_org_permission(((storage.foldername(name))[1])::uuid, 'employee.documents')
   );
 
@@ -393,7 +393,7 @@ drop policy if exists employee_docs_storage_insert on storage.objects;
 create policy employee_docs_storage_insert on storage.objects
   for insert with check (
     bucket_id = 'employee-documents'
-    and (storage.foldername(name))[1] in (select id::text from public.current_org_ids())
+    and ((storage.foldername(name))[1])::uuid in (select public.current_org_ids())
     and public.has_org_permission(((storage.foldername(name))[1])::uuid, 'employee.documents')
   );
 
@@ -401,5 +401,6 @@ drop policy if exists employee_docs_storage_update on storage.objects;
 create policy employee_docs_storage_update on storage.objects
   for update using (
     bucket_id = 'employee-documents'
+    and ((storage.foldername(name))[1])::uuid in (select public.current_org_ids())
     and public.has_org_permission(((storage.foldername(name))[1])::uuid, 'employee.documents')
   );

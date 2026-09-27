@@ -124,7 +124,7 @@ create table if not exists public.roles (
   name text not null,
   description text,
   is_system boolean not null default true,
-  created_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
 );
 create unique index if not exists roles_global_code_idx on public.roles (code) where organization_id is null;
 create unique index if not exists roles_org_code_idx on public.roles (organization_id, code) where organization_id is not null;
@@ -292,15 +292,22 @@ insert into public.permissions (code, name, group_name) values
   ('settings.manage', 'Manage settings', 'Settings')
 on conflict (code) do nothing;
 
-insert into public.roles (organization_id, code, name, description, is_system) values
-  (null, 'SUPER_ADMIN', 'Super Admin', 'Full platform access', true),
-  (null, 'ADMIN', 'Admin', 'Organization administrator', true),
-  (null, 'HR', 'HR', 'Human resources', true),
-  (null, 'PAYROLL', 'Payroll', 'Payroll operations', true),
-  (null, 'ACCOUNTANT', 'Accountant', 'Finance and accounts', true),
-  (null, 'MANAGER', 'Manager', 'Team manager', true),
-  (null, 'EMPLOYEE', 'Employee', 'Employee self-service foundation', true)
-on conflict do nothing;
+insert into public.roles (organization_id, code, name, description, is_system)
+select v.organization_id, v.code, v.name, v.description, v.is_system
+from (
+  values
+    (null::uuid, 'SUPER_ADMIN', 'Super Admin', 'Full platform access', true),
+    (null::uuid, 'ADMIN', 'Admin', 'Organization administrator', true),
+    (null::uuid, 'HR', 'HR', 'Human resources', true),
+    (null::uuid, 'PAYROLL', 'Payroll', 'Payroll operations', true),
+    (null::uuid, 'ACCOUNTANT', 'Accountant', 'Finance and accounts', true),
+    (null::uuid, 'MANAGER', 'Manager', 'Team manager', true),
+    (null::uuid, 'EMPLOYEE', 'Employee', 'Employee self-service foundation', true)
+) as v(organization_id, code, name, description, is_system)
+where not exists (
+  select 1 from public.roles r
+  where r.code = v.code and r.organization_id is null
+);
 
 -- Attach default permissions to system roles
 insert into public.role_permissions (role_id, permission_id)
@@ -309,7 +316,7 @@ from public.roles r
 cross join public.permissions p
 where r.organization_id is null
   and r.code in ('SUPER_ADMIN', 'ADMIN')
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
@@ -319,7 +326,7 @@ join public.permissions p on p.code in (
   'employee.view','employee.create','employee.edit','attendance.view','settings.manage'
 )
 where r.organization_id is null and r.code = 'HR'
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
@@ -328,14 +335,14 @@ join public.permissions p on p.code in (
   'organization.view','user.view','employee.view','attendance.view','payroll.view','payroll.process'
 )
 where r.organization_id is null and r.code = 'PAYROLL'
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from public.roles r
 join public.permissions p on p.code in ('organization.view','employee.view','payroll.view')
 where r.organization_id is null and r.code = 'ACCOUNTANT'
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
@@ -344,14 +351,14 @@ join public.permissions p on p.code in (
   'organization.view','user.view','employee.view','attendance.view'
 )
 where r.organization_id is null and r.code = 'MANAGER'
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from public.roles r
 join public.permissions p on p.code in ('organization.view','employee.view','attendance.view')
 where r.organization_id is null and r.code = 'EMPLOYEE'
-on conflict do nothing;
+on conflict (role_id, permission_id) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security

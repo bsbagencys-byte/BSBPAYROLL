@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/schema.sql`, then `supabase/seed.sql` only in non-production.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2). Then run `supabase/seed.sql` only in non-production.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
