@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import type {
+  AttendanceDay,
   AttendancePunch,
   AuditLog,
   BiometricDevice,
@@ -7,6 +8,7 @@ import type {
   BiometricNormalizedEvent,
   BiometricRawEvent,
   Branch,
+  CompOffEarning,
   Department,
   Designation,
   Employee,
@@ -17,6 +19,15 @@ import type {
   EmployeeHistory,
   EmployeeStatutory,
   EmploymentType,
+  Holiday,
+  LeaveApproval,
+  LeaveBalance,
+  LeaveBalanceTransaction,
+  LeavePolicy,
+  LeavePolicyAssignment,
+  LeaveRequest,
+  LeaveRequestDay,
+  LeaveType,
   Location,
   Organization,
   OrganizationUser,
@@ -224,6 +235,17 @@ export type DemoStore = {
   biometricRawEvents: BiometricRawEvent[];
   biometricNormalizedEvents: BiometricNormalizedEvent[];
   attendancePunches: AttendancePunch[];
+  leaveTypes: LeaveType[];
+  leavePolicies: LeavePolicy[];
+  leavePolicyAssignments: LeavePolicyAssignment[];
+  leaveBalances: LeaveBalance[];
+  leaveBalanceTransactions: LeaveBalanceTransaction[];
+  leaveRequests: LeaveRequest[];
+  leaveRequestDays: LeaveRequestDay[];
+  leaveApprovals: LeaveApproval[];
+  holidays: Holiday[];
+  compOffEarnings: CompOffEarning[];
+  attendanceDays: AttendanceDay[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -652,6 +674,360 @@ function createStore(): DemoStore {
     biometricRawEvents: [] as BiometricRawEvent[],
     biometricNormalizedEvents: [] as BiometricNormalizedEvent[],
     attendancePunches: [] as AttendancePunch[],
+    ...createLeaveSeed(),
+  };
+}
+
+function createLeaveSeed(): Pick<
+  DemoStore,
+  | "leaveTypes"
+  | "leavePolicies"
+  | "leavePolicyAssignments"
+  | "leaveBalances"
+  | "leaveBalanceTransactions"
+  | "leaveRequests"
+  | "leaveRequestDays"
+  | "leaveApprovals"
+  | "holidays"
+  | "compOffEarnings"
+  | "attendanceDays"
+> {
+  const created = nowIso();
+  const year = new Date().getFullYear();
+  const clId = "l1111111-1111-1111-1111-111111111111";
+  const slId = "l2222222-2222-2222-2222-222222222222";
+  const elId = "l3333333-3333-3333-3333-333333333333";
+  const lopId = "l4444444-4444-4444-4444-444444444444";
+  const compId = "l5555555-5555-5555-5555-555555555555";
+  const policyCl = "p1111111-1111-1111-1111-111111111111";
+  const policySl = "p2222222-2222-2222-2222-222222222222";
+  const policyEl = "p3333333-3333-3333-3333-333333333333";
+  const policyLop = "p4444444-4444-4444-4444-444444444444";
+  const policyComp = "p5555555-5555-5555-5555-555555555555";
+  const requestApproved = "q1111111-1111-1111-1111-111111111111";
+  const requestPending = "q2222222-2222-2222-2222-222222222222";
+
+  const type = (
+    id: string,
+    name: string,
+    code: string,
+    extras: Partial<LeaveType> = {}
+  ): LeaveType => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    code,
+    paid: true,
+    requires_approval: true,
+    requires_document: false,
+    allow_half_day: true,
+    allow_backdated: false,
+    allow_future: true,
+    carry_forward_allowed: false,
+    max_carry_forward: null,
+    encashment_allowed: false,
+    negative_balance_allowed: false,
+    is_comp_off: false,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const policy = (
+    id: string,
+    name: string,
+    leaveTypeId: string,
+    allocation: number,
+    extras: Partial<LeavePolicy> = {}
+  ): LeavePolicy => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    leave_type_id: leaveTypeId,
+    annual_allocation: allocation,
+    accrual_method: "ANNUAL",
+    accrual_frequency: "ANNUAL",
+    start_balance: 0,
+    carry_forward: false,
+    carry_forward_limit: null,
+    encashment: false,
+    approval_required: true,
+    count_weekly_off: false,
+    count_holiday: false,
+    version: 1,
+    effective_from: `${year}-01-01`,
+    effective_to: null,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const assignment = (policyId: string): LeavePolicyAssignment => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    policy_id: policyId,
+    scope: "ORGANIZATION",
+    branch_id: null,
+    department_id: null,
+    designation_id: null,
+    employment_type_id: null,
+    employee_id: null,
+    created_at: created,
+  });
+
+  const balance = (employeeId: string, leaveTypeId: string, allocated: number, used = 0, pending = 0): LeaveBalance => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    employee_id: employeeId,
+    leave_type_id: leaveTypeId,
+    year,
+    opening: 0,
+    allocated,
+    accrued: 0,
+    used,
+    pending,
+    carry_forward: 0,
+    adjusted: 0,
+    available: allocated - used - pending,
+    updated_at: created,
+  });
+
+  const holiday = (name: string, date: string, holidayType: Holiday["holiday_type"]): Holiday => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    name,
+    holiday_date: `${year}-${date}`,
+    holiday_type: holidayType,
+    branch_id: null,
+    location_id: null,
+    optional: holidayType === "OPTIONAL",
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+  });
+
+  return {
+    leaveTypes: [
+      type(clId, "Casual Leave", "CL"),
+      type(slId, "Sick Leave", "SL", { allow_backdated: true, requires_document: true }),
+      type(elId, "Earned Leave", "EL", { carry_forward_allowed: true, max_carry_forward: 15, encashment_allowed: true }),
+      type(lopId, "Loss of Pay", "LOP", { paid: false, negative_balance_allowed: true }),
+      type(compId, "Compensatory Off", "COMP", { is_comp_off: true, allow_backdated: true }),
+    ],
+    leavePolicies: [
+      policy(policyCl, "Casual Leave — org", clId, 12),
+      policy(policySl, "Sick Leave — org", slId, 8),
+      policy(policyEl, "Earned Leave — org", elId, 18, { carry_forward: true, carry_forward_limit: 15, encashment: true }),
+      policy(policyLop, "Loss of Pay — org", lopId, 0, { accrual_method: "NONE", accrual_frequency: "NONE", approval_required: true }),
+      policy(policyComp, "Comp-off — org", compId, 0, { accrual_method: "MANUAL", accrual_frequency: "NONE" }),
+    ],
+    leavePolicyAssignments: [policyCl, policySl, policyEl, policyLop, policyComp].map(assignment),
+    leaveBalances: [
+      balance(EMPLOYEE_ADMIN_ID, clId, 12, 0, 0),
+      balance(EMPLOYEE_ADMIN_ID, slId, 8, 0, 0),
+      balance(EMPLOYEE_ADMIN_ID, elId, 18, 0, 0),
+      balance(EMPLOYEE_ADMIN_ID, lopId, 0, 0, 0),
+      balance(EMPLOYEE_ADMIN_ID, compId, 0, 0, 0),
+      balance(EMPLOYEE_HR_ID, clId, 12, 1, 0),
+      balance(EMPLOYEE_HR_ID, slId, 8, 0, 0),
+      balance(EMPLOYEE_HR_ID, elId, 18, 0, 0),
+      balance(EMPLOYEE_HR_ID, lopId, 0, 0, 0),
+      balance(EMPLOYEE_HR_ID, compId, 0, 0, 0),
+      balance(EMPLOYEE_STAFF_ID, clId, 12, 0, 1),
+      balance(EMPLOYEE_STAFF_ID, slId, 8, 0, 0),
+      balance(EMPLOYEE_STAFF_ID, elId, 18, 0, 0),
+      balance(EMPLOYEE_STAFF_ID, lopId, 0, 0, 0),
+      balance(EMPLOYEE_STAFF_ID, compId, 0, 0, 0),
+    ],
+    leaveBalanceTransactions: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        leave_type_id: clId,
+        year,
+        source: "USED" as const,
+        quantity: 1,
+        balance_before: 12,
+        balance_after: 11,
+        reference_id: requestApproved,
+        notes: "Approved casual leave",
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_STAFF_ID,
+        leave_type_id: clId,
+        year,
+        source: "PENDING" as const,
+        quantity: 1,
+        balance_before: 12,
+        balance_after: 11,
+        reference_id: requestPending,
+        notes: "Pending casual leave",
+        created_by: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        created_at: created,
+      },
+    ],
+    leaveRequests: [
+      {
+        id: requestApproved,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        leave_type_id: clId,
+        from_date: `${year}-01-16`,
+        to_date: `${year}-01-16`,
+        session: "FULL",
+        days: 1,
+        reason: "Personal work",
+        contact_during_leave: "9000000002",
+        attachment_name: null,
+        attachment_data: null,
+        status: "APPROVED",
+        submitted_at: created,
+        decided_at: created,
+        created_by: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        updated_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: requestPending,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_STAFF_ID,
+        leave_type_id: clId,
+        from_date: `${year}-02-10`,
+        to_date: `${year}-02-10`,
+        session: "FULL",
+        days: 1,
+        reason: "Family function",
+        contact_during_leave: "9000000004",
+        attachment_name: null,
+        attachment_data: null,
+        status: "PENDING",
+        submitted_at: created,
+        decided_at: null,
+        created_by: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        updated_by: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    leaveRequestDays: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        request_id: requestApproved,
+        employee_id: EMPLOYEE_HR_ID,
+        work_date: `${year}-01-16`,
+        session: "FULL",
+        units: 1,
+        counted: true,
+        skip_reason: null,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        request_id: requestPending,
+        employee_id: EMPLOYEE_STAFF_ID,
+        work_date: `${year}-02-10`,
+        session: "FULL",
+        units: 1,
+        counted: true,
+        skip_reason: null,
+      },
+    ],
+    leaveApprovals: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        request_id: requestApproved,
+        actor_user_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        action: "SUBMITTED",
+        reason: null,
+        created_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        request_id: requestApproved,
+        actor_user_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        action: "APPROVED",
+        reason: null,
+        created_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        request_id: requestPending,
+        actor_user_id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        action: "SUBMITTED",
+        reason: null,
+        created_at: created,
+      },
+    ],
+    holidays: [
+      holiday("Republic Day", "01-26", "NATIONAL"),
+      holiday("Independence Day", "08-15", "NATIONAL"),
+      holiday("Gandhi Jayanti", "10-02", "NATIONAL"),
+      holiday("Diwali", "10-20", "OPTIONAL"),
+      holiday("Christmas", "12-25", "COMPANY"),
+    ],
+    compOffEarnings: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        work_date: `${year}-01-26`,
+        source: "HOLIDAY",
+        units: 1,
+        status: "PENDING",
+        notes: "Worked on Republic Day",
+        request_id: null,
+        decided_by: null,
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    attendanceDays: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        work_date: `${year}-01-16`,
+        status: "PAID_LEAVE",
+        session: "FULL",
+        leave_request_id: requestApproved,
+        source: "LEAVE",
+        previous_status: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        work_date: `${year}-01-26`,
+        status: "HOLIDAY",
+        session: "FULL",
+        leave_request_id: null,
+        source: "CALENDAR",
+        previous_status: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
   };
 }
 
@@ -659,7 +1035,8 @@ export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
     !("employees" in globalStore.__bsbDemo) ||
-    !("biometricDevices" in globalStore.__bsbDemo)
+    !("biometricDevices" in globalStore.__bsbDemo) ||
+    !("leaveTypes" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

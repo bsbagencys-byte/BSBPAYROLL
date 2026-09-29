@@ -51,6 +51,14 @@ export const PERMISSIONS = [
   { code: "biometric.view", group: "Biometric", label: "View biometric devices and punches" },
   { code: "biometric.manage", group: "Biometric", label: "Manage biometric devices" },
   { code: "biometric.mapping", group: "Biometric", label: "Map device users to employees" },
+  { code: "leave.view", group: "Leave", label: "View leave" },
+  { code: "leave.request", group: "Leave", label: "Submit leave requests" },
+  { code: "leave.approve", group: "Leave", label: "Approve leave requests" },
+  { code: "leave.manage", group: "Leave", label: "Manage leave records" },
+  { code: "leave.balance.manage", group: "Leave", label: "Adjust leave balances" },
+  { code: "leave.policy.manage", group: "Leave", label: "Manage leave policies" },
+  { code: "leave.calendar.manage", group: "Leave", label: "Manage holidays" },
+  { code: "leave.comp_off.manage", group: "Leave", label: "Manage comp-off" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -77,6 +85,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "biometric.view",
     "biometric.manage",
     "biometric.mapping",
+    "leave.view",
+    "leave.request",
+    "leave.approve",
+    "leave.manage",
+    "leave.balance.manage",
+    "leave.policy.manage",
+    "leave.calendar.manage",
+    "leave.comp_off.manage",
   ],
   PAYROLL: [
     "organization.view",
@@ -86,17 +102,27 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "payroll.view",
     "payroll.process",
     "biometric.view",
+    "leave.view",
   ],
-  ACCOUNTANT: ["organization.view", "employee.view", "payroll.view"],
-  MANAGER: ["organization.view", "user.view", "employee.view", "attendance.view", "biometric.view"],
-  EMPLOYEE: ["organization.view", "employee.view", "attendance.view"],
+  ACCOUNTANT: ["organization.view", "employee.view", "payroll.view", "leave.view"],
+  MANAGER: [
+    "organization.view",
+    "user.view",
+    "employee.view",
+    "attendance.view",
+    "biometric.view",
+    "leave.view",
+    "leave.request",
+    "leave.approve",
+  ],
+  EMPLOYEE: ["organization.view", "employee.view", "attendance.view", "leave.view", "leave.request"],
 };
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard", enabled: true },
   { href: "/employees", label: "Employees", icon: "Users", enabled: true, phase: 2 },
   { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: false, phase: 4 },
-  { href: "/leave", label: "Leave", icon: "Palmtree", enabled: false, phase: 5 },
+  { href: "/leave", label: "Leave", icon: "Palmtree", enabled: true, phase: 5 },
   { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: true, phase: 3 },
   { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: false, phase: 7 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 10 },
@@ -314,3 +340,124 @@ export const BIOMETRIC_NAV = [
 
 export const DEMO_ESSL_DEVICE_ID = "b1111111-1111-1111-1111-111111111111";
 export const DEMO_ESSL_DEVICE_TOKEN = "demo-essl-ho-token";
+
+export const LEAVE_TYPE_STATUSES = ["ACTIVE", "DISABLED", "ARCHIVED"] as const;
+export type LeaveTypeStatus = (typeof LEAVE_TYPE_STATUSES)[number];
+
+export const ACCRUAL_METHODS = ["ANNUAL", "MONTHLY", "NONE", "MANUAL"] as const;
+export type AccrualMethod = (typeof ACCRUAL_METHODS)[number];
+
+export const ACCRUAL_METHOD_LABELS: Record<AccrualMethod, string> = {
+  ANNUAL: "Annual allocation",
+  MONTHLY: "Monthly accrual",
+  NONE: "No accrual / unlimited",
+  MANUAL: "Manual allocation",
+};
+
+export const ACCRUAL_FREQUENCIES = ["ANNUAL", "MONTHLY", "NONE"] as const;
+export type AccrualFrequency = (typeof ACCRUAL_FREQUENCIES)[number];
+
+export const POLICY_SCOPES = ["ORGANIZATION", "BRANCH", "DEPARTMENT", "DESIGNATION", "EMPLOYMENT_TYPE", "EMPLOYEE"] as const;
+export type PolicyScope = (typeof POLICY_SCOPES)[number];
+
+export const POLICY_SCOPE_LABELS: Record<PolicyScope, string> = {
+  ORGANIZATION: "Organization",
+  BRANCH: "Branch",
+  DEPARTMENT: "Department",
+  DESIGNATION: "Designation",
+  EMPLOYMENT_TYPE: "Employment type",
+  EMPLOYEE: "Employee",
+};
+
+export const LEAVE_REQUEST_STATUSES = ["DRAFT", "PENDING", "APPROVED", "REJECTED", "CANCELLED", "WITHDRAWN"] as const;
+export type LeaveRequestStatus = (typeof LEAVE_REQUEST_STATUSES)[number];
+
+export const LEAVE_REQUEST_STATUS_LABELS: Record<LeaveRequestStatus, string> = {
+  DRAFT: "Draft",
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+  WITHDRAWN: "Withdrawn",
+};
+
+export const LEAVE_DAY_SESSIONS = ["FULL", "FIRST_HALF", "SECOND_HALF"] as const;
+export type LeaveDaySession = (typeof LEAVE_DAY_SESSIONS)[number];
+
+export const LEAVE_DAY_SESSION_LABELS: Record<LeaveDaySession, string> = {
+  FULL: "Full day",
+  FIRST_HALF: "First half",
+  SECOND_HALF: "Second half",
+};
+
+export const LEAVE_LEDGER_SOURCES = [
+  "ALLOCATED",
+  "ACCRUED",
+  "USED",
+  "CANCELLED",
+  "CARRY_FORWARD",
+  "ADJUSTMENT",
+  "COMP_OFF_EARNED",
+  "COMP_OFF_USED",
+  "ENCASHED",
+  "PENDING",
+] as const;
+export type LeaveLedgerSource = (typeof LEAVE_LEDGER_SOURCES)[number];
+
+export const HOLIDAY_TYPES = ["NATIONAL", "REGIONAL", "OPTIONAL", "COMPANY"] as const;
+export type HolidayType = (typeof HOLIDAY_TYPES)[number];
+
+export const HOLIDAY_TYPE_LABELS: Record<HolidayType, string> = {
+  NATIONAL: "National",
+  REGIONAL: "Regional",
+  OPTIONAL: "Optional",
+  COMPANY: "Company",
+};
+
+export const COMP_OFF_STATUSES = ["PENDING", "APPROVED", "REJECTED", "EXPIRED", "USED"] as const;
+export type CompOffStatus = (typeof COMP_OFF_STATUSES)[number];
+
+export const COMP_OFF_STATUS_LABELS: Record<CompOffStatus, string> = {
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  EXPIRED: "Expired",
+  USED: "Used",
+};
+
+export const ATTENDANCE_DAY_STATUSES = [
+  "PRESENT",
+  "ABSENT",
+  "WEEKLY_OFF",
+  "HOLIDAY",
+  "PAID_LEAVE",
+  "UNPAID_LEAVE",
+  "HALF_DAY_LEAVE",
+  "COMP_OFF",
+] as const;
+export type AttendanceDayStatus = (typeof ATTENDANCE_DAY_STATUSES)[number];
+
+export const ATTENDANCE_DAY_STATUS_LABELS: Record<AttendanceDayStatus, string> = {
+  PRESENT: "Present",
+  ABSENT: "Absent",
+  WEEKLY_OFF: "Weekly off",
+  HOLIDAY: "Holiday",
+  PAID_LEAVE: "Paid leave",
+  UNPAID_LEAVE: "Unpaid leave",
+  HALF_DAY_LEAVE: "Half-day leave",
+  COMP_OFF: "Comp-off",
+};
+
+export const LEAVE_NAV = [
+  { href: "/leave", label: "Overview" },
+  { href: "/leave/requests", label: "Requests" },
+  { href: "/leave/approvals", label: "Approvals" },
+  { href: "/leave/balances", label: "Balances" },
+  { href: "/leave/calendar", label: "Calendar" },
+  { href: "/leave/holidays", label: "Holidays" },
+  { href: "/leave/types", label: "Types" },
+  { href: "/leave/policies", label: "Policies" },
+  { href: "/leave/comp-off", label: "Comp-off" },
+  { href: "/leave/reports", label: "Reports" },
+  { href: "/leave/settings", label: "Settings" },
+] as const;

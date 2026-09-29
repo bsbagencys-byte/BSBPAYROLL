@@ -1,17 +1,40 @@
 import type {
+  AccrualFrequency,
+  AccrualMethod,
+  AttendanceDayStatus,
   BiometricEventStatus,
   BiometricSource,
   BiometricVendor,
+  CompOffStatus,
   DeviceConnectionMode,
   DeviceStatus,
   DocumentType,
   EmployeeStatus,
   Gender,
+  HolidayType,
+  LeaveDaySession,
+  LeaveLedgerSource,
+  LeaveRequestStatus,
+  LeaveTypeStatus,
   PermissionCode,
+  PolicyScope,
   PunchDirection,
   RoleCode,
   VerificationMode,
 } from "@/lib/constants";
+
+export type {
+  AccrualFrequency,
+  AccrualMethod,
+  AttendanceDayStatus,
+  CompOffStatus,
+  HolidayType,
+  LeaveDaySession,
+  LeaveLedgerSource,
+  LeaveRequestStatus,
+  LeaveTypeStatus,
+  PolicyScope,
+};
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
 export type OrgStatus = "PENDING_SETUP" | "ACTIVE" | "SUSPENDED";
@@ -493,3 +516,234 @@ export interface AdapterParseError {
 }
 
 export type AdapterResult = AdapterParseResult | AdapterParseError;
+
+export interface LeaveType {
+  id: string;
+  organization_id: string;
+  name: string;
+  code: string;
+  paid: boolean;
+  requires_approval: boolean;
+  requires_document: boolean;
+  allow_half_day: boolean;
+  allow_backdated: boolean;
+  allow_future: boolean;
+  carry_forward_allowed: boolean;
+  max_carry_forward: number | null;
+  encashment_allowed: boolean;
+  negative_balance_allowed: boolean;
+  is_comp_off: boolean;
+  status: LeaveTypeStatus;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeavePolicy {
+  id: string;
+  organization_id: string;
+  name: string;
+  leave_type_id: string;
+  annual_allocation: number;
+  accrual_method: AccrualMethod;
+  accrual_frequency: AccrualFrequency;
+  start_balance: number;
+  carry_forward: boolean;
+  carry_forward_limit: number | null;
+  encashment: boolean;
+  approval_required: boolean;
+  count_weekly_off: boolean;
+  count_holiday: boolean;
+  version: number;
+  effective_from: string;
+  effective_to: string | null;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeavePolicyAssignment {
+  id: string;
+  organization_id: string;
+  policy_id: string;
+  scope: PolicyScope;
+  branch_id: string | null;
+  department_id: string | null;
+  designation_id: string | null;
+  employment_type_id: string | null;
+  employee_id: string | null;
+  created_at: string;
+}
+
+export interface LeaveBalance {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  leave_type_id: string;
+  year: number;
+  opening: number;
+  allocated: number;
+  accrued: number;
+  used: number;
+  pending: number;
+  carry_forward: number;
+  adjusted: number;
+  available: number;
+  updated_at: string;
+}
+
+export interface LeaveBalanceTransaction {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  leave_type_id: string;
+  year: number;
+  source: LeaveLedgerSource;
+  quantity: number;
+  balance_before: number;
+  balance_after: number;
+  reference_id: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  leave_type_id: string;
+  from_date: string;
+  to_date: string;
+  session: LeaveDaySession;
+  days: number;
+  reason: string | null;
+  contact_during_leave: string | null;
+  attachment_name: string | null;
+  attachment_data: string | null;
+  status: LeaveRequestStatus;
+  submitted_at: string | null;
+  decided_at: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeaveRequestDay {
+  id: string;
+  organization_id: string;
+  request_id: string;
+  employee_id: string;
+  work_date: string;
+  session: LeaveDaySession;
+  units: number;
+  counted: boolean;
+  skip_reason: string | null;
+}
+
+export interface LeaveApproval {
+  id: string;
+  organization_id: string;
+  request_id: string;
+  actor_user_id: string | null;
+  action: "SUBMITTED" | "APPROVED" | "REJECTED" | "CANCELLED" | "WITHDRAWN" | "CORRECTION";
+  reason: string | null;
+  created_at: string;
+}
+
+export interface Holiday {
+  id: string;
+  organization_id: string;
+  name: string;
+  holiday_date: string;
+  holiday_type: HolidayType;
+  branch_id: string | null;
+  location_id: string | null;
+  optional: boolean;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompOffEarning {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  work_date: string;
+  source: "HOLIDAY" | "WEEKLY_OFF";
+  units: number;
+  status: CompOffStatus;
+  notes: string | null;
+  request_id: string | null;
+  decided_by: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceDay {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  work_date: string;
+  status: AttendanceDayStatus;
+  session: LeaveDaySession;
+  leave_request_id: string | null;
+  source: string;
+  previous_status: AttendanceDayStatus | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeaveDayPreview {
+  date: string;
+  session: LeaveDaySession;
+  units: number;
+  counted: boolean;
+  skipReason: string | null;
+  weekday: string;
+}
+
+export interface LeaveBalanceView {
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  leaveTypeCode: string;
+  year: number;
+  opening: number;
+  allocated: number;
+  accrued: number;
+  used: number;
+  pending: number;
+  carryForward: number;
+  adjusted: number;
+  available: number;
+}
+
+export interface LeaveRequestListItem {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string | null;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  leaveTypeCode: string;
+  paid: boolean;
+  fromDate: string;
+  toDate: string;
+  session: LeaveDaySession;
+  days: number;
+  reason: string | null;
+  status: LeaveRequestStatus;
+  availableAfter: number | null;
+  submittedAt: string | null;
+}

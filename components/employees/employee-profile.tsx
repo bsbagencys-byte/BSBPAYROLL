@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { EmployeeLeavePanel } from "@/components/leave/employee-leave";
 import { EmployeeDocuments } from "@/components/employees/employee-documents";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { EmployeeHistoryList } from "@/components/employees/employee-history";
@@ -20,6 +21,8 @@ import type {
   Employee,
   EmployeeRecord,
   EmploymentType,
+  LeaveBalanceView,
+  LeaveRequest,
   Location,
 } from "@/types";
 
@@ -47,6 +50,8 @@ export function EmployeeProfile({
   canDisable,
   canDocuments,
   timezone,
+  leaveBalances,
+  leaveRequests,
 }: {
   record: EmployeeRecord;
   values: Partial<EmployeeFormValues>;
@@ -62,6 +67,8 @@ export function EmployeeProfile({
   canDisable: boolean;
   canDocuments: boolean;
   timezone: string;
+  leaveBalances?: LeaveBalanceView[];
+  leaveRequests?: LeaveRequest[];
 }) {
   const [tab, setTab] = useState<TabId>("overview");
   const { employee, address, employment, statutory, bank } = record;
@@ -144,7 +151,7 @@ export function EmployeeProfile({
       ) : null}
 
       {tab === "attendance" ? <LaterPhase title="Attendance" phase={4} /> : null}
-      {tab === "leave" ? <LaterPhase title="Leave" phase={5} /> : null}
+      {tab === "leave" ? <EmployeeLeavePanel balances={leaveBalances ?? []} requests={leaveRequests ?? []} /> : null}
       {tab === "payroll" ? <LaterPhase title="Payroll" phase={7} /> : null}
 
       {tab === "overview" ? (

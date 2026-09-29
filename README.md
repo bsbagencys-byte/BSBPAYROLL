@@ -1,8 +1,8 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, and Phase 3 universal biometric ingest. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, and Phase 5 leave and holiday management. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
-This app does **not** implement payroll, attendance calculation, leave, Face, QR, GPS or mobile attendance.
+This app does **not** implement payroll, full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest.
 
 ## Stack
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql` and `supabase/phase5.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -91,18 +91,42 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `/biometric/simulator`
 - `POST /api/biometric/push`
 - `POST /api/biometric/webhook`
+- `/leave`
+- `/leave/requests`
+- `/leave/approvals`
+- `/leave/balances`
+- `/leave/calendar`
+- `/leave/holidays`
+- `/leave/types`
+- `/leave/policies`
+- `/leave/comp-off`
+- `/leave/reports`
+- `/leave/settings`
+- `GET /api/leave/reports/requests`
+- `GET /api/leave/reports/balances`
+- `GET /api/leave/reports/holidays`
+- `GET /api/leave/reports/attendance`
 
-Attendance calculation, leave, payroll, reports and compliance remain Coming Soon.
+Attendance calculation (Phase 4), payroll, compliance and full reports remain Coming Soon.
+
+## Leave
+
+- Leave types and policies are configurable (CL, SL, EL, LOP, COMP are demo seeds, not hard-coded).
+- Day calculation skips weekly off (org `weekly_off`) and holidays unless the policy counts them.
+- Half-day is first or second half; overlapping PENDING/APPROVED requests are blocked.
+- Balances change through a ledger (`ALLOCATED`, `ACCRUED`, `USED`, `PENDING`, `CANCELLED`, `ADJUSTMENT`, `COMP_OFF_*`).
+- Approved leave writes `attendance_days` as `PAID_LEAVE`, `UNPAID_LEAVE`, `HALF_DAY_LEAVE` or `COMP_OFF`. Cancel restores the previous status. Punch history is not erased.
+- Holidays never become ABSENT.
 
 ## Security
 
 - RLS isolates every business table by `organization_id`
 - Passwords are never stored in plaintext
 - Login is rate-limited
-- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes
+- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes
 - Public biometric ingest is token-authenticated and rate-limited; device tokens are stored as hashes only
 - Service role keys must not be prefixed with `NEXT_PUBLIC_`
 
 ## Later phases
 
-Attendance calculation, leave, salary components, payroll, payslips, compliance, reports, employee self-service. New biometric vendors add an adapter, not a rewrite.
+Attendance calculation, salary components, payroll, payslips, compliance, reports, employee self-service. New biometric vendors add an adapter, not a rewrite.
