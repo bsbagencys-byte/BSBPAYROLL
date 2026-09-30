@@ -59,6 +59,13 @@ export const PERMISSIONS = [
   { code: "leave.policy.manage", group: "Leave", label: "Manage leave policies" },
   { code: "leave.calendar.manage", group: "Leave", label: "Manage holidays" },
   { code: "leave.comp_off.manage", group: "Leave", label: "Manage comp-off" },
+  { code: "salary.view", group: "Salary", label: "View salary" },
+  { code: "salary.manage", group: "Salary", label: "Assign and edit employee salary" },
+  { code: "salary.component.manage", group: "Salary", label: "Manage salary components" },
+  { code: "salary.structure.manage", group: "Salary", label: "Manage salary structures" },
+  { code: "salary.revision.create", group: "Salary", label: "Create salary revisions" },
+  { code: "salary.revision.approve", group: "Salary", label: "Approve salary revisions" },
+  { code: "salary.history.view", group: "Salary", label: "View salary history" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -93,6 +100,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "leave.policy.manage",
     "leave.calendar.manage",
     "leave.comp_off.manage",
+    "salary.view",
+    "salary.manage",
+    "salary.component.manage",
+    "salary.structure.manage",
+    "salary.revision.create",
+    "salary.revision.approve",
+    "salary.history.view",
   ],
   PAYROLL: [
     "organization.view",
@@ -103,8 +117,12 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "payroll.process",
     "biometric.view",
     "leave.view",
+    "salary.view",
+    "salary.manage",
+    "salary.revision.create",
+    "salary.history.view",
   ],
-  ACCOUNTANT: ["organization.view", "employee.view", "payroll.view", "leave.view"],
+  ACCOUNTANT: ["organization.view", "employee.view", "payroll.view", "leave.view", "salary.view", "salary.history.view"],
   MANAGER: [
     "organization.view",
     "user.view",
@@ -123,6 +141,7 @@ export const NAV_ITEMS = [
   { href: "/employees", label: "Employees", icon: "Users", enabled: true, phase: 2 },
   { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: false, phase: 4 },
   { href: "/leave", label: "Leave", icon: "Palmtree", enabled: true, phase: 5 },
+  { href: "/salary", label: "Salary", icon: "Banknote", enabled: true, phase: 6 },
   { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: true, phase: 3 },
   { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: false, phase: 7 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 10 },
@@ -460,4 +479,115 @@ export const LEAVE_NAV = [
   { href: "/leave/comp-off", label: "Comp-off" },
   { href: "/leave/reports", label: "Reports" },
   { href: "/leave/settings", label: "Settings" },
+] as const;
+
+export const SALARY_COMPONENT_TYPES = ["EARNING", "DEDUCTION", "REIMBURSEMENT"] as const;
+export type SalaryComponentType = (typeof SALARY_COMPONENT_TYPES)[number];
+
+export const SALARY_COMPONENT_TYPE_LABELS: Record<SalaryComponentType, string> = {
+  EARNING: "Earning",
+  DEDUCTION: "Deduction",
+  REIMBURSEMENT: "Reimbursement",
+};
+
+export const SALARY_COMPONENT_CATEGORIES = [
+  "BASIC",
+  "ALLOWANCE",
+  "VARIABLE",
+  "STATUTORY_PLACEHOLDER",
+  "BENEFIT",
+  "DEDUCTION",
+  "REIMBURSEMENT",
+  "OTHER",
+] as const;
+export type SalaryComponentCategory = (typeof SALARY_COMPONENT_CATEGORIES)[number];
+
+export const SALARY_COMPONENT_CATEGORY_LABELS: Record<SalaryComponentCategory, string> = {
+  BASIC: "Basic",
+  ALLOWANCE: "Allowance",
+  VARIABLE: "Variable",
+  STATUTORY_PLACEHOLDER: "Statutory placeholder",
+  BENEFIT: "Employer benefit",
+  DEDUCTION: "Deduction",
+  REIMBURSEMENT: "Reimbursement",
+  OTHER: "Other",
+};
+
+export const SALARY_CALCULATION_METHODS = ["FIXED", "PERCENTAGE", "FORMULA", "MANUAL", "RESIDUAL"] as const;
+export type SalaryCalculationMethod = (typeof SALARY_CALCULATION_METHODS)[number];
+
+export const SALARY_CALCULATION_METHOD_LABELS: Record<SalaryCalculationMethod, string> = {
+  FIXED: "Fixed amount",
+  PERCENTAGE: "Percentage of base",
+  FORMULA: "Formula",
+  MANUAL: "Manual / payroll input",
+  RESIDUAL: "Residual of CTC",
+};
+
+export const SALARY_FREQUENCIES = ["MONTHLY", "ANNUAL", "ONE_TIME", "PAYROLL"] as const;
+export type SalaryFrequency = (typeof SALARY_FREQUENCIES)[number];
+
+export const SALARY_FREQUENCY_LABELS: Record<SalaryFrequency, string> = {
+  MONTHLY: "Monthly",
+  ANNUAL: "Annual",
+  ONE_TIME: "One time",
+  PAYROLL: "With payroll",
+};
+
+export const SALARY_ASSIGNMENT_STATUSES = ["DRAFT", "ACTIVE", "CLOSED"] as const;
+export type SalaryAssignmentStatus = (typeof SALARY_ASSIGNMENT_STATUSES)[number];
+
+export const SALARY_REVISION_STATUSES = ["DRAFT", "PENDING", "APPROVED", "REJECTED", "APPLIED"] as const;
+export type SalaryRevisionStatus = (typeof SALARY_REVISION_STATUSES)[number];
+
+export const SALARY_REVISION_STATUS_LABELS: Record<SalaryRevisionStatus, string> = {
+  DRAFT: "Draft",
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  APPLIED: "Applied",
+};
+
+export const SALARY_CHANGE_TYPES = [
+  "NEW_JOINER",
+  "REVISION",
+  "PROMOTION",
+  "INCREMENT",
+  "TRANSFER",
+  "STRUCTURE_CHANGE",
+  "DEACTIVATED",
+] as const;
+export type SalaryChangeType = (typeof SALARY_CHANGE_TYPES)[number];
+
+export const SALARY_CHANGE_TYPE_LABELS: Record<SalaryChangeType, string> = {
+  NEW_JOINER: "New joiner",
+  REVISION: "Salary revision",
+  PROMOTION: "Promotion",
+  INCREMENT: "Increment",
+  TRANSFER: "Transfer",
+  STRUCTURE_CHANGE: "Structure change",
+  DEACTIVATED: "Deactivated",
+};
+
+export const COMPENSATION_ENTRY_STATUSES = ["DRAFT", "PENDING", "APPROVED", "REJECTED"] as const;
+export type CompensationEntryStatus = (typeof COMPENSATION_ENTRY_STATUSES)[number];
+
+export const COMPENSATION_ENTRY_STATUS_LABELS: Record<CompensationEntryStatus, string> = {
+  DRAFT: "Draft",
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
+export const SALARY_NAV = [
+  { href: "/salary", label: "Overview" },
+  { href: "/salary/components", label: "Components" },
+  { href: "/salary/structures", label: "Structures" },
+  { href: "/salary/employee", label: "Employees" },
+  { href: "/salary/revisions", label: "Revisions" },
+  { href: "/salary/history", label: "History" },
+  { href: "/salary/variable", label: "Variable" },
+  { href: "/salary/reimbursements", label: "Reimbursements" },
+  { href: "/salary/reports", label: "Reports" },
+  { href: "/salary/settings", label: "Settings" },
 ] as const;

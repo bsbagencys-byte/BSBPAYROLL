@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { EmployeeLeavePanel } from "@/components/leave/employee-leave";
+import { EmployeeSalaryPanel } from "@/components/salary/employee-salary";
 import { EmployeeDocuments } from "@/components/employees/employee-documents";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { EmployeeHistoryList } from "@/components/employees/employee-history";
@@ -21,9 +22,12 @@ import type {
   Employee,
   EmployeeRecord,
   EmploymentType,
+  EmployeeSalarySnapshot,
   LeaveBalanceView,
   LeaveRequest,
   Location,
+  SalaryHistory,
+  SalaryRevision,
 } from "@/types";
 
 const TABS = [
@@ -37,6 +41,7 @@ const TABS = [
   { id: "history", label: "History" },
   { id: "attendance", label: "Attendance" },
   { id: "leave", label: "Leave" },
+  { id: "salary", label: "Salary" },
   { id: "payroll", label: "Payroll" },
 ] as const;
 
@@ -52,6 +57,12 @@ export function EmployeeProfile({
   timezone,
   leaveBalances,
   leaveRequests,
+  salarySnapshot,
+  salaryHistory,
+  salaryRevisions,
+  canViewSalary,
+  canManageSalary,
+  canReviseSalary,
 }: {
   record: EmployeeRecord;
   values: Partial<EmployeeFormValues>;
@@ -69,6 +80,12 @@ export function EmployeeProfile({
   timezone: string;
   leaveBalances?: LeaveBalanceView[];
   leaveRequests?: LeaveRequest[];
+  salarySnapshot?: EmployeeSalarySnapshot | null;
+  salaryHistory?: SalaryHistory[];
+  salaryRevisions?: SalaryRevision[];
+  canViewSalary?: boolean;
+  canManageSalary?: boolean;
+  canReviseSalary?: boolean;
 }) {
   const [tab, setTab] = useState<TabId>("overview");
   const { employee, address, employment, statutory, bank } = record;
@@ -152,6 +169,22 @@ export function EmployeeProfile({
 
       {tab === "attendance" ? <LaterPhase title="Attendance" phase={4} /> : null}
       {tab === "leave" ? <EmployeeLeavePanel balances={leaveBalances ?? []} requests={leaveRequests ?? []} /> : null}
+      {tab === "salary" ? (
+        canViewSalary ? (
+          <EmployeeSalaryPanel
+            snapshot={salarySnapshot ?? null}
+            history={salaryHistory ?? []}
+            revisions={salaryRevisions ?? []}
+            canManage={canManageSalary ?? false}
+            canRevise={canReviseSalary ?? false}
+            employeeId={employee.id}
+          />
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-sm text-slate-600">You do not have permission to view salary.</CardContent>
+          </Card>
+        )
+      ) : null}
       {tab === "payroll" ? <LaterPhase title="Payroll" phase={7} /> : null}
 
       {tab === "overview" ? (

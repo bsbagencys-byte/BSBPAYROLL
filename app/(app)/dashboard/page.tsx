@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Fingerprint, Palmtree, Shield, UserRound, Users } from "lucide-react";
+import { Banknote, Building2, Fingerprint, Palmtree, Shield, UserRound, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Company, users, employees, biometric ingest and leave. Attendance calculation and payroll are not enabled yet."
+        description="Company, users, employees, biometric ingest, leave and salary. Attendance calculation and payroll runs are not enabled yet."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -166,6 +166,11 @@ export default async function DashboardPage() {
             <p className="mt-2 font-medium">Leave</p>
             <p className="text-xs text-slate-500">Requests, balances, holidays and approvals</p>
           </Link>
+          <Link href="/salary" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
+            <Banknote className="h-5 w-5 text-brand-700" />
+            <p className="mt-2 font-medium">Salary</p>
+            <p className="text-xs text-slate-500">Components, structures, CTC and revisions</p>
+          </Link>
           <Link href="/profile" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
             <UserRound className="h-5 w-5 text-brand-700" />
             <p className="mt-2 font-medium">Profile</p>
@@ -176,7 +181,7 @@ export default async function DashboardPage() {
 
       <p className="mt-6 flex items-center gap-2 text-xs text-slate-500">
         <Shield className="h-3.5 w-3.5" />
-        No payroll or attendance totals are shown. Leave marks attendance days; biometric ingest captures punches only.
+        No payroll run or attendance totals are shown. Leave marks attendance days; salary stores CTC; biometric ingest captures punches only.
       </p>
     </div>
   );

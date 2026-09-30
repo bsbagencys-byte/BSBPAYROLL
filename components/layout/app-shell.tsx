@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  Banknote,
   BarChart3,
   Bell,
   CalendarCheck,
@@ -31,6 +32,7 @@ const ICONS = {
   Users,
   CalendarCheck,
   Palmtree,
+  Banknote,
   Fingerprint,
   Wallet,
   BarChart3,

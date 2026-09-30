@@ -6,6 +6,7 @@ import type {
   BiometricSource,
   BiometricVendor,
   CompOffStatus,
+  CompensationEntryStatus,
   DeviceConnectionMode,
   DeviceStatus,
   DocumentType,
@@ -20,6 +21,13 @@ import type {
   PolicyScope,
   PunchDirection,
   RoleCode,
+  SalaryAssignmentStatus,
+  SalaryCalculationMethod,
+  SalaryChangeType,
+  SalaryComponentCategory,
+  SalaryComponentType,
+  SalaryFrequency,
+  SalaryRevisionStatus,
   VerificationMode,
 } from "@/lib/constants";
 
@@ -28,12 +36,20 @@ export type {
   AccrualMethod,
   AttendanceDayStatus,
   CompOffStatus,
+  CompensationEntryStatus,
   HolidayType,
   LeaveDaySession,
   LeaveLedgerSource,
   LeaveRequestStatus,
   LeaveTypeStatus,
   PolicyScope,
+  SalaryAssignmentStatus,
+  SalaryCalculationMethod,
+  SalaryChangeType,
+  SalaryComponentCategory,
+  SalaryComponentType,
+  SalaryFrequency,
+  SalaryRevisionStatus,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -746,4 +762,196 @@ export interface LeaveRequestListItem {
   status: LeaveRequestStatus;
   availableAfter: number | null;
   submittedAt: string | null;
+}
+
+export interface SalaryComponent {
+  id: string;
+  organization_id: string;
+  name: string;
+  code: string;
+  component_type: SalaryComponentType;
+  category: SalaryComponentCategory;
+  calculation_method: SalaryCalculationMethod;
+  formula: string | null;
+  base_component_id: string | null;
+  fixed_amount: number | null;
+  percentage: number | null;
+  frequency: SalaryFrequency;
+  taxable: boolean;
+  include_in_ctc: boolean;
+  include_in_gross: boolean;
+  variable: boolean;
+  sort_order: number;
+  status: "ACTIVE" | "DISABLED";
+  effective_from: string | null;
+  effective_to: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryStructure {
+  id: string;
+  organization_id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  ctc_amount: number | null;
+  status: "ACTIVE" | "DISABLED";
+  effective_from: string;
+  effective_to: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryStructureItem {
+  id: string;
+  organization_id: string;
+  structure_id: string;
+  component_id: string;
+  calculation_method: SalaryCalculationMethod;
+  formula: string | null;
+  base_component_id: string | null;
+  fixed_amount: number | null;
+  percentage: number | null;
+  include_in_ctc: boolean;
+  include_in_gross: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface EmployeeSalaryAssignment {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  structure_id: string;
+  ctc_amount: number;
+  gross_amount: number;
+  effective_from: string;
+  effective_to: string | null;
+  status: SalaryAssignmentStatus;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryRevision {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  previous_assignment_id: string | null;
+  previous_structure_id: string | null;
+  new_structure_id: string;
+  previous_ctc: number | null;
+  new_ctc: number;
+  effective_from: string;
+  reason: SalaryChangeType;
+  notes: string | null;
+  status: SalaryRevisionStatus;
+  decided_at: string | null;
+  applied_at: string | null;
+  created_by: string | null;
+  decided_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryHistory {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  assignment_id: string | null;
+  revision_id: string | null;
+  change_type: SalaryChangeType;
+  old_value: string | null;
+  new_value: string | null;
+  reason: string | null;
+  approved_by: string | null;
+  effective_from: string;
+  applied_at: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface VariableEarning {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  component_id: string;
+  amount: number;
+  quantity: number | null;
+  rate: number | null;
+  period_from: string;
+  period_to: string;
+  source: string;
+  reference: string | null;
+  notes: string | null;
+  status: CompensationEntryStatus;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReimbursementEntry {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  component_id: string;
+  entry_date: string;
+  amount: number;
+  description: string | null;
+  reference: string | null;
+  include_in_payroll: boolean;
+  status: CompensationEntryStatus;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryLine {
+  componentId: string;
+  code: string;
+  name: string;
+  componentType: SalaryComponentType;
+  category: SalaryComponentCategory;
+  calculationMethod: SalaryCalculationMethod;
+  formula: string | null;
+  amount: number;
+  includeInCtc: boolean;
+  includeInGross: boolean;
+  variable: boolean;
+}
+
+export interface EmployeeSalarySnapshot {
+  employeeId: string;
+  assignmentId: string;
+  structureId: string;
+  structureName: string;
+  structureCode: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  ctc: number;
+  gross: number;
+  fixedEarnings: number;
+  variableEarnings: number;
+  deductions: number;
+  reimbursements: number;
+  employerBenefits: number;
+  lines: SalaryLine[];
+}
+
+export interface AttendanceSalaryInputs {
+  workingDays: number;
+  presentDays: number;
+  unpaidLeaveDays: number;
+  paidLeaveDays: number;
+  lateCount: number;
+  otMinutes: number;
 }

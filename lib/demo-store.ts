@@ -9,6 +9,7 @@ import type {
   BiometricRawEvent,
   Branch,
   CompOffEarning,
+  EmployeeSalaryAssignment,
   Department,
   Designation,
   Employee,
@@ -29,6 +30,13 @@ import type {
   LeaveRequestDay,
   LeaveType,
   Location,
+  ReimbursementEntry,
+  SalaryComponent,
+  SalaryHistory,
+  SalaryRevision,
+  SalaryStructure,
+  SalaryStructureItem,
+  VariableEarning,
   Organization,
   OrganizationUser,
   Role,
@@ -246,6 +254,14 @@ export type DemoStore = {
   holidays: Holiday[];
   compOffEarnings: CompOffEarning[];
   attendanceDays: AttendanceDay[];
+  salaryComponents: SalaryComponent[];
+  salaryStructures: SalaryStructure[];
+  salaryStructureItems: SalaryStructureItem[];
+  employeeSalaryAssignments: EmployeeSalaryAssignment[];
+  salaryRevisions: SalaryRevision[];
+  salaryHistory: SalaryHistory[];
+  variableEarnings: VariableEarning[];
+  reimbursementEntries: ReimbursementEntry[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -675,6 +691,7 @@ function createStore(): DemoStore {
     biometricNormalizedEvents: [] as BiometricNormalizedEvent[],
     attendancePunches: [] as AttendancePunch[],
     ...createLeaveSeed(),
+    ...createSalarySeed(),
   };
 }
 
@@ -1031,12 +1048,315 @@ function createLeaveSeed(): Pick<
   };
 }
 
+function createSalarySeed(): Pick<
+  DemoStore,
+  | "salaryComponents"
+  | "salaryStructures"
+  | "salaryStructureItems"
+  | "employeeSalaryAssignments"
+  | "salaryRevisions"
+  | "salaryHistory"
+  | "variableEarnings"
+  | "reimbursementEntries"
+> {
+  const created = nowIso();
+  const year = new Date().getFullYear();
+  const basicId = "s1111111-1111-1111-1111-111111111111";
+  const hraId = "s2222222-2222-2222-2222-222222222222";
+  const daId = "s3333333-3333-3333-3333-333333333333";
+  const taId = "s4444444-4444-4444-4444-444444444444";
+  const specialId = "s5555555-5555-5555-5555-555555555555";
+  const bonusId = "s6666666-6666-6666-6666-666666666666";
+  const otId = "s7777777-7777-7777-7777-777777777777";
+  const loanId = "s8888888-8888-8888-8888-888888888888";
+  const travelId = "s9999999-9999-9999-9999-999999999999";
+  const structureStd = "t1111111-1111-1111-1111-111111111111";
+  const structureStaff = "t2222222-2222-2222-2222-222222222222";
+  const ashaAssign = "a1111111-1111-1111-1111-111111111111";
+  const meeraAssign = "a2222222-2222-2222-2222-222222222222";
+  const ashaClosed = "a0000000-0000-0000-0000-000000000001";
+
+  const component = (
+    id: string,
+    name: string,
+    code: string,
+    extras: Partial<SalaryComponent>
+  ): SalaryComponent => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    code,
+    component_type: "EARNING",
+    category: "ALLOWANCE",
+    calculation_method: "FIXED",
+    formula: null,
+    base_component_id: null,
+    fixed_amount: null,
+    percentage: null,
+    frequency: "MONTHLY",
+    taxable: true,
+    include_in_ctc: true,
+    include_in_gross: true,
+    variable: false,
+    sort_order: 10,
+    status: "ACTIVE",
+    effective_from: `${year}-04-01`,
+    effective_to: null,
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const item = (
+    structureId: string,
+    componentId: string,
+    method: SalaryStructureItem["calculation_method"],
+    extras: Partial<SalaryStructureItem> = {}
+  ): SalaryStructureItem => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    structure_id: structureId,
+    component_id: componentId,
+    calculation_method: method,
+    formula: extras.formula ?? null,
+    base_component_id: extras.base_component_id ?? null,
+    fixed_amount: extras.fixed_amount ?? null,
+    percentage: extras.percentage ?? null,
+    include_in_ctc: extras.include_in_ctc ?? true,
+    include_in_gross: extras.include_in_gross ?? true,
+    sort_order: extras.sort_order ?? 10,
+    created_at: created,
+  });
+
+  return {
+    salaryComponents: [
+      component(basicId, "Basic Salary", "BASIC", { category: "BASIC", calculation_method: "PERCENTAGE", percentage: 40, sort_order: 1 }),
+      component(hraId, "House Rent Allowance", "HRA", { calculation_method: "FORMULA", formula: "BASIC * 0.40", base_component_id: basicId, sort_order: 2 }),
+      component(daId, "Dearness Allowance", "DA", { calculation_method: "PERCENTAGE", percentage: 10, base_component_id: basicId, sort_order: 3 }),
+      component(taId, "Travel Allowance", "TA", { calculation_method: "FIXED", fixed_amount: 1600, sort_order: 4 }),
+      component(specialId, "Special Allowance", "SPECIAL", { calculation_method: "RESIDUAL", sort_order: 5 }),
+      component(bonusId, "Incentive", "INCENTIVE", { category: "VARIABLE", calculation_method: "MANUAL", variable: true, include_in_ctc: false, sort_order: 20 }),
+      component(otId, "Overtime", "OT", { category: "VARIABLE", calculation_method: "MANUAL", variable: true, include_in_ctc: false, sort_order: 21 }),
+      component(loanId, "Loan EMI", "LOAN_EMI", { component_type: "DEDUCTION", category: "DEDUCTION", calculation_method: "MANUAL", include_in_ctc: false, include_in_gross: false, sort_order: 30 }),
+      component(travelId, "Travel Reimbursement", "TRAVEL", { component_type: "REIMBURSEMENT", category: "REIMBURSEMENT", calculation_method: "MANUAL", include_in_ctc: false, include_in_gross: false, taxable: false, sort_order: 40 }),
+    ],
+    salaryStructures: [
+      {
+        id: structureStd,
+        organization_id: ORG_ID,
+        name: "Standard CTC",
+        code: "STD-CTC",
+        description: "Basic 40% of CTC, HRA 40% of Basic, DA 10% of Basic, TA fixed, Special residual.",
+        ctc_amount: 612000,
+        status: "ACTIVE",
+        effective_from: `${year}-04-01`,
+        effective_to: null,
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: structureStaff,
+        organization_id: ORG_ID,
+        name: "Staff CTC",
+        code: "STAFF-CTC",
+        description: "Same formula at a lower CTC band.",
+        ctc_amount: 420000,
+        status: "ACTIVE",
+        effective_from: `${year}-04-01`,
+        effective_to: null,
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    salaryStructureItems: [
+      item(structureStd, basicId, "PERCENTAGE", { percentage: 40, sort_order: 1 }),
+      item(structureStd, hraId, "FORMULA", { formula: "BASIC * 0.40", base_component_id: basicId, sort_order: 2 }),
+      item(structureStd, daId, "PERCENTAGE", { percentage: 10, base_component_id: basicId, sort_order: 3 }),
+      item(structureStd, taId, "FIXED", { fixed_amount: 1600, sort_order: 4 }),
+      item(structureStd, specialId, "RESIDUAL", { sort_order: 5 }),
+      item(structureStaff, basicId, "PERCENTAGE", { percentage: 40, sort_order: 1 }),
+      item(structureStaff, hraId, "FORMULA", { formula: "BASIC * 0.40", base_component_id: basicId, sort_order: 2 }),
+      item(structureStaff, daId, "PERCENTAGE", { percentage: 10, base_component_id: basicId, sort_order: 3 }),
+      item(structureStaff, taId, "FIXED", { fixed_amount: 1600, sort_order: 4 }),
+      item(structureStaff, specialId, "RESIDUAL", { sort_order: 5 }),
+    ],
+    employeeSalaryAssignments: [
+      {
+        id: ashaClosed,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        structure_id: structureStd,
+        ctc_amount: 540000,
+        gross_amount: 45000,
+        effective_from: `${year}-04-01`,
+        effective_to: `${year}-06-30`,
+        status: "CLOSED",
+        notes: "Joining CTC",
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        updated_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: ashaAssign,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        structure_id: structureStd,
+        ctc_amount: 612000,
+        gross_amount: 51000,
+        effective_from: `${year}-07-01`,
+        effective_to: null,
+        status: "ACTIVE",
+        notes: "Increment",
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        updated_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: meeraAssign,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        structure_id: structureStaff,
+        ctc_amount: 420000,
+        gross_amount: 35000,
+        effective_from: `${year}-04-01`,
+        effective_to: null,
+        status: "ACTIVE",
+        notes: "HR band",
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        updated_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    salaryRevisions: [
+      {
+        id: "v1111111-1111-1111-1111-111111111111",
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_STAFF_ID,
+        previous_assignment_id: null,
+        previous_structure_id: null,
+        new_structure_id: structureStaff,
+        previous_ctc: null,
+        new_ctc: 360000,
+        effective_from: `${year}-04-01`,
+        reason: "NEW_JOINER",
+        notes: "Pending first assignment",
+        status: "PENDING",
+        decided_at: null,
+        applied_at: null,
+        created_by: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        decided_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    salaryHistory: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        assignment_id: ashaClosed,
+        revision_id: null,
+        change_type: "NEW_JOINER",
+        old_value: null,
+        new_value: "540000",
+        reason: "Joining CTC",
+        approved_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        effective_from: `${year}-04-01`,
+        applied_at: created,
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        assignment_id: ashaAssign,
+        revision_id: null,
+        change_type: "INCREMENT",
+        old_value: "540000",
+        new_value: "612000",
+        reason: "Mid-year increment",
+        approved_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        effective_from: `${year}-07-01`,
+        applied_at: created,
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        assignment_id: meeraAssign,
+        revision_id: null,
+        change_type: "NEW_JOINER",
+        old_value: null,
+        new_value: "420000",
+        reason: "HR band",
+        approved_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        effective_from: `${year}-04-01`,
+        applied_at: created,
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+      },
+    ],
+    variableEarnings: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        component_id: bonusId,
+        amount: 5000,
+        quantity: 1,
+        rate: 5000,
+        period_from: `${year}-01-01`,
+        period_to: `${year}-01-31`,
+        source: "MANUAL",
+        reference: "Q4 incentive",
+        notes: "Recorded for future payroll",
+        status: "APPROVED",
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        updated_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    reimbursementEntries: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        component_id: travelId,
+        entry_date: `${year}-01-12`,
+        amount: 2400,
+        description: "Client visit travel",
+        reference: "TVL-1001",
+        include_in_payroll: true,
+        status: "PENDING",
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        updated_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
     !("employees" in globalStore.__bsbDemo) ||
     !("biometricDevices" in globalStore.__bsbDemo) ||
-    !("leaveTypes" in globalStore.__bsbDemo)
+    !("leaveTypes" in globalStore.__bsbDemo) ||
+    !("salaryComponents" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }
