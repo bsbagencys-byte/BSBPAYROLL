@@ -237,7 +237,7 @@ function CompleteCard({ onComplete }: { onComplete: () => Promise<void> }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-slate-600">
-          Phase 1 will unlock the dashboard, user management, roles and company settings. Payroll modules remain disabled until later phases.
+          Setup unlocks the dashboard, user management, roles and company settings. Attendance calculation and payroll runs remain disabled until later phases.
         </p>
         <Button
           onClick={async () => {

@@ -7,7 +7,7 @@ export default function NotFound() {
       <Logo />
       <h1 className="text-2xl font-semibold">Page not found</h1>
       <p className="max-w-sm text-center text-sm text-slate-500">
-        The page you requested does not exist or has not been built in Phase 1.
+        The page you requested does not exist or has not been built yet.
       </p>
       <Link
         href="/dashboard"

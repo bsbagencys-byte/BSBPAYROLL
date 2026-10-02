@@ -28,7 +28,7 @@ export function ProfileView({ user }: { user: SessionUser }) {
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-700 text-xl font-semibold text-white">
             {initials(user.displayName)}
           </div>
-          <p className="text-xs text-slate-500">Photo upload arrives with employee profiles in Phase 2.</p>
+          <p className="text-xs text-slate-500">Photo upload is available on the employee profile documents tab.</p>
           <dl className="space-y-2 text-sm">
             <Row label="Display name" value={user.displayName} />
             <Row label="Username" value={user.username} />

@@ -47,7 +47,7 @@ export default async function EmployeesPage({
     <div className="space-y-4">
       <PageHeader
         title="Employees"
-        description="Organisation directory. Salary and attendance modules are not enabled yet."
+        description="Organisation directory. Attendance calculation and payroll runs are not enabled yet."
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/employees/hierarchy">

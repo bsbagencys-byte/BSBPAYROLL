@@ -23,7 +23,7 @@ export default async function ReimbursementsPage() {
 
   return (
     <div>
-      <PageHeader title="Reimbursements" description="Travel, fuel, medical and other claims stored for later payroll. Full claim workflow is Phase 7." />
+      <PageHeader title="Reimbursements" description="Travel, fuel, medical and other salary reimbursements stored for later payroll. Full claim workflow lives under Claims." />
       <SalarySubnav />
       {canManage ? (
         <div className="mb-6">

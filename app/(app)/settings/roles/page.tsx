@@ -18,7 +18,7 @@ export default async function RolesPage() {
 
   return (
     <div>
-      <PageHeader title="Roles and permissions" description="Phase 1 permission foundation. Custom role editing ships later." />
+      <PageHeader title="Roles and permissions" description="Permission foundation. Custom role editing ships later." />
       <SettingsSubnav pathname="/settings/roles" />
       <Card>
         <CardHeader>

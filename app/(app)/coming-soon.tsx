@@ -11,7 +11,7 @@ export function ComingSoon({ title, phase }: { title: string; phase: number }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="text-sm text-slate-600">
-        This module is intentionally not built in Phase 1. Navigation is visible so later phases can plug in without rewriting the shell.
+        This module is not built yet. Navigation is visible so later phases can plug in without rewriting the shell.
       </CardContent>
     </Card>
   );

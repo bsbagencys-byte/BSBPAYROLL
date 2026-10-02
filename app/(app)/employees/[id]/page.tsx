@@ -8,6 +8,8 @@ import { recordToFormValues } from "@/lib/employee-form";
 import { loadOrgCatalog } from "@/lib/org-data";
 import { loadEmployeeLeave } from "@/lib/leave/query";
 import { loadEmployeeCompensation } from "@/lib/salary/query";
+import { listBenefitTypes, listEmployeeBenefits } from "@/lib/claims/repository";
+import { loadClaimListItems } from "@/lib/claims/query";
 
 export const metadata = { title: "Employee profile" };
 
@@ -19,17 +21,22 @@ export default async function EmployeeProfilePage({
   const user = await requirePermissionOrRedirect("employee.view");
   const { id } = await params;
   const canViewSalary = hasPermission(user, "salary.view");
-  const [record, catalog, leave, salary] = await Promise.all([
+  const canViewBenefits = hasPermission(user, "benefits.view");
+  const canViewClaims = hasPermission(user, "claims.view");
+  const [record, catalog, leave, salary, benefitAssignments, benefitTypes, claims] = await Promise.all([
     getEmployeeRecord(user.organization.id, id),
     loadOrgCatalog(user.organization.id),
     loadEmployeeLeave(user.organization.id, id, user.organization.timezone),
     canViewSalary ? loadEmployeeCompensation(user.organization.id, id, user.organization.timezone) : Promise.resolve(null),
+    canViewBenefits ? listEmployeeBenefits(user.organization.id) : Promise.resolve([]),
+    canViewBenefits ? listBenefitTypes(user.organization.id) : Promise.resolve([]),
+    canViewClaims ? loadClaimListItems(user.organization.id) : Promise.resolve([]),
   ]);
   if (!record) notFound();
 
   return (
     <div>
-      <PageHeader title="Employee profile" description="Master data, documents, leave and salary. Attendance calculation and payroll stay in later phases." />
+      <PageHeader title="Employee profile" description="Master data, documents, leave, salary, benefits and claims. Attendance calculation and payroll runs stay in later phases." />
       <EmployeeProfile
         record={record}
         values={recordToFormValues(record)}
@@ -46,6 +53,11 @@ export default async function EmployeeProfilePage({
         canViewSalary={canViewSalary}
         canManageSalary={hasPermission(user, "salary.manage")}
         canReviseSalary={hasPermission(user, "salary.revision.create")}
+        benefitAssignments={benefitAssignments.filter((item) => item.employee_id === id)}
+        benefitTypes={benefitTypes}
+        claimItems={claims.filter((item) => item.claim.employee_id === id)}
+        canViewBenefits={canViewBenefits}
+        canViewClaims={canViewClaims}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, and Phase 6 salary and compensation. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, and Phase 7 benefits, reimbursements, TA/DA and claims. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
 This app does **not** implement payroll runs, statutory PF/ESI/TDS/PT, payslips, full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest.
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql` and `supabase/phase6.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql` and `supabase/phase7.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -122,6 +122,26 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `GET /api/salary/reports/ctc`
 - `GET /api/salary/reports/without`
 - `GET /api/salary/reports/variable`
+- `/benefits`
+- `/benefits/types`
+- `/benefits/policies`
+- `/benefits/employee`
+- `/benefits/reports`
+- `GET /api/benefits/reports/types`
+- `GET /api/benefits/reports/assignments`
+- `/claims`
+- `/claims/new`
+- `/claims/pending`
+- `/claims/approvals`
+- `/claims/approved`
+- `/claims/history`
+- `/claims/policies`
+- `/claims/reports`
+- `/claims/[id]`
+- `GET /api/claims/reports/claims`
+- `GET /api/claims/reports/pending`
+- `GET /api/claims/reports/approved`
+- `GET /api/claims/reports/policies`
 
 Attendance calculation (Phase 4), payroll processing, compliance and full reports remain Coming Soon.
 
@@ -143,12 +163,22 @@ Attendance calculation (Phase 4), payroll processing, compliance and full report
 - Variable earnings and reimbursements are stored for later payroll. PF/ESI/TDS and the monthly payroll run are not calculated here.
 - Attendance and leave are read-only inputs (working days, present, LOP). Salary never writes those tables.
 
+## Benefits and claims
+
+- Benefit types and policies are configurable (fuel, telephone, internet, medical are demo seeds, not hard-coded).
+- Employee assignments block overlapping ACTIVE periods. Closing a previous assignment happens the day before a later start.
+- Claim types, travel policies, draft/submit/approve (single-step or manager then finance).
+- Policy engine checks eligibility, limits, duplicates, receipts and travel fields. FAIL blocks submit; the draft and checks are saved.
+- TA/DA is distance x rate plus days x DA.
+- `getApprovedPayrollClaimLines(organizationId, period)` is the payroll contract. This module does not run payroll.
+- Receipts upload to private `claim-receipts` in live mode. Demo stores metadata only.
+
 ## Security
 
 - RLS isolates every business table by `organization_id`
 - Passwords are never stored in plaintext
 - Login is rate-limited
-- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes
+- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes
 - Public biometric ingest is token-authenticated and rate-limited; device tokens are stored as hashes only
 - Service role keys must not be prefixed with `NEXT_PUBLIC_`
 

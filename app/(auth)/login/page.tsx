@@ -12,7 +12,7 @@ export default function LoginPage() {
         <Logo className="[&_div]:text-white [&_div_div:last-child]:text-blue-200" />
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">BSB Payroll</h1>
-          <p className="mt-3 max-w-md text-sm text-blue-100">{APP_TAGLINE} Phase 1 foundation for multi-tenant workforce operations.</p>
+          <p className="mt-3 max-w-md text-sm text-blue-100">{APP_TAGLINE} Multi-tenant workforce operations.</p>
         </div>
         <p className="text-xs text-blue-200">Secure username access. Passwords are never stored in plaintext.</p>
       </div>

@@ -29,6 +29,20 @@ import type {
   SalaryFrequency,
   SalaryRevisionStatus,
   VerificationMode,
+  BenefitAssignmentStatus,
+  BenefitCalculationMethod,
+  BenefitCategory,
+  BenefitFrequency,
+  BenefitTaxTreatment,
+  ClaimApprovalDecision,
+  ClaimApprovalStep,
+  ClaimCategory,
+  ClaimPolicyCheckResult,
+  ClaimStatus,
+  ClaimWorkflowMode,
+  CityCategory,
+  TravelMode,
+  TravelType,
 } from "@/lib/constants";
 
 export type {
@@ -50,6 +64,20 @@ export type {
   SalaryComponentType,
   SalaryFrequency,
   SalaryRevisionStatus,
+  BenefitAssignmentStatus,
+  BenefitCalculationMethod,
+  BenefitCategory,
+  BenefitFrequency,
+  BenefitTaxTreatment,
+  ClaimApprovalDecision,
+  ClaimApprovalStep,
+  ClaimCategory,
+  ClaimPolicyCheckResult,
+  ClaimStatus,
+  ClaimWorkflowMode,
+  CityCategory,
+  TravelMode,
+  TravelType,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -954,4 +982,220 @@ export interface AttendanceSalaryInputs {
   paidLeaveDays: number;
   lateCount: number;
   otMinutes: number;
+}
+
+export interface BenefitType {
+  id: string;
+  organization_id: string;
+  name: string;
+  code: string;
+  category: BenefitCategory;
+  calculation_method: BenefitCalculationMethod;
+  fixed_amount: number | null;
+  percentage: number | null;
+  frequency: BenefitFrequency;
+  eligibility: string | null;
+  tax_treatment: BenefitTaxTreatment;
+  include_in_ctc: boolean;
+  include_in_gross: boolean;
+  effective_from: string | null;
+  effective_to: string | null;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BenefitPolicy {
+  id: string;
+  organization_id: string;
+  name: string;
+  benefit_type_id: string;
+  max_amount: number | null;
+  scope: PolicyScope;
+  branch_id: string | null;
+  department_id: string | null;
+  designation_id: string | null;
+  employment_type_id: string | null;
+  employee_id: string | null;
+  require_assignment: boolean;
+  effective_from: string;
+  effective_to: string | null;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeBenefit {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  benefit_type_id: string;
+  amount: number;
+  calculation_method: BenefitCalculationMethod;
+  percentage: number | null;
+  effective_from: string;
+  effective_to: string | null;
+  status: BenefitAssignmentStatus;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClaimType {
+  id: string;
+  organization_id: string;
+  name: string;
+  code: string;
+  category: ClaimCategory;
+  requires_receipt: boolean;
+  requires_travel_fields: boolean;
+  max_amount: number | null;
+  workflow_mode: ClaimWorkflowMode;
+  include_in_payroll_default: boolean;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClaimPolicy {
+  id: string;
+  organization_id: string;
+  name: string;
+  claim_type_id: string | null;
+  employee_category: string | null;
+  designation_id: string | null;
+  city_category: CityCategory | null;
+  travel_type: TravelType | null;
+  da_per_day: number | null;
+  mileage_rate: number | null;
+  local_conveyance_limit: number | null;
+  hotel_limit: number | null;
+  meal_limit: number | null;
+  max_amount: number | null;
+  max_days: number | null;
+  require_receipt: boolean;
+  workflow_mode: ClaimWorkflowMode;
+  effective_from: string;
+  effective_to: string | null;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Claim {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  claim_type_id: string;
+  claim_date: string;
+  period_from: string | null;
+  period_to: string | null;
+  purpose: string | null;
+  submitted_amount: number;
+  calculated_amount: number | null;
+  approved_amount: number | null;
+  override_reason: string | null;
+  notes: string | null;
+  reference_number: string | null;
+  status: ClaimStatus;
+  policy_id: string | null;
+  distance: number | null;
+  rate_per_km: number | null;
+  travel_mode: TravelMode | null;
+  travel_days: number | null;
+  city_category: CityCategory | null;
+  travel_type: TravelType | null;
+  include_in_payroll: boolean;
+  payroll_period: string | null;
+  paid_at: string | null;
+  current_step: ClaimApprovalStep | null;
+  submitted_at: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClaimItem {
+  id: string;
+  organization_id: string;
+  claim_id: string;
+  description: string;
+  quantity: number | null;
+  rate: number | null;
+  amount: number;
+  item_date: string | null;
+  created_at: string;
+}
+
+export interface ClaimApproval {
+  id: string;
+  organization_id: string;
+  claim_id: string;
+  step: ClaimApprovalStep;
+  decision: ClaimApprovalDecision;
+  amount: number | null;
+  reason: string | null;
+  actor_id: string | null;
+  decided_at: string;
+  created_at: string;
+}
+
+export interface ClaimPolicyCheck {
+  id: string;
+  organization_id: string;
+  claim_id: string;
+  check_code: string;
+  result: ClaimPolicyCheckResult;
+  message: string;
+  created_at: string;
+}
+
+export interface ClaimAttachment {
+  id: string;
+  organization_id: string;
+  claim_id: string;
+  employee_id: string;
+  file_name: string;
+  file_path: string;
+  mime_type: string | null;
+  file_size: number | null;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface ClaimListItem {
+  claim: Claim;
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string | null;
+  branchName: string | null;
+  claimTypeName: string;
+  claimTypeCode: string;
+  category: ClaimCategory;
+  policyName: string | null;
+  policyLimit: number | null;
+  receiptCount: number;
+}
+
+export interface PayrollClaimLine {
+  claimId: string;
+  employeeId: string;
+  claimTypeId: string;
+  category: ClaimCategory;
+  source: "REIMBURSEMENT" | "TA" | "DA" | "BENEFIT";
+  amount: number;
+  includeInPayroll: boolean;
+  payrollPeriod: string | null;
+  status: ClaimStatus;
 }

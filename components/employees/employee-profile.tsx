@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { EmployeeLeavePanel } from "@/components/leave/employee-leave";
 import { EmployeeSalaryPanel } from "@/components/salary/employee-salary";
+import { EmployeeBenefitsPanel } from "@/components/benefits/employee-benefits";
+import { EmployeeClaimsPanel } from "@/components/claims/employee-claims";
 import { EmployeeDocuments } from "@/components/employees/employee-documents";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { EmployeeHistoryList } from "@/components/employees/employee-history";
@@ -26,6 +28,9 @@ import type {
   LeaveBalanceView,
   LeaveRequest,
   Location,
+  BenefitType,
+  ClaimListItem,
+  EmployeeBenefit,
   SalaryHistory,
   SalaryRevision,
 } from "@/types";
@@ -42,6 +47,8 @@ const TABS = [
   { id: "attendance", label: "Attendance" },
   { id: "leave", label: "Leave" },
   { id: "salary", label: "Salary" },
+  { id: "benefits", label: "Benefits" },
+  { id: "claims", label: "Claims" },
   { id: "payroll", label: "Payroll" },
 ] as const;
 
@@ -63,6 +70,11 @@ export function EmployeeProfile({
   canViewSalary,
   canManageSalary,
   canReviseSalary,
+  benefitAssignments,
+  benefitTypes,
+  claimItems,
+  canViewBenefits,
+  canViewClaims,
 }: {
   record: EmployeeRecord;
   values: Partial<EmployeeFormValues>;
@@ -86,6 +98,11 @@ export function EmployeeProfile({
   canViewSalary?: boolean;
   canManageSalary?: boolean;
   canReviseSalary?: boolean;
+  benefitAssignments?: EmployeeBenefit[];
+  benefitTypes?: BenefitType[];
+  claimItems?: ClaimListItem[];
+  canViewBenefits?: boolean;
+  canViewClaims?: boolean;
 }) {
   const [tab, setTab] = useState<TabId>("overview");
   const { employee, address, employment, statutory, bank } = record;
@@ -185,7 +202,25 @@ export function EmployeeProfile({
           </Card>
         )
       ) : null}
-      {tab === "payroll" ? <LaterPhase title="Payroll" phase={7} /> : null}
+      {tab === "benefits" ? (
+        canViewBenefits ? (
+          <EmployeeBenefitsPanel assignments={benefitAssignments ?? []} types={benefitTypes ?? []} />
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-sm text-slate-600">You do not have permission to view benefits.</CardContent>
+          </Card>
+        )
+      ) : null}
+      {tab === "claims" ? (
+        canViewClaims ? (
+          <EmployeeClaimsPanel items={claimItems ?? []} />
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-sm text-slate-600">You do not have permission to view claims.</CardContent>
+          </Card>
+        )
+      ) : null}
+      {tab === "payroll" ? <LaterPhase title="Payroll" phase={9} /> : null}
 
       {tab === "overview" ? (
         <Card>

@@ -66,6 +66,15 @@ export const PERMISSIONS = [
   { code: "salary.revision.create", group: "Salary", label: "Create salary revisions" },
   { code: "salary.revision.approve", group: "Salary", label: "Approve salary revisions" },
   { code: "salary.history.view", group: "Salary", label: "View salary history" },
+  { code: "benefits.view", group: "Benefits", label: "View benefits" },
+  { code: "benefits.manage", group: "Benefits", label: "Manage benefit types and policies" },
+  { code: "benefits.assign", group: "Benefits", label: "Assign employee benefits" },
+  { code: "claims.view", group: "Claims", label: "View claims" },
+  { code: "claims.create", group: "Claims", label: "Create claims" },
+  { code: "claims.edit", group: "Claims", label: "Edit claims" },
+  { code: "claims.approve", group: "Claims", label: "Approve claims" },
+  { code: "claims.manage", group: "Claims", label: "Manage claims" },
+  { code: "claims.export", group: "Claims", label: "Export claims" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -107,6 +116,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "salary.revision.create",
     "salary.revision.approve",
     "salary.history.view",
+    "benefits.view",
+    "benefits.manage",
+    "benefits.assign",
+    "claims.view",
+    "claims.create",
+    "claims.edit",
+    "claims.approve",
+    "claims.manage",
+    "claims.export",
   ],
   PAYROLL: [
     "organization.view",
@@ -121,8 +139,23 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "salary.manage",
     "salary.revision.create",
     "salary.history.view",
+    "benefits.view",
+    "claims.view",
+    "claims.approve",
+    "claims.export",
   ],
-  ACCOUNTANT: ["organization.view", "employee.view", "payroll.view", "leave.view", "salary.view", "salary.history.view"],
+  ACCOUNTANT: [
+    "organization.view",
+    "employee.view",
+    "payroll.view",
+    "leave.view",
+    "salary.view",
+    "salary.history.view",
+    "benefits.view",
+    "claims.view",
+    "claims.approve",
+    "claims.export",
+  ],
   MANAGER: [
     "organization.view",
     "user.view",
@@ -132,8 +165,20 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "leave.view",
     "leave.request",
     "leave.approve",
+    "benefits.view",
+    "claims.view",
+    "claims.create",
+    "claims.approve",
   ],
-  EMPLOYEE: ["organization.view", "employee.view", "attendance.view", "leave.view", "leave.request"],
+  EMPLOYEE: [
+    "organization.view",
+    "employee.view",
+    "attendance.view",
+    "leave.view",
+    "leave.request",
+    "claims.view",
+    "claims.create",
+  ],
 };
 
 export const NAV_ITEMS = [
@@ -142,8 +187,10 @@ export const NAV_ITEMS = [
   { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: false, phase: 4 },
   { href: "/leave", label: "Leave", icon: "Palmtree", enabled: true, phase: 5 },
   { href: "/salary", label: "Salary", icon: "Banknote", enabled: true, phase: 6 },
+  { href: "/benefits", label: "Benefits", icon: "Gift", enabled: true, phase: 7 },
+  { href: "/claims", label: "Claims", icon: "Receipt", enabled: true, phase: 7 },
   { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: true, phase: 3 },
-  { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: false, phase: 7 },
+  { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: false, phase: 9 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 10 },
   { href: "/compliance", label: "Compliance", icon: "ShieldCheck", enabled: false, phase: 9 },
   { href: "/settings/company", label: "Settings", icon: "Settings", enabled: true },
@@ -590,4 +637,189 @@ export const SALARY_NAV = [
   { href: "/salary/reimbursements", label: "Reimbursements" },
   { href: "/salary/reports", label: "Reports" },
   { href: "/salary/settings", label: "Settings" },
+] as const;
+
+export const BENEFIT_CATEGORIES = [
+  "FUEL",
+  "TELEPHONE",
+  "INTERNET",
+  "MEDICAL",
+  "TRAVEL",
+  "MEAL",
+  "OTHER",
+] as const;
+export type BenefitCategory = (typeof BENEFIT_CATEGORIES)[number];
+
+export const BENEFIT_CATEGORY_LABELS: Record<BenefitCategory, string> = {
+  FUEL: "Fuel",
+  TELEPHONE: "Telephone",
+  INTERNET: "Internet",
+  MEDICAL: "Medical",
+  TRAVEL: "Travel",
+  MEAL: "Meal",
+  OTHER: "Other",
+};
+
+export const BENEFIT_CALCULATION_METHODS = ["FIXED", "PERCENTAGE", "MANUAL"] as const;
+export type BenefitCalculationMethod = (typeof BENEFIT_CALCULATION_METHODS)[number];
+
+export const BENEFIT_CALCULATION_METHOD_LABELS: Record<BenefitCalculationMethod, string> = {
+  FIXED: "Fixed amount",
+  PERCENTAGE: "Percentage of CTC",
+  MANUAL: "Manual",
+};
+
+export const BENEFIT_FREQUENCIES = ["MONTHLY", "ANNUAL", "ONE_TIME"] as const;
+export type BenefitFrequency = (typeof BENEFIT_FREQUENCIES)[number];
+
+export const BENEFIT_FREQUENCY_LABELS: Record<BenefitFrequency, string> = {
+  MONTHLY: "Monthly",
+  ANNUAL: "Annual",
+  ONE_TIME: "One time",
+};
+
+export const BENEFIT_TAX_TREATMENTS = ["TAXABLE", "EXEMPT", "PARTIAL", "UNSET"] as const;
+export type BenefitTaxTreatment = (typeof BENEFIT_TAX_TREATMENTS)[number];
+
+export const BENEFIT_TAX_TREATMENT_LABELS: Record<BenefitTaxTreatment, string> = {
+  TAXABLE: "Taxable (placeholder)",
+  EXEMPT: "Exempt (placeholder)",
+  PARTIAL: "Partial (placeholder)",
+  UNSET: "Not set",
+};
+
+export const BENEFIT_ASSIGNMENT_STATUSES = ["DRAFT", "ACTIVE", "CLOSED"] as const;
+export type BenefitAssignmentStatus = (typeof BENEFIT_ASSIGNMENT_STATUSES)[number];
+
+export const BENEFIT_ASSIGNMENT_STATUS_LABELS: Record<BenefitAssignmentStatus, string> = {
+  DRAFT: "Draft",
+  ACTIVE: "Active",
+  CLOSED: "Closed",
+};
+
+export const CLAIM_CATEGORIES = [
+  "TRAVEL",
+  "TA_DA",
+  "FUEL",
+  "MEDICAL",
+  "TELEPHONE",
+  "INTERNET",
+  "FOOD",
+  "OTHER",
+] as const;
+export type ClaimCategory = (typeof CLAIM_CATEGORIES)[number];
+
+export const CLAIM_CATEGORY_LABELS: Record<ClaimCategory, string> = {
+  TRAVEL: "Travel",
+  TA_DA: "TA/DA",
+  FUEL: "Fuel",
+  MEDICAL: "Medical",
+  TELEPHONE: "Telephone",
+  INTERNET: "Internet",
+  FOOD: "Food",
+  OTHER: "Other",
+};
+
+export const CLAIM_STATUSES = [
+  "DRAFT",
+  "SUBMITTED",
+  "PENDING_APPROVAL",
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED",
+  "PAID",
+  "INCLUDED_IN_PAYROLL",
+] as const;
+export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
+
+export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  PENDING_APPROVAL: "Pending approval",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+  PAID: "Paid",
+  INCLUDED_IN_PAYROLL: "Included in payroll",
+};
+
+export const CLAIM_APPROVAL_STEPS = ["MANAGER", "FINANCE", "SINGLE"] as const;
+export type ClaimApprovalStep = (typeof CLAIM_APPROVAL_STEPS)[number];
+
+export const CLAIM_APPROVAL_STEP_LABELS: Record<ClaimApprovalStep, string> = {
+  MANAGER: "Manager",
+  FINANCE: "Finance / Admin",
+  SINGLE: "Single approver",
+};
+
+export const CLAIM_APPROVAL_DECISIONS = ["APPROVED", "REJECTED", "REQUEST_CORRECTION"] as const;
+export type ClaimApprovalDecision = (typeof CLAIM_APPROVAL_DECISIONS)[number];
+
+export const CLAIM_APPROVAL_DECISION_LABELS: Record<ClaimApprovalDecision, string> = {
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  REQUEST_CORRECTION: "Request correction",
+};
+
+export const TRAVEL_TYPES = ["LOCAL", "DOMESTIC", "OVERNIGHT", "OUTSTATION"] as const;
+export type TravelType = (typeof TRAVEL_TYPES)[number];
+
+export const TRAVEL_TYPE_LABELS: Record<TravelType, string> = {
+  LOCAL: "Local",
+  DOMESTIC: "Domestic",
+  OVERNIGHT: "Overnight",
+  OUTSTATION: "Outstation",
+};
+
+export const TRAVEL_MODES = ["CAR", "BIKE", "BUS", "TRAIN", "FLIGHT", "TAXI", "OTHER"] as const;
+export type TravelMode = (typeof TRAVEL_MODES)[number];
+
+export const TRAVEL_MODE_LABELS: Record<TravelMode, string> = {
+  CAR: "Car",
+  BIKE: "Bike",
+  BUS: "Bus",
+  TRAIN: "Train",
+  FLIGHT: "Flight",
+  TAXI: "Taxi",
+  OTHER: "Other",
+};
+
+export const CITY_CATEGORIES = ["A", "B", "C", "OTHER"] as const;
+export type CityCategory = (typeof CITY_CATEGORIES)[number];
+
+export const CITY_CATEGORY_LABELS: Record<CityCategory, string> = {
+  A: "Tier A",
+  B: "Tier B",
+  C: "Tier C",
+  OTHER: "Other",
+};
+
+export const CLAIM_POLICY_CHECK_RESULTS = ["PASS", "WARN", "FAIL"] as const;
+export type ClaimPolicyCheckResult = (typeof CLAIM_POLICY_CHECK_RESULTS)[number];
+
+export const CLAIM_WORKFLOW_MODES = ["SINGLE", "TWO_STEP"] as const;
+export type ClaimWorkflowMode = (typeof CLAIM_WORKFLOW_MODES)[number];
+
+export const CLAIM_WORKFLOW_MODE_LABELS: Record<ClaimWorkflowMode, string> = {
+  SINGLE: "Single-step approval",
+  TWO_STEP: "Manager then finance",
+};
+
+export const BENEFITS_NAV = [
+  { href: "/benefits", label: "Overview" },
+  { href: "/benefits/components", label: "Benefit types" },
+  { href: "/benefits/policies", label: "Policies" },
+  { href: "/benefits/employee", label: "Assignments" },
+  { href: "/benefits/reports", label: "Reports" },
+] as const;
+
+export const CLAIMS_NAV = [
+  { href: "/claims", label: "Overview" },
+  { href: "/claims/new", label: "New claim" },
+  { href: "/claims/pending", label: "Pending" },
+  { href: "/claims/approvals", label: "Approvals" },
+  { href: "/claims/approved", label: "Approved" },
+  { href: "/claims/history", label: "History" },
+  { href: "/claims/policies", label: "Policies" },
+  { href: "/claims/reports", label: "Reports" },
 ] as const;

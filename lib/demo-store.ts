@@ -6,9 +6,19 @@ import type {
   BiometricDevice,
   BiometricIdentityMap,
   BiometricNormalizedEvent,
+  BenefitPolicy,
+  BenefitType,
   BiometricRawEvent,
   Branch,
+  Claim,
+  ClaimApproval,
+  ClaimAttachment,
+  ClaimItem,
+  ClaimPolicy,
+  ClaimPolicyCheck,
+  ClaimType,
   CompOffEarning,
+  EmployeeBenefit,
   EmployeeSalaryAssignment,
   Department,
   Designation,
@@ -262,6 +272,16 @@ export type DemoStore = {
   salaryHistory: SalaryHistory[];
   variableEarnings: VariableEarning[];
   reimbursementEntries: ReimbursementEntry[];
+  benefitTypes: BenefitType[];
+  benefitPolicies: BenefitPolicy[];
+  employeeBenefits: EmployeeBenefit[];
+  claimTypes: ClaimType[];
+  claimPolicies: ClaimPolicy[];
+  claims: Claim[];
+  claimItems: ClaimItem[];
+  claimApprovals: ClaimApproval[];
+  claimPolicyChecks: ClaimPolicyCheck[];
+  claimAttachments: ClaimAttachment[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -692,6 +712,7 @@ function createStore(): DemoStore {
     attendancePunches: [] as AttendancePunch[],
     ...createLeaveSeed(),
     ...createSalarySeed(),
+    ...createBenefitsSeed(),
   };
 }
 
@@ -1350,13 +1371,366 @@ function createSalarySeed(): Pick<
   };
 }
 
+function createBenefitsSeed(): Pick<
+  DemoStore,
+  | "benefitTypes"
+  | "benefitPolicies"
+  | "employeeBenefits"
+  | "claimTypes"
+  | "claimPolicies"
+  | "claims"
+  | "claimItems"
+  | "claimApprovals"
+  | "claimPolicyChecks"
+  | "claimAttachments"
+> {
+  const created = nowIso();
+  const year = new Date().getFullYear();
+  const fuelBenefit = "b1111111-1111-1111-1111-111111111111";
+  const phoneBenefit = "b2222222-2222-2222-2222-222222222222";
+  const medicalBenefit = "b3333333-3333-3333-3333-333333333333";
+  const internetBenefit = "b4444444-4444-4444-4444-444444444444";
+  const fuelPolicyBenefit = "bp111111-1111-1111-1111-111111111111";
+  const phonePolicyBenefit = "bp222222-2222-2222-2222-222222222222";
+  const medicalPolicyBenefit = "bp333333-3333-3333-3333-333333333333";
+  const localClaim = "c1111111-1111-1111-1111-111111111111";
+  const outstationClaim = "c2222222-2222-2222-2222-222222222222";
+  const fuelClaim = "c3333333-3333-3333-3333-333333333333";
+  const medicalClaim = "c4444444-4444-4444-4444-444444444444";
+  const localPolicy = "cp111111-1111-1111-1111-111111111111";
+  const outstationPolicy = "cp222222-2222-2222-2222-222222222222";
+  const fuelPolicy = "cp333333-3333-3333-3333-333333333333";
+  const medicalPolicy = "cp444444-4444-4444-4444-444444444444";
+  const approvedClaimId = "q1111111-1111-1111-1111-111111111111";
+  const pendingClaimId = "q2222222-2222-2222-2222-222222222222";
+  const approver = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+
+  const benefitType = (
+    id: string,
+    name: string,
+    code: string,
+    category: BenefitType["category"],
+    extras: Partial<BenefitType> = {}
+  ): BenefitType => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    code,
+    category,
+    calculation_method: "FIXED",
+    fixed_amount: null,
+    percentage: null,
+    frequency: "MONTHLY",
+    eligibility: null,
+    tax_treatment: "EXEMPT",
+    include_in_ctc: false,
+    include_in_gross: false,
+    effective_from: `${year}-04-01`,
+    effective_to: null,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const benefitPolicy = (
+    id: string,
+    name: string,
+    benefitTypeId: string,
+    maxAmount: number,
+    extras: Partial<BenefitPolicy> = {}
+  ): BenefitPolicy => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    benefit_type_id: benefitTypeId,
+    max_amount: maxAmount,
+    scope: "ORGANIZATION",
+    branch_id: null,
+    department_id: null,
+    designation_id: null,
+    employment_type_id: null,
+    employee_id: null,
+    require_assignment: true,
+    effective_from: `${year}-04-01`,
+    effective_to: null,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const employeeBenefit = (
+    employeeId: string,
+    benefitTypeId: string,
+    amount: number,
+    extras: Partial<EmployeeBenefit> = {}
+  ): EmployeeBenefit => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    employee_id: employeeId,
+    benefit_type_id: benefitTypeId,
+    amount,
+    calculation_method: "FIXED",
+    percentage: null,
+    effective_from: `${year}-04-01`,
+    effective_to: null,
+    status: "ACTIVE",
+    notes: null,
+    created_by: approver,
+    updated_by: approver,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const claimType = (
+    id: string,
+    name: string,
+    code: string,
+    category: ClaimType["category"],
+    extras: Partial<ClaimType> = {}
+  ): ClaimType => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    code,
+    category,
+    requires_receipt: true,
+    requires_travel_fields: false,
+    max_amount: null,
+    workflow_mode: "TWO_STEP",
+    include_in_payroll_default: true,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const claimPolicy = (
+    id: string,
+    name: string,
+    claimTypeId: string,
+    extras: Partial<ClaimPolicy> = {}
+  ): ClaimPolicy => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    claim_type_id: claimTypeId,
+    employee_category: null,
+    designation_id: null,
+    city_category: null,
+    travel_type: null,
+    da_per_day: null,
+    mileage_rate: null,
+    local_conveyance_limit: null,
+    hotel_limit: null,
+    meal_limit: null,
+    max_amount: null,
+    max_days: null,
+    require_receipt: true,
+    workflow_mode: "TWO_STEP",
+    effective_from: `${year}-04-01`,
+    effective_to: null,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const baseClaim = (extras: Partial<Claim>): Claim => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    employee_id: EMPLOYEE_ADMIN_ID,
+    claim_type_id: localClaim,
+    claim_date: `${year}-01-15`,
+    period_from: null,
+    period_to: null,
+    purpose: null,
+    submitted_amount: 0,
+    calculated_amount: null,
+    approved_amount: null,
+    override_reason: null,
+    notes: null,
+    reference_number: null,
+    status: "DRAFT",
+    policy_id: null,
+    distance: null,
+    rate_per_km: null,
+    travel_mode: null,
+    travel_days: null,
+    city_category: null,
+    travel_type: null,
+    include_in_payroll: true,
+    payroll_period: null,
+    paid_at: null,
+    current_step: null,
+    submitted_at: null,
+    created_by: approver,
+    updated_by: approver,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const check = (claimId: string, code: string, result: ClaimPolicyCheck["result"], message: string): ClaimPolicyCheck => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    claim_id: claimId,
+    check_code: code,
+    result,
+    message,
+    created_at: created,
+  });
+
+  return {
+    benefitTypes: [
+      benefitType(fuelBenefit, "Fuel Reimbursement", "FUEL", "FUEL", { fixed_amount: 3000, include_in_gross: true }),
+      benefitType(phoneBenefit, "Telephone Reimbursement", "PHONE", "TELEPHONE", { fixed_amount: 800 }),
+      benefitType(medicalBenefit, "Medical Reimbursement", "MEDICAL", "MEDICAL", { fixed_amount: 1250 }),
+      benefitType(internetBenefit, "Internet Reimbursement", "INTERNET", "INTERNET", { fixed_amount: 1000, tax_treatment: "TAXABLE", include_in_gross: true }),
+    ],
+    benefitPolicies: [
+      benefitPolicy(fuelPolicyBenefit, "Fuel — org wide", fuelBenefit, 3000),
+      benefitPolicy(phonePolicyBenefit, "Telephone — org wide", phoneBenefit, 800, { require_assignment: false }),
+      benefitPolicy(medicalPolicyBenefit, "Medical — org wide", medicalBenefit, 1250, { require_assignment: false }),
+    ],
+    employeeBenefits: [
+      employeeBenefit(EMPLOYEE_ADMIN_ID, fuelBenefit, 3000, { notes: "Executive fuel card" }),
+      employeeBenefit(EMPLOYEE_HR_ID, phoneBenefit, 800),
+      employeeBenefit(EMPLOYEE_ADMIN_ID, medicalBenefit, 1250),
+    ],
+    claimTypes: [
+      claimType(localClaim, "Local Conveyance", "LOCAL_CONV", "TRAVEL", { requires_travel_fields: true, max_amount: 5000 }),
+      claimType(outstationClaim, "Outstation TA/DA", "OUTSTATION", "TA_DA", { requires_travel_fields: true, max_amount: 25000 }),
+      claimType(fuelClaim, "Fuel Claim", "FUEL_CLAIM", "FUEL", { max_amount: 3000, workflow_mode: "SINGLE" }),
+      claimType(medicalClaim, "Medical Claim", "MEDICAL_CLAIM", "MEDICAL", { max_amount: 15000 }),
+    ],
+    claimPolicies: [
+      claimPolicy(localPolicy, "Local conveyance — standard", localClaim, {
+        mileage_rate: 12,
+        local_conveyance_limit: 5000,
+        max_amount: 5000,
+        travel_type: "LOCAL",
+      }),
+      claimPolicy(outstationPolicy, "Outstation TA/DA — standard", outstationClaim, {
+        da_per_day: 1000,
+        mileage_rate: 14,
+        hotel_limit: 3000,
+        meal_limit: 500,
+        max_amount: 25000,
+        max_days: 15,
+        travel_type: "OUTSTATION",
+      }),
+      claimPolicy(fuelPolicy, "Fuel claim cap", fuelClaim, { max_amount: 3000, workflow_mode: "SINGLE" }),
+      claimPolicy(medicalPolicy, "Medical claim cap", medicalClaim, { max_amount: 15000 }),
+    ],
+    claims: [
+      baseClaim({
+        id: approvedClaimId,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        claim_type_id: fuelClaim,
+        claim_date: `${year}-01-12`,
+        purpose: "Client visit fuel",
+        submitted_amount: 2400,
+        approved_amount: 2400,
+        reference_number: "CLM-1001",
+        status: "APPROVED",
+        policy_id: fuelPolicy,
+        notes: "Approved by finance",
+        current_step: null,
+        submitted_at: created,
+      }),
+      baseClaim({
+        id: pendingClaimId,
+        employee_id: EMPLOYEE_HR_ID,
+        claim_type_id: outstationClaim,
+        claim_date: `${year}-02-03`,
+        period_from: `${year}-02-03`,
+        period_to: `${year}-02-05`,
+        purpose: "Vendor audit travel",
+        submitted_amount: 9800,
+        calculated_amount: 9800,
+        reference_number: "CLM-1002",
+        status: "SUBMITTED",
+        policy_id: outstationPolicy,
+        distance: 320,
+        rate_per_km: 14,
+        travel_mode: "CAR",
+        travel_days: 3,
+        city_category: "A",
+        travel_type: "OUTSTATION",
+        current_step: "MANAGER",
+        submitted_at: created,
+      }),
+      baseClaim({
+        employee_id: EMPLOYEE_STAFF_ID,
+        claim_type_id: medicalClaim,
+        claim_date: `${year}-02-10`,
+        purpose: "Clinic consultation",
+        submitted_amount: 1500,
+        reference_number: "CLM-1003",
+        status: "DRAFT",
+        policy_id: medicalPolicy,
+      }),
+    ],
+    claimItems: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        claim_id: approvedClaimId,
+        description: "Diesel — 28 litres",
+        quantity: 28,
+        rate: 85.71,
+        amount: 2400,
+        item_date: `${year}-01-12`,
+        created_at: created,
+      },
+    ],
+    claimApprovals: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        claim_id: approvedClaimId,
+        step: "SINGLE",
+        decision: "APPROVED",
+        amount: 2400,
+        reason: "Within fuel cap",
+        actor_id: approver,
+        decided_at: created,
+        created_at: created,
+      },
+    ],
+    claimPolicyChecks: [
+      check(approvedClaimId, "TYPE_ACTIVE", "PASS", "Claim type is active."),
+      check(approvedClaimId, "MAX_AMOUNT", "PASS", "Submitted amount is within the limit of 3000."),
+      check(approvedClaimId, "DUPLICATE", "PASS", "No overlapping claim found."),
+      check(approvedClaimId, "RECEIPT", "PASS", "Receipt attached."),
+      check(pendingClaimId, "TYPE_ACTIVE", "PASS", "Claim type is active."),
+      check(pendingClaimId, "MAX_AMOUNT", "PASS", "Submitted amount is within the limit of 25000."),
+      check(pendingClaimId, "DUPLICATE", "PASS", "No overlapping claim found."),
+      check(pendingClaimId, "RECEIPT", "PASS", "Receipt attached."),
+    ],
+    claimAttachments: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
     !("employees" in globalStore.__bsbDemo) ||
     !("biometricDevices" in globalStore.__bsbDemo) ||
     !("leaveTypes" in globalStore.__bsbDemo) ||
-    !("salaryComponents" in globalStore.__bsbDemo)
+    !("salaryComponents" in globalStore.__bsbDemo) ||
+    !("benefitTypes" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }
