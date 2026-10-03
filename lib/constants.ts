@@ -75,6 +75,15 @@ export const PERMISSIONS = [
   { code: "claims.approve", group: "Claims", label: "Approve claims" },
   { code: "claims.manage", group: "Claims", label: "Manage claims" },
   { code: "claims.export", group: "Claims", label: "Export claims" },
+  { code: "loans.view", group: "Loans", label: "View loans" },
+  { code: "loans.create", group: "Loans", label: "Create loan applications" },
+  { code: "loans.edit", group: "Loans", label: "Edit loan applications" },
+  { code: "loans.approve", group: "Loans", label: "Approve loans" },
+  { code: "loans.disburse", group: "Loans", label: "Disburse loans" },
+  { code: "loans.repayment.manage", group: "Loans", label: "Record loan repayments" },
+  { code: "loans.adjust", group: "Loans", label: "Adjust, waive or defer loans" },
+  { code: "loans.export", group: "Loans", label: "Export loans" },
+  { code: "loans.settings", group: "Loans", label: "Manage loan types and policies" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -125,6 +134,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "claims.approve",
     "claims.manage",
     "claims.export",
+    "loans.view",
+    "loans.create",
+    "loans.edit",
+    "loans.approve",
+    "loans.disburse",
+    "loans.repayment.manage",
+    "loans.adjust",
+    "loans.export",
+    "loans.settings",
   ],
   PAYROLL: [
     "organization.view",
@@ -143,6 +161,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "claims.view",
     "claims.approve",
     "claims.export",
+    "loans.view",
+    "loans.disburse",
+    "loans.repayment.manage",
+    "loans.export",
   ],
   ACCOUNTANT: [
     "organization.view",
@@ -155,6 +177,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "claims.view",
     "claims.approve",
     "claims.export",
+    "loans.view",
+    "loans.approve",
+    "loans.disburse",
+    "loans.repayment.manage",
+    "loans.export",
   ],
   MANAGER: [
     "organization.view",
@@ -169,6 +196,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "claims.view",
     "claims.create",
     "claims.approve",
+    "loans.view",
+    "loans.create",
+    "loans.approve",
   ],
   EMPLOYEE: [
     "organization.view",
@@ -178,6 +208,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "leave.request",
     "claims.view",
     "claims.create",
+    "loans.view",
+    "loans.create",
   ],
 };
 
@@ -189,6 +221,7 @@ export const NAV_ITEMS = [
   { href: "/salary", label: "Salary", icon: "Banknote", enabled: true, phase: 6 },
   { href: "/benefits", label: "Benefits", icon: "Gift", enabled: true, phase: 7 },
   { href: "/claims", label: "Claims", icon: "Receipt", enabled: true, phase: 7 },
+  { href: "/loans", label: "Loans", icon: "HandCoins", enabled: true, phase: 8 },
   { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: true, phase: 3 },
   { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: false, phase: 9 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 10 },
@@ -822,4 +855,157 @@ export const CLAIMS_NAV = [
   { href: "/claims/history", label: "History" },
   { href: "/claims/policies", label: "Policies" },
   { href: "/claims/reports", label: "Reports" },
+] as const;
+
+export const LOAN_CATEGORIES = [
+  "SALARY_ADVANCE",
+  "EMPLOYEE_LOAN",
+  "EMERGENCY_LOAN",
+  "FESTIVAL_ADVANCE",
+  "OTHER",
+] as const;
+export type LoanCategory = (typeof LOAN_CATEGORIES)[number];
+
+export const LOAN_CATEGORY_LABELS: Record<LoanCategory, string> = {
+  SALARY_ADVANCE: "Salary advance",
+  EMPLOYEE_LOAN: "Employee loan",
+  EMERGENCY_LOAN: "Emergency loan",
+  FESTIVAL_ADVANCE: "Festival advance",
+  OTHER: "Other",
+};
+
+export const LOAN_INTEREST_METHODS = ["NONE", "FLAT", "REDUCING"] as const;
+export type LoanInterestMethod = (typeof LOAN_INTEREST_METHODS)[number];
+
+export const LOAN_INTEREST_METHOD_LABELS: Record<LoanInterestMethod, string> = {
+  NONE: "Zero interest",
+  FLAT: "Flat interest",
+  REDUCING: "Reducing balance",
+};
+
+export const LOAN_APPLICATION_STATUSES = [
+  "DRAFT",
+  "SUBMITTED",
+  "PENDING_APPROVAL",
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED",
+  "DISBURSED",
+] as const;
+export type LoanApplicationStatus = (typeof LOAN_APPLICATION_STATUSES)[number];
+
+export const LOAN_APPLICATION_STATUS_LABELS: Record<LoanApplicationStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  PENDING_APPROVAL: "Pending approval",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+  DISBURSED: "Disbursed",
+};
+
+export const LOAN_ACCOUNT_STATUSES = ["ACTIVE", "PAUSED", "COMPLETED", "CANCELLED", "WRITTEN_OFF"] as const;
+export type LoanAccountStatus = (typeof LOAN_ACCOUNT_STATUSES)[number];
+
+export const LOAN_ACCOUNT_STATUS_LABELS: Record<LoanAccountStatus, string> = {
+  ACTIVE: "Active",
+  PAUSED: "Paused",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+  WRITTEN_OFF: "Written off",
+};
+
+export const LOAN_INSTALLMENT_STATUSES = [
+  "UPCOMING",
+  "DUE",
+  "PARTIALLY_PAID",
+  "PAID",
+  "OVERDUE",
+  "WAIVED",
+  "DEFERRED",
+] as const;
+export type LoanInstallmentStatus = (typeof LOAN_INSTALLMENT_STATUSES)[number];
+
+export const LOAN_INSTALLMENT_STATUS_LABELS: Record<LoanInstallmentStatus, string> = {
+  UPCOMING: "Upcoming",
+  DUE: "Due",
+  PARTIALLY_PAID: "Partially paid",
+  PAID: "Paid",
+  OVERDUE: "Overdue",
+  WAIVED: "Waived",
+  DEFERRED: "Deferred",
+};
+
+export const LOAN_PAYMENT_METHODS = ["CASH", "BANK", "PAYROLL", "OTHER"] as const;
+export type LoanPaymentMethod = (typeof LOAN_PAYMENT_METHODS)[number];
+
+export const LOAN_PAYMENT_METHOD_LABELS: Record<LoanPaymentMethod, string> = {
+  CASH: "Cash",
+  BANK: "Bank transfer",
+  PAYROLL: "Payroll deduction",
+  OTHER: "Other",
+};
+
+export const LOAN_LEDGER_TYPES = [
+  "DISBURSEMENT",
+  "PRINCIPAL_REPAYMENT",
+  "INTEREST_REPAYMENT",
+  "MANUAL_REPAYMENT",
+  "PAYROLL_DEDUCTION_REFERENCE",
+  "ADJUSTMENT",
+  "WAIVER",
+  "REVERSAL",
+] as const;
+export type LoanLedgerType = (typeof LOAN_LEDGER_TYPES)[number];
+
+export const LOAN_LEDGER_TYPE_LABELS: Record<LoanLedgerType, string> = {
+  DISBURSEMENT: "Disbursement",
+  PRINCIPAL_REPAYMENT: "Principal repayment",
+  INTEREST_REPAYMENT: "Interest repayment",
+  MANUAL_REPAYMENT: "Manual repayment",
+  PAYROLL_DEDUCTION_REFERENCE: "Payroll deduction",
+  ADJUSTMENT: "Adjustment",
+  WAIVER: "Waiver",
+  REVERSAL: "Reversal",
+};
+
+export const LOAN_ADJUSTMENT_KINDS = ["SKIP", "DEFER", "WAIVER", "WRITE_OFF", "REVERSAL"] as const;
+export type LoanAdjustmentKind = (typeof LOAN_ADJUSTMENT_KINDS)[number];
+
+export const LOAN_ADJUSTMENT_KIND_LABELS: Record<LoanAdjustmentKind, string> = {
+  SKIP: "Skip installment",
+  DEFER: "Defer installment",
+  WAIVER: "Waive installment",
+  WRITE_OFF: "Write off",
+  REVERSAL: "Reverse payment",
+};
+
+export const LOAN_WORKFLOW_MODES = ["SINGLE", "TWO_STEP"] as const;
+export type LoanWorkflowMode = (typeof LOAN_WORKFLOW_MODES)[number];
+
+export const LOAN_WORKFLOW_MODE_LABELS: Record<LoanWorkflowMode, string> = {
+  SINGLE: "Single-step approval",
+  TWO_STEP: "Manager then finance",
+};
+
+export const LOAN_APPROVAL_STEPS = ["MANAGER", "FINANCE", "SINGLE"] as const;
+export type LoanApprovalStep = (typeof LOAN_APPROVAL_STEPS)[number];
+
+export const LOAN_APPROVAL_STEP_LABELS: Record<LoanApprovalStep, string> = {
+  MANAGER: "Manager",
+  FINANCE: "Finance / Admin",
+  SINGLE: "Single approver",
+};
+
+export const LOAN_APPROVAL_DECISIONS = ["APPROVED", "REJECTED"] as const;
+export type LoanApprovalDecision = (typeof LOAN_APPROVAL_DECISIONS)[number];
+
+export const LOANS_NAV = [
+  { href: "/loans", label: "Overview" },
+  { href: "/loans/types", label: "Loan types" },
+  { href: "/loans/applications", label: "Applications" },
+  { href: "/loans/active", label: "Active" },
+  { href: "/loans/repayments", label: "Repayments" },
+  { href: "/loans/history", label: "History" },
+  { href: "/loans/settings", label: "Settings" },
 ] as const;

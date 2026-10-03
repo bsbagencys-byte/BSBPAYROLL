@@ -6,6 +6,7 @@ import { EmployeeLeavePanel } from "@/components/leave/employee-leave";
 import { EmployeeSalaryPanel } from "@/components/salary/employee-salary";
 import { EmployeeBenefitsPanel } from "@/components/benefits/employee-benefits";
 import { EmployeeClaimsPanel } from "@/components/claims/employee-claims";
+import { EmployeeLoansPanel } from "@/components/loans/employee-loans";
 import { EmployeeDocuments } from "@/components/employees/employee-documents";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { EmployeeHistoryList } from "@/components/employees/employee-history";
@@ -31,6 +32,9 @@ import type {
   BenefitType,
   ClaimListItem,
   EmployeeBenefit,
+  LoanAccountListItem,
+  LoanListItem,
+  LoanRepayment,
   SalaryHistory,
   SalaryRevision,
 } from "@/types";
@@ -49,6 +53,7 @@ const TABS = [
   { id: "salary", label: "Salary" },
   { id: "benefits", label: "Benefits" },
   { id: "claims", label: "Claims" },
+  { id: "loans", label: "Loans" },
   { id: "payroll", label: "Payroll" },
 ] as const;
 
@@ -75,6 +80,10 @@ export function EmployeeProfile({
   claimItems,
   canViewBenefits,
   canViewClaims,
+  loanAccounts,
+  loanApplications,
+  loanRepayments,
+  canViewLoans,
 }: {
   record: EmployeeRecord;
   values: Partial<EmployeeFormValues>;
@@ -103,6 +112,10 @@ export function EmployeeProfile({
   claimItems?: ClaimListItem[];
   canViewBenefits?: boolean;
   canViewClaims?: boolean;
+  loanAccounts?: LoanAccountListItem[];
+  loanApplications?: LoanListItem[];
+  loanRepayments?: LoanRepayment[];
+  canViewLoans?: boolean;
 }) {
   const [tab, setTab] = useState<TabId>("overview");
   const { employee, address, employment, statutory, bank } = record;
@@ -217,6 +230,15 @@ export function EmployeeProfile({
         ) : (
           <Card>
             <CardContent className="p-6 text-sm text-slate-600">You do not have permission to view claims.</CardContent>
+          </Card>
+        )
+      ) : null}
+      {tab === "loans" ? (
+        canViewLoans ? (
+          <EmployeeLoansPanel accounts={loanAccounts ?? []} applications={loanApplications ?? []} repayments={loanRepayments ?? []} />
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-sm text-slate-600">You do not have permission to view loans.</CardContent>
           </Card>
         )
       ) : null}

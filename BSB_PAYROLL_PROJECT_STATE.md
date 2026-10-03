@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `main` (Phase 7 uncommitted)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `main` (Phase 8 uncommitted)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7 implemented. Phase 4 Attendance is not started. Payroll / compliance / global reports are not started.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8 implemented. Phase 4 Attendance is not started. Payroll / compliance / global reports are not started.
 
 ---
 
@@ -27,6 +27,7 @@ Status is from code, not README.
 | 5 Leave & Holiday | **COMPLETE** | Types, policies, requests, approvals, balances/ledger, holidays, calendar, comp-off, CSV reports. Approved leave writes `attendance_days`. |
 | 6 Salary & Compensation | **COMPLETE** for master CTC; **PARTIAL** for payroll inputs | Components, structures, assignments, revisions, history, formula parser, variable/reimbursement storage. No payroll run, PF/ESI/TDS, payslips. `lateCount` / `otMinutes` stubbed at `0`. |
 | 7 Benefits, Reimbursements, TA/DA & Claims | **COMPLETE** for master data and workflow; **PARTIAL** for payroll | Types, policies, assignments, claims, approvals, policy engine, TA/DA calc, receipts, CSV. `getApprovedPayrollClaimLines` exists. No payroll run, PAID, or statutory tax. |
+| 8 Loans & Advances | **COMPLETE** for master data and recovery; **PARTIAL** for payroll | Types, policies, applications, accounts, EMI schedule, ledger, repayments, adjustments. `getEmployeeLoanDeductions` exists. No payroll run or statutory tax. |
 
 ---
 
@@ -59,7 +60,7 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, Employees, Leave, Salary, Benefits, Claims, Biometric, Settings.
+Enabled nav: Dashboard, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Settings.
 
 Disabled nav (no pages): `/attendance` (P4), `/payroll` (P9), `/reports` (P10), `/compliance` (P9).
 
@@ -100,15 +101,20 @@ Disabled nav (no pages): `/attendance` (P4), `/payroll` (P9), `/reports` (P10), 
 - `/claims`, `/claims/new`, `/claims/pending`, `/claims/approvals`, `/claims/approved`, `/claims/history`, `/claims/policies`, `/claims/reports`, `/claims/[id]`
 - CSV: `/api/claims/reports/{claims,pending,approved,policies}`
 
+### Loans (P8)
+
+- `/loans`, `/loans/types`, `/loans/applications`, `/loans/applications/new`, `/loans/applications/[id]`, `/loans/active`, `/loans/accounts/[id]`, `/loans/repayments`, `/loans/history`, `/loans/settings`
+- CSV: `/api/loans/reports/{register,active,outstanding,schedule,repayments,advances,overdue,statement}`
+
 ### Employee profile tabs
 
-Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, payroll (later P9 copy).
+Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, loans, payroll (later P9 copy).
 
 ---
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -124,6 +130,8 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 **P7:** `benefit_types`, `benefit_policies`, `employee_benefits`, `claim_types`, `claim_policies`, `claims`, `claim_items`, `claim_approvals`, `claim_policy_checks`, `claim_attachments` + storage bucket `claim-receipts`
 
+**P8:** `loan_types`, `loan_policies`, `loan_applications`, `loan_accounts`, `loan_schedule`, `loan_repayments`, `loan_adjustments`, `loan_approvals`, `loan_ledger`
+
 **Not present:** shifts, attendance rules, overtime, LOP calc, payroll runs, payslips, statutory PF/ESI/TDS tables.
 
 `login_attempts` and `username_lookup` are service-role only. Biometric raw insert from the client is denied; ingest uses admin/demo store.
@@ -132,20 +140,21 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 ## APIs / Services
 
-Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims}.ts`.
+Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans}.ts`.
 
 | Area | Code |
 |---|---|
 | Session / RBAC | `lib/auth/session.ts`, `lib/auth/guards.ts` |
 | Audit | `lib/audit.ts` (free-form action strings) |
-| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, or `benefitTypes` missing |
+| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, or `loanTypes` missing |
 | Biometric | `lib/biometric/{gateway,repository,query,hash,time}.ts`, `lib/biometric/adapters/{essl,generic,index,types}.ts` |
 | Leave | `lib/leave/{engine,service,repository,query,csv,dates,attendance}.ts` |
 | Salary | `lib/salary/{formula,engine,service,repository,query,csv}.ts` |
 | Benefits/Claims | `lib/claims/{engine,service,repository,query,csv}.ts`, `lib/validations/benefits.ts` |
+| Loans | `lib/loans/{engine,service,repository,query,csv}.ts`, `lib/validations/loans.ts` |
 | Proxy | `proxy.ts` — public prefixes for login/reset and biometric ingest |
 
-Future payroll contracts already exist: `getEmployeeSalaryForDate(organizationId, employeeId, date)` in `lib/salary/service.ts`; `getApprovedPayrollClaimLines(organizationId, period)` in `lib/claims/service.ts`.
+Future payroll contracts already exist: `getEmployeeSalaryForDate(organizationId, employeeId, date)` in `lib/salary/service.ts`; `getApprovedPayrollClaimLines(organizationId, period)` in `lib/claims/service.ts`; `getEmployeeLoanDeductions(organizationId, employeeId, payrollPeriod)` in `lib/loans/service.ts`.
 
 ---
 
@@ -206,6 +215,20 @@ Demo seed: four benefit types, three assignments, four claim types/policies, app
 
 ---
 
+## Loans
+
+Configurable loan types (salary advance, employee loan, emergency, festival) with NONE / FLAT / REDUCING interest. Scoped policies. Workflow: DRAFT → SUBMITTED → (TWO_STEP: MANAGER then FINANCE) → APPROVED → DISBURSED account + schedule + DISBURSEMENT ledger.
+
+Zero-interest EMI = principal / tenure; reducing uses the EMI formula. Salary advance is a loan type with a full recovery schedule, not a single balance field. Ledger is append-only.
+
+Permissions: `loans.view|create|edit|approve|disburse|repayment.manage|adjust|export|settings`. HR all; PAYROLL view/disburse/repayment/export; ACCOUNTANT view/approve/disburse/repayment/export; MANAGER view/create/approve; EMPLOYEE view/create.
+
+Demo seed: Asha ₹20k salary advance (4×₹5k, 1 paid); Meera pending reducing loan; Rahul festival draft.
+
+`getEmployeeLoanDeductions(orgId, employeeId, payrollPeriod)` returns EMI due for ACTIVE auto-deduct accounts. Does not write payroll tables.
+
+---
+
 ## Known Issues
 
 - `app/(app)/coming-soon.tsx` is unused; disabled nav items are non-links with a Soon badge.
@@ -215,14 +238,15 @@ Demo seed: four benefit types, three assignments, four claim types/policies, app
 - No `/attendance` route; hitting it 404s.
 - Tax treatment on benefits is stored as a placeholder only.
 - Approved claims are not paid or included in a payroll period from this UI.
+- Loan EMI payroll deduction is exposed as a contract only; this UI does not run payroll.
 
 ---
 
 ## Current Phase
 
-**Next: Phase 4 Attendance calculation.**
+**Next: Phase 9 Payroll.**
 
-Do not start Phase 9 payroll until attendance days can be produced from punches + leave + holidays + weekly-off.
+Phase 8 loans are complete as master data and recovery. Do not start payroll until attendance days can be produced from punches + leave + holidays + weekly-off (Phase 4 remains a gap). Prefer Phase 4 Attendance before a full payroll run if day totals are required.
 
 ---
 
@@ -235,6 +259,7 @@ Phase 4 should consume, not rebuild:
 - `holidays`, leave-written `attendance_days`, leave request days (P5)
 - Salary already reads `attendance_days` via `loadAttendanceInputs` / formula tokens `WORKING_DAYS`, `PRESENT_DAYS`, `LOP_DAYS`
 - Phase 7 `getApprovedPayrollClaimLines` is ready for a later payroll run
+- Phase 8 `getEmployeeLoanDeductions` is ready for a later payroll run
 
 Phase 4 must fill PRESENT/ABSENT/WEEKLY_OFF/HOLIDAY (and later late/OT) without erasing leave marks or punch history.
 

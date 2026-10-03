@@ -43,6 +43,17 @@ import type {
   CityCategory,
   TravelMode,
   TravelType,
+  LoanAccountStatus,
+  LoanAdjustmentKind,
+  LoanApplicationStatus,
+  LoanApprovalDecision,
+  LoanApprovalStep,
+  LoanCategory,
+  LoanInstallmentStatus,
+  LoanInterestMethod,
+  LoanLedgerType,
+  LoanPaymentMethod,
+  LoanWorkflowMode,
 } from "@/lib/constants";
 
 export type {
@@ -78,6 +89,17 @@ export type {
   CityCategory,
   TravelMode,
   TravelType,
+  LoanAccountStatus,
+  LoanAdjustmentKind,
+  LoanApplicationStatus,
+  LoanApprovalDecision,
+  LoanApprovalStep,
+  LoanCategory,
+  LoanInstallmentStatus,
+  LoanInterestMethod,
+  LoanLedgerType,
+  LoanPaymentMethod,
+  LoanWorkflowMode,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -1198,4 +1220,226 @@ export interface PayrollClaimLine {
   includeInPayroll: boolean;
   payrollPeriod: string | null;
   status: ClaimStatus;
+}
+
+export interface LoanType {
+  id: string;
+  organization_id: string;
+  name: string;
+  code: string;
+  category: LoanCategory;
+  description: string | null;
+  max_amount: number | null;
+  max_tenure_months: number | null;
+  interest_method: LoanInterestMethod;
+  interest_rate: number | null;
+  processing_fee: number | null;
+  eligibility: string | null;
+  allow_multiple_active: boolean;
+  auto_deduct_payroll: boolean;
+  workflow_mode: LoanWorkflowMode;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanPolicy {
+  id: string;
+  organization_id: string;
+  name: string;
+  loan_type_id: string;
+  max_amount: number | null;
+  max_tenure_months: number | null;
+  max_active_loans: number | null;
+  min_service_months: number | null;
+  scope: PolicyScope;
+  branch_id: string | null;
+  department_id: string | null;
+  designation_id: string | null;
+  employment_type_id: string | null;
+  employee_id: string | null;
+  effective_from: string;
+  effective_to: string | null;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanApplication {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  loan_type_id: string;
+  policy_id: string | null;
+  requested_amount: number;
+  tenure_months: number;
+  interest_method: LoanInterestMethod;
+  interest_rate: number | null;
+  processing_fee: number | null;
+  purpose: string | null;
+  requested_date: string;
+  notes: string | null;
+  principal: number;
+  interest_amount: number;
+  total_repayment: number;
+  emi_amount: number;
+  first_due_date: string | null;
+  last_due_date: string | null;
+  approved_amount: number | null;
+  approved_tenure_months: number | null;
+  status: LoanApplicationStatus;
+  current_step: LoanApprovalStep | null;
+  auto_deduct_payroll: boolean;
+  reference_number: string | null;
+  submitted_at: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanAccount {
+  id: string;
+  organization_id: string;
+  application_id: string;
+  employee_id: string;
+  loan_type_id: string;
+  approved_amount: number;
+  disbursed_amount: number;
+  interest_amount: number;
+  outstanding_principal: number;
+  outstanding_interest: number;
+  emi_amount: number;
+  tenure_months: number;
+  paid_installments: number;
+  remaining_installments: number;
+  start_date: string;
+  end_date: string | null;
+  next_due_date: string | null;
+  auto_deduct_payroll: boolean;
+  status: LoanAccountStatus;
+  disbursed_at: string | null;
+  disbursed_by: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanScheduleItem {
+  id: string;
+  organization_id: string;
+  account_id: string;
+  installment_number: number;
+  due_date: string;
+  principal_amount: number;
+  interest_amount: number;
+  emi_amount: number;
+  paid_amount: number;
+  outstanding_amount: number;
+  status: LoanInstallmentStatus;
+  paid_at: string | null;
+  payroll_period: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanRepayment {
+  id: string;
+  organization_id: string;
+  account_id: string;
+  schedule_id: string | null;
+  payment_date: string;
+  amount: number;
+  principal_amount: number;
+  interest_amount: number;
+  payment_method: LoanPaymentMethod;
+  reference: string | null;
+  notes: string | null;
+  source: "MANUAL" | "PAYROLL";
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface LoanAdjustment {
+  id: string;
+  organization_id: string;
+  account_id: string;
+  schedule_id: string | null;
+  kind: LoanAdjustmentKind;
+  amount: number | null;
+  reason: string;
+  actor_id: string | null;
+  created_at: string;
+}
+
+export interface LoanApproval {
+  id: string;
+  organization_id: string;
+  application_id: string;
+  step: LoanApprovalStep;
+  decision: LoanApprovalDecision;
+  amount: number | null;
+  tenure_months: number | null;
+  reason: string | null;
+  actor_id: string | null;
+  decided_at: string;
+  created_at: string;
+}
+
+export interface LoanLedgerEntry {
+  id: string;
+  organization_id: string;
+  account_id: string;
+  entry_type: LoanLedgerType;
+  before_principal: number;
+  before_interest: number;
+  amount: number;
+  after_principal: number;
+  after_interest: number;
+  source: string;
+  reference_id: string | null;
+  notes: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
+
+export interface LoanListItem {
+  application: LoanApplication;
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string | null;
+  branchName: string | null;
+  loanTypeName: string;
+  loanTypeCode: string;
+  category: LoanCategory;
+}
+
+export interface LoanAccountListItem {
+  account: LoanAccount;
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string | null;
+  branchName: string | null;
+  loanTypeName: string;
+  loanTypeCode: string;
+  category: LoanCategory;
+  overdueCount: number;
+}
+
+export interface PayrollLoanDeduction {
+  loanId: string;
+  employeeId: string;
+  loanTypeId: string;
+  installmentId: string;
+  installmentNumber: number;
+  emiDue: number;
+  advanceRecovery: number;
+  outstandingBalance: number;
+  autoDeduct: boolean;
+  payrollPeriod: string;
 }

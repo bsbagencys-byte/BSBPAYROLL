@@ -26,7 +26,7 @@ Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
 - **Public HTTP:** biometric ingest only (`/api/biometric/push`, `/api/biometric/webhook`).
-- **Authenticated HTTP:** CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*` and `/api/claims/reports/*`.
+- **Authenticated HTTP:** CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*` and `/api/loans/reports/*`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
 - **Rate limit:** in-memory for login and biometric ingest.
@@ -37,7 +37,7 @@ No standalone API gateway or worker queue.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
@@ -182,14 +182,33 @@ Claims never write salary, attendance or leave tables.
 
 ---
 
+## Loans — IMPLEMENTED (master) / PLANNED (payroll)
+
+Implemented:
+
+- Loan type catalog (salary advance, employee loan, emergency, festival) with NONE / FLAT / REDUCING interest.
+- Scoped eligibility policies.
+- Application workflow: DRAFT → SUBMITTED → optional TWO_STEP (MANAGER then FINANCE) → APPROVED → DISBURSED.
+- Disbursement creates a loan account, EMI schedule and append-only ledger.
+- Manual repayments, skip / defer / waive / write-off adjustments.
+- `quoteLoan` / `validateLoanApplication` in `lib/loans/engine.ts` — calculations are not in the UI.
+- `getEmployeeLoanDeductions(orgId, employeeId, payrollPeriod)` — contract for payroll.
+
+Planned (Phase 9): deduct EMI during a payroll run, write PAYROLL_DEDUCTION_REFERENCE ledger rows, mark installments payroll-paid.
+
+Loans never write salary, attendance, leave or payroll tables.
+
+---
+
 ## Future integration boundaries
 
 Do not implement these until the named phase:
 
 - **Phase 4:** shift/rules, punch-to-day, late/early, OT minutes, weekly-off/holiday application that does not erase leave.
 - **Phase 7:** benefits, reimbursements, TA/DA and claims (implemented).
-- **Phase 9:** payroll run consuming `getEmployeeSalaryForDate` + attendance inputs + approved variable/reimbursement + `getApprovedPayrollClaimLines`. Compliance filings.
-- **Phase 10:** global reports hub (leave/salary/benefits/claims already have in-module CSV).
+- **Phase 8:** loans and advances (implemented).
+- **Phase 9:** payroll run consuming `getEmployeeSalaryForDate` + attendance inputs + approved variable/reimbursement + `getApprovedPayrollClaimLines` + `getEmployeeLoanDeductions`. Compliance filings.
+- **Phase 10:** global reports hub (leave/salary/benefits/claims/loans already have in-module CSV).
 - **Later:** employee self-service beyond `/profile`, Face/QR/GPS, smart auto attendance.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

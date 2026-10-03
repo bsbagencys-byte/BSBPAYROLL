@@ -19,6 +19,15 @@ import type {
   ClaimType,
   CompOffEarning,
   EmployeeBenefit,
+  LoanAccount,
+  LoanAdjustment,
+  LoanApplication,
+  LoanApproval,
+  LoanLedgerEntry,
+  LoanPolicy,
+  LoanRepayment,
+  LoanScheduleItem,
+  LoanType,
   EmployeeSalaryAssignment,
   Department,
   Designation,
@@ -282,6 +291,15 @@ export type DemoStore = {
   claimApprovals: ClaimApproval[];
   claimPolicyChecks: ClaimPolicyCheck[];
   claimAttachments: ClaimAttachment[];
+  loanTypes: LoanType[];
+  loanPolicies: LoanPolicy[];
+  loanApplications: LoanApplication[];
+  loanAccounts: LoanAccount[];
+  loanSchedule: LoanScheduleItem[];
+  loanRepayments: LoanRepayment[];
+  loanAdjustments: LoanAdjustment[];
+  loanApprovals: LoanApproval[];
+  loanLedger: LoanLedgerEntry[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -713,6 +731,7 @@ function createStore(): DemoStore {
     ...createLeaveSeed(),
     ...createSalarySeed(),
     ...createBenefitsSeed(),
+    ...createLoansSeed(),
   };
 }
 
@@ -1723,6 +1742,344 @@ function createBenefitsSeed(): Pick<
   };
 }
 
+function createLoansSeed(): Pick<
+  DemoStore,
+  | "loanTypes"
+  | "loanPolicies"
+  | "loanApplications"
+  | "loanAccounts"
+  | "loanSchedule"
+  | "loanRepayments"
+  | "loanAdjustments"
+  | "loanApprovals"
+  | "loanLedger"
+> {
+  const created = nowIso();
+  const year = new Date().getFullYear();
+  const advanceType = "lt111111-1111-1111-1111-111111111111";
+  const employeeLoanType = "lt222222-2222-2222-2222-222222222222";
+  const emergencyType = "lt333333-3333-3333-3333-333333333333";
+  const festivalType = "lt444444-4444-4444-4444-444444444444";
+  const advancePolicy = "lp111111-1111-1111-1111-111111111111";
+  const employeeLoanPolicy = "lp222222-2222-2222-2222-222222222222";
+  const advanceApp = "la111111-1111-1111-1111-111111111111";
+  const pendingApp = "la222222-2222-2222-2222-222222222222";
+  const draftApp = "la333333-3333-3333-3333-333333333333";
+  const advanceAccount = "lac11111-1111-1111-1111-111111111111";
+  const approver = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+  const startDate = `${year}-01-15`;
+  const firstDue = `${year}-02-15`;
+
+  const loanType = (
+    id: string,
+    name: string,
+    code: string,
+    category: LoanType["category"],
+    extras: Partial<LoanType> = {}
+  ): LoanType => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    code,
+    category,
+    description: null,
+    max_amount: 50000,
+    max_tenure_months: 12,
+    interest_method: "NONE",
+    interest_rate: null,
+    processing_fee: null,
+    eligibility: null,
+    allow_multiple_active: false,
+    auto_deduct_payroll: true,
+    workflow_mode: "TWO_STEP",
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const policy = (id: string, name: string, loanTypeId: string, extras: Partial<LoanPolicy> = {}): LoanPolicy => ({
+    id,
+    organization_id: ORG_ID,
+    name,
+    loan_type_id: loanTypeId,
+    max_amount: 20000,
+    max_tenure_months: 4,
+    max_active_loans: 1,
+    min_service_months: 3,
+    scope: "ORGANIZATION",
+    branch_id: null,
+    department_id: null,
+    designation_id: null,
+    employment_type_id: null,
+    employee_id: null,
+    effective_from: `${year}-04-01`,
+    effective_to: null,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  const scheduleItem = (n: number, due: string, extras: Partial<LoanScheduleItem> = {}): LoanScheduleItem => ({
+    id: crypto.randomUUID(),
+    organization_id: ORG_ID,
+    account_id: advanceAccount,
+    installment_number: n,
+    due_date: due,
+    principal_amount: 5000,
+    interest_amount: 0,
+    emi_amount: 5000,
+    paid_amount: 0,
+    outstanding_amount: 5000,
+    status: "UPCOMING",
+    paid_at: null,
+    payroll_period: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  return {
+    loanTypes: [
+      loanType(advanceType, "Salary Advance", "ADVANCE", "SALARY_ADVANCE", { max_amount: 20000, max_tenure_months: 4, workflow_mode: "SINGLE" }),
+      loanType(employeeLoanType, "Employee Loan", "EMP_LOAN", "EMPLOYEE_LOAN", {
+        max_amount: 100000,
+        max_tenure_months: 24,
+        interest_method: "REDUCING",
+        interest_rate: 8,
+      }),
+      loanType(emergencyType, "Emergency Loan", "EMERGENCY", "EMERGENCY_LOAN", { max_amount: 30000, max_tenure_months: 6, workflow_mode: "SINGLE" }),
+      loanType(festivalType, "Festival Advance", "FESTIVAL", "FESTIVAL_ADVANCE", { max_amount: 15000, max_tenure_months: 3, workflow_mode: "SINGLE" }),
+    ],
+    loanPolicies: [
+      policy(advancePolicy, "Salary advance — org wide", advanceType, { max_amount: 20000, max_tenure_months: 4 }),
+      policy(employeeLoanPolicy, "Employee loan — org wide", employeeLoanType, { max_amount: 100000, max_tenure_months: 24, min_service_months: 12 }),
+    ],
+    loanApplications: [
+      {
+        id: advanceApp,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        loan_type_id: advanceType,
+        policy_id: advancePolicy,
+        requested_amount: 20000,
+        tenure_months: 4,
+        interest_method: "NONE",
+        interest_rate: null,
+        processing_fee: null,
+        purpose: "Short-term salary advance",
+        requested_date: startDate,
+        notes: "Recovered over 4 months",
+        principal: 20000,
+        interest_amount: 0,
+        total_repayment: 20000,
+        emi_amount: 5000,
+        first_due_date: firstDue,
+        last_due_date: `${year}-05-15`,
+        approved_amount: 20000,
+        approved_tenure_months: 4,
+        status: "DISBURSED",
+        current_step: null,
+        auto_deduct_payroll: true,
+        reference_number: "LN-2001",
+        submitted_at: created,
+        created_by: approver,
+        updated_by: approver,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: pendingApp,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        loan_type_id: employeeLoanType,
+        policy_id: employeeLoanPolicy,
+        requested_amount: 40000,
+        tenure_months: 12,
+        interest_method: "REDUCING",
+        interest_rate: 8,
+        processing_fee: null,
+        purpose: "Home repair",
+        requested_date: `${year}-02-01`,
+        notes: null,
+        principal: 40000,
+        interest_amount: 1765.72,
+        total_repayment: 41765.72,
+        emi_amount: 3480.48,
+        first_due_date: `${year}-03-01`,
+        last_due_date: `${year}-02-01`,
+        approved_amount: null,
+        approved_tenure_months: null,
+        status: "SUBMITTED",
+        current_step: "MANAGER",
+        auto_deduct_payroll: true,
+        reference_number: "LN-2002",
+        submitted_at: created,
+        created_by: approver,
+        updated_by: approver,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: draftApp,
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_STAFF_ID,
+        loan_type_id: festivalType,
+        policy_id: null,
+        requested_amount: 8000,
+        tenure_months: 2,
+        interest_method: "NONE",
+        interest_rate: null,
+        processing_fee: null,
+        purpose: "Festival expenses",
+        requested_date: `${year}-02-10`,
+        notes: null,
+        principal: 8000,
+        interest_amount: 0,
+        total_repayment: 8000,
+        emi_amount: 4000,
+        first_due_date: `${year}-03-10`,
+        last_due_date: `${year}-04-10`,
+        approved_amount: null,
+        approved_tenure_months: null,
+        status: "DRAFT",
+        current_step: null,
+        auto_deduct_payroll: true,
+        reference_number: "LN-2003",
+        submitted_at: null,
+        created_by: approver,
+        updated_by: approver,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    loanAccounts: [
+      {
+        id: advanceAccount,
+        organization_id: ORG_ID,
+        application_id: advanceApp,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        loan_type_id: advanceType,
+        approved_amount: 20000,
+        disbursed_amount: 20000,
+        interest_amount: 0,
+        outstanding_principal: 15000,
+        outstanding_interest: 0,
+        emi_amount: 5000,
+        tenure_months: 4,
+        paid_installments: 1,
+        remaining_installments: 3,
+        start_date: startDate,
+        end_date: `${year}-05-15`,
+        next_due_date: `${year}-03-15`,
+        auto_deduct_payroll: true,
+        status: "ACTIVE",
+        disbursed_at: created,
+        disbursed_by: approver,
+        created_by: approver,
+        updated_by: approver,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    loanSchedule: [
+      scheduleItem(1, firstDue, { paid_amount: 5000, outstanding_amount: 0, status: "PAID", paid_at: created }),
+      scheduleItem(2, `${year}-03-15`),
+      scheduleItem(3, `${year}-04-15`),
+      scheduleItem(4, `${year}-05-15`),
+    ],
+    loanRepayments: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        account_id: advanceAccount,
+        schedule_id: null,
+        payment_date: firstDue,
+        amount: 5000,
+        principal_amount: 5000,
+        interest_amount: 0,
+        payment_method: "CASH",
+        reference: "ADV-R1",
+        notes: "First recovery",
+        source: "MANUAL",
+        created_by: approver,
+        created_at: created,
+      },
+    ],
+    loanAdjustments: [],
+    loanApprovals: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        application_id: advanceApp,
+        step: "SINGLE",
+        decision: "APPROVED",
+        amount: 20000,
+        tenure_months: 4,
+        reason: "Eligible salary advance",
+        actor_id: approver,
+        decided_at: created,
+        created_at: created,
+      },
+    ],
+    loanLedger: [
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        account_id: advanceAccount,
+        entry_type: "DISBURSEMENT",
+        before_principal: 0,
+        before_interest: 0,
+        amount: 20000,
+        after_principal: 20000,
+        after_interest: 0,
+        source: "DISBURSEMENT",
+        reference_id: advanceApp,
+        notes: null,
+        actor_id: approver,
+        created_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        account_id: advanceAccount,
+        entry_type: "MANUAL_REPAYMENT",
+        before_principal: 20000,
+        before_interest: 0,
+        amount: 5000,
+        after_principal: 15000,
+        after_interest: 0,
+        source: "MANUAL",
+        reference_id: null,
+        notes: "First recovery",
+        actor_id: approver,
+        created_at: created,
+      },
+      {
+        id: crypto.randomUUID(),
+        organization_id: ORG_ID,
+        account_id: advanceAccount,
+        entry_type: "PRINCIPAL_REPAYMENT",
+        before_principal: 20000,
+        before_interest: 0,
+        amount: 5000,
+        after_principal: 15000,
+        after_interest: 0,
+        source: "MANUAL",
+        reference_id: null,
+        notes: null,
+        actor_id: approver,
+        created_at: created,
+      },
+    ],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -1730,7 +2087,8 @@ export function getDemoStore(): DemoStore {
     !("biometricDevices" in globalStore.__bsbDemo) ||
     !("leaveTypes" in globalStore.__bsbDemo) ||
     !("salaryComponents" in globalStore.__bsbDemo) ||
-    !("benefitTypes" in globalStore.__bsbDemo)
+    !("benefitTypes" in globalStore.__bsbDemo) ||
+    !("loanTypes" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

@@ -4,6 +4,50 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 8 — Loans & Advances
+
+- **Date:** 2026-10-03
+- **Status:** implemented in working tree (not yet committed)
+
+### Implemented
+
+- Configurable loan types (salary advance, employee loan, emergency, festival) with NONE / FLAT / REDUCING interest.
+- Loan policies with org / branch / department / designation / employment-type / employee scope.
+- Application raise / draft / submit / approve / reject / cancel / disburse.
+- Workflow: DRAFT → SUBMITTED → optional TWO_STEP (MANAGER then FINANCE) → APPROVED → DISBURSED.
+- Disbursement creates a loan account, EMI schedule and append-only ledger.
+- Manual repayments (cash/bank), skip / defer / waive / write-off adjustments.
+- Engine quotes EMI (zero-interest = principal / tenure; reducing uses EMI formula). Policy validation on submit.
+- Salary advance is a loan type with a full recovery schedule, not a single balance field.
+- `getEmployeeLoanDeductions(organizationId, employeeId, payrollPeriod)` for a later payroll run. Does not process payroll.
+- Demo seed: Asha ₹20k salary advance (4×₹5k, 1 paid); Meera pending reducing loan; Rahul festival draft.
+
+### Database
+
+- Additive `supabase/phase8.sql`, appended into `combined.sql`.
+- Tables: `loan_types`, `loan_policies`, `loan_applications`, `loan_accounts`, `loan_schedule`, `loan_repayments`, `loan_adjustments`, `loan_approvals`, `loan_ledger`.
+- Permissions: `loans.view`, `loans.create`, `loans.edit`, `loans.approve`, `loans.disburse`, `loans.repayment.manage`, `loans.adjust`, `loans.export`, `loans.settings`.
+- RLS enabled.
+
+### API
+
+- Server actions in `actions/loans.ts`.
+- CSV: `/api/loans/reports/{register,active,outstanding,schedule,repayments,advances,overdue,statement}`.
+
+### UI
+
+- `/loans` and sub-routes: types, applications, applications/new, applications/[id], active, accounts/[id], repayments, history, settings.
+- Nav item Loans (`HandCoins`). Payroll nav stays phase 9.
+- Employee profile Loans tab and dashboard shortcut.
+
+### Limitations
+
+- No payroll run, PF/ESI/TDS/PT, or payslips.
+- EMI payroll deduction is a contract only; this UI does not mark installments payroll-paid.
+- Attendance calculation remains Phase 4.
+
+---
+
 ## Phase 7 — Benefits, Reimbursements, TA/DA & Claims
 
 - **Date:** 2026-10-02
@@ -43,7 +87,7 @@ Entries record what landed in git, not planned work.
 
 ### Limitations
 
-- No payroll run, PF/ESI/TDS/PT, payslips, or loan module.
+- No payroll run, PF/ESI/TDS/PT or payslips.
 - Tax treatment is stored as a placeholder only.
 - Approved claims are not paid or included in a payroll period from this UI.
 - Attendance calculation remains Phase 4.

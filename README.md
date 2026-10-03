@@ -1,6 +1,6 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, and Phase 7 benefits, reimbursements, TA/DA and claims. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, and Phase 8 loans and advances. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
 This app does **not** implement payroll runs, statutory PF/ESI/TDS/PT, payslips, full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest.
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql` and `supabase/phase7.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql` and `supabase/phase8.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -142,6 +142,24 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `GET /api/claims/reports/pending`
 - `GET /api/claims/reports/approved`
 - `GET /api/claims/reports/policies`
+- `/loans`
+- `/loans/types`
+- `/loans/applications`
+- `/loans/applications/new`
+- `/loans/applications/[id]`
+- `/loans/active`
+- `/loans/accounts/[id]`
+- `/loans/repayments`
+- `/loans/history`
+- `/loans/settings`
+- `GET /api/loans/reports/register`
+- `GET /api/loans/reports/active`
+- `GET /api/loans/reports/outstanding`
+- `GET /api/loans/reports/schedule`
+- `GET /api/loans/reports/repayments`
+- `GET /api/loans/reports/advances`
+- `GET /api/loans/reports/overdue`
+- `GET /api/loans/reports/statement`
 
 Attendance calculation (Phase 4), payroll processing, compliance and full reports remain Coming Soon.
 
@@ -173,12 +191,21 @@ Attendance calculation (Phase 4), payroll processing, compliance and full report
 - `getApprovedPayrollClaimLines(organizationId, period)` is the payroll contract. This module does not run payroll.
 - Receipts upload to private `claim-receipts` in live mode. Demo stores metadata only.
 
+## Loans
+
+- Loan types and policies are configurable (salary advance, employee loan, emergency and festival are demo seeds, not hard-coded).
+- Interest methods: NONE, FLAT, REDUCING. EMI is quoted in `lib/loans/engine.ts`, never in the UI.
+- Workflow: draft, submit, optional manager-then-finance approval, disburse. Disbursement creates the account, schedule and ledger.
+- Salary advance uses a full recovery schedule, not a single balance field.
+- Ledger is append-only (disbursement, principal/interest/manual repayment, payroll deduction reference, adjustment, waiver, reversal).
+- `getEmployeeLoanDeductions(organizationId, employeeId, payrollPeriod)` is the payroll contract. This module does not run payroll.
+
 ## Security
 
 - RLS isolates every business table by `organization_id`
 - Passwords are never stored in plaintext
 - Login is rate-limited
-- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes
+- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes, loan type/policy/application/disburse/repayment/adjustment changes
 - Public biometric ingest is token-authenticated and rate-limited; device tokens are stored as hashes only
 - Service role keys must not be prefixed with `NEXT_PUBLIC_`
 
