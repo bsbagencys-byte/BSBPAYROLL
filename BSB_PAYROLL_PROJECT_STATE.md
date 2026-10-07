@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `main` (Phase 8 uncommitted)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `main` (Phase 8–10 uncommitted)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8 implemented. Phase 4 Attendance is not started. Payroll / compliance / global reports are not started.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10 implemented. Phase 4 Attendance is not started. Phase 11 statutory filing is not started.
 
 ---
 
@@ -25,9 +25,11 @@ Status is from code, not README.
 | 3 Universal Biometric | **COMPLETE** (ingest only) | Devices, mapping, gateway, eSSL + generic adapters, raw/normalized events, punches. Does not calculate days. |
 | 4 Attendance | **NOT STARTED** | Nav `enabled: false`. No `/attendance` page, no `phase4.sql`, no shift/late/OT engine. Thin `attendance_days` exists for leave marks only. |
 | 5 Leave & Holiday | **COMPLETE** | Types, policies, requests, approvals, balances/ledger, holidays, calendar, comp-off, CSV reports. Approved leave writes `attendance_days`. |
-| 6 Salary & Compensation | **COMPLETE** for master CTC; **PARTIAL** for payroll inputs | Components, structures, assignments, revisions, history, formula parser, variable/reimbursement storage. No payroll run, PF/ESI/TDS, payslips. `lateCount` / `otMinutes` stubbed at `0`. |
-| 7 Benefits, Reimbursements, TA/DA & Claims | **COMPLETE** for master data and workflow; **PARTIAL** for payroll | Types, policies, assignments, claims, approvals, policy engine, TA/DA calc, receipts, CSV. `getApprovedPayrollClaimLines` exists. No payroll run, PAID, or statutory tax. |
-| 8 Loans & Advances | **COMPLETE** for master data and recovery; **PARTIAL** for payroll | Types, policies, applications, accounts, EMI schedule, ledger, repayments, adjustments. `getEmployeeLoanDeductions` exists. No payroll run or statutory tax. |
+| 6 Salary & Compensation | **COMPLETE** for master CTC; consumed by P9 | Components, structures, assignments, revisions, history, formula parser, variable/reimbursement storage. `lateCount` / `otMinutes` stubbed at `0`. |
+| 7 Benefits, Reimbursements, TA/DA & Claims | **COMPLETE**; consumed by P9 | Types, policies, assignments, claims, approvals, policy engine, TA/DA calc, receipts, CSV. `getApprovedPayrollClaimLines` used by payroll. Process marks `INCLUDED_IN_PAYROLL`; mark-paid sets `PAID`. |
+| 8 Loans & Advances | **COMPLETE**; consumed by P9 | Types, policies, applications, accounts, EMI schedule, ledger, repayments, adjustments. `getEmployeeLoanDeductions` used by payroll. Process posts `recordLoanRepayment` (`source: "PAYROLL"`). |
+| 9 Payroll & Compliance | **COMPLETE** with Phase 4 attendance gap | Monthly run, proration from leave-written days (unmarked working days paid), PF/ESI/PT/TDS, payslips, lock/process/paid, CSV, compliance filings. |
+| 10 Review / Finalize / Payslip | **COMPLETE** overlay on P9 | Review, exceptions, two-step approval, finalize+snapshot, lock after finalize, numbered PDF payslips, adjustments. Statutory payslip sections reserved at 0. |
 
 ---
 
@@ -60,9 +62,9 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Settings.
+Enabled nav: Dashboard, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Compliance, Settings.
 
-Disabled nav (no pages): `/attendance` (P4), `/payroll` (P9), `/reports` (P10), `/compliance` (P9).
+Disabled nav (no pages): `/attendance` (P4). Global reports hub remains later; payroll has in-module CSV.
 
 ### Auth / foundation
 
@@ -106,15 +108,26 @@ Disabled nav (no pages): `/attendance` (P4), `/payroll` (P9), `/reports` (P10), 
 - `/loans`, `/loans/types`, `/loans/applications`, `/loans/applications/new`, `/loans/applications/[id]`, `/loans/active`, `/loans/accounts/[id]`, `/loans/repayments`, `/loans/history`, `/loans/settings`
 - CSV: `/api/loans/reports/{register,active,outstanding,schedule,repayments,advances,overdue,statement}`
 
+### Payroll (P9 + P10 overlay)
+
+- `/payroll`, `/payroll/runs`, `/payroll/runs/[id]`, `/payroll/review`, `/payroll/review/[runId]/[employeeId]`, `/payroll/exceptions`, `/payroll/employees`, `/payroll/payslips`, `/payroll/payslips/[id]`, `/payroll/reports`, `/payroll/settings`
+- CSV: `/api/payroll/reports/{register,sheet,employee,earnings,deductions,approval,bank,payslips}`
+- PDF: `/api/payroll/payslips/[id]/pdf`
+
+### Compliance (P9)
+
+- `/compliance`, `/compliance/pf`, `/compliance/esi`, `/compliance/pt`, `/compliance/tds`
+- CSV: `/api/compliance/reports/{pf,esi,pt,tds}`
+
 ### Employee profile tabs
 
-Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, loans, payroll (later P9 copy).
+Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, loans, payroll.
 
 ---
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -132,7 +145,11 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 **P8:** `loan_types`, `loan_policies`, `loan_applications`, `loan_accounts`, `loan_schedule`, `loan_repayments`, `loan_adjustments`, `loan_approvals`, `loan_ledger`
 
-**Not present:** shifts, attendance rules, overtime, LOP calc, payroll runs, payslips, statutory PF/ESI/TDS tables.
+**P9:** `statutory_rules`, `payroll_runs`, `payroll_items`, `payroll_lines`, `payslips`, `compliance_filings`
+
+**P10:** `payroll_exceptions`, `payroll_approval_history`, `payroll_snapshots`, `payroll_finalization_logs`, `payroll_adjustments`, `payslip_line_items`, `payslip_sequences` + storage bucket `payslips`
+
+**Not present:** shifts, attendance rules, overtime, LOP calc from punches.
 
 `login_attempts` and `username_lookup` are service-role only. Biometric raw insert from the client is denied; ingest uses admin/demo store.
 
@@ -152,9 +169,10 @@ Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salar
 | Salary | `lib/salary/{formula,engine,service,repository,query,csv}.ts` |
 | Benefits/Claims | `lib/claims/{engine,service,repository,query,csv}.ts`, `lib/validations/benefits.ts` |
 | Loans | `lib/loans/{engine,service,repository,query,csv}.ts`, `lib/validations/loans.ts` |
+| Payroll | `lib/payroll/{engine,service,repository,query,csv,workflow,exceptions,numbering,pdf}.ts`, `lib/validations/payroll.ts` |
 | Proxy | `proxy.ts` — public prefixes for login/reset and biometric ingest |
 
-Future payroll contracts already exist: `getEmployeeSalaryForDate(organizationId, employeeId, date)` in `lib/salary/service.ts`; `getApprovedPayrollClaimLines(organizationId, period)` in `lib/claims/service.ts`; `getEmployeeLoanDeductions(organizationId, employeeId, payrollPeriod)` in `lib/loans/service.ts`.
+Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getApprovedPayrollClaimLines` (`lib/claims/service.ts`); `getEmployeeLoanDeductions` / `recordLoanRepayment` (`lib/loans/service.ts`); leave-written `attendance_days`.
 
 ---
 
@@ -194,7 +212,7 @@ Configurable components/structures. Methods: FIXED, PERCENTAGE, FORMULA, MANUAL,
 
 - Overlapping ACTIVE assignments blocked.
 - Revision approval closes previous period the day before `effective_from` and writes `salary_history`.
-- Variable earnings and reimbursements stored, not processed into a payroll run.
+- Variable earnings and reimbursements stored; payroll includes APPROVED rows overlapping the period.
 - Permissions: `salary.view`, `salary.manage`, `salary.component.manage`, `salary.structure.manage`, `salary.revision.create`, `salary.revision.approve`, `salary.history.view`. HR all; PAYROLL view/manage/revision.create/history; ACCOUNTANT view/history; EMPLOYEE none.
 
 Demo seed: BASIC 40% CTC, HRA `BASIC * 0.40`, DA 10% Basic, TA ₹1600, SPECIAL residual. Asha closed then active increment; Meera active Staff CTC; Rahul pending NEW_JOINER.
@@ -211,7 +229,7 @@ Permissions: `benefits.view|manage|assign`; `claims.view|create|edit|approve|man
 
 Demo seed: four benefit types, three assignments, four claim types/policies, approved fuel claim, pending outstation claim, draft medical claim.
 
-`getApprovedPayrollClaimLines` returns APPROVED + `include_in_payroll` lines. Does not mark PAID or write payroll.
+`getApprovedPayrollClaimLines` returns APPROVED + `include_in_payroll` lines. Payroll process marks `INCLUDED_IN_PAYROLL`; mark-paid sets `PAID`.
 
 ---
 
@@ -225,7 +243,21 @@ Permissions: `loans.view|create|edit|approve|disburse|repayment.manage|adjust|ex
 
 Demo seed: Asha ₹20k salary advance (4×₹5k, 1 paid); Meera pending reducing loan; Rahul festival draft.
 
-`getEmployeeLoanDeductions(orgId, employeeId, payrollPeriod)` returns EMI due for ACTIVE auto-deduct accounts. Does not write payroll tables.
+`getEmployeeLoanDeductions(orgId, employeeId, payrollPeriod)` returns EMI due for ACTIVE auto-deduct accounts. Payroll process posts repayments with `source: "PAYROLL"`.
+
+---
+
+## Payroll
+
+Monthly run overlay: DRAFT → CALCULATED → UNDER_REVIEW → APPROVAL_PENDING → APPROVED → FINALIZED → LOCKED → PROCESSED → PAID (CANCELLED added). Recalculate only DRAFT/CALCULATED. ERROR exceptions block review/approval; WARNING must be acknowledged. Finalize writes an immutable snapshot. Unlock is blocked after finalize. Process posts loan EMI and marks claims; generates numbered PDFs if none exist.
+
+Payslip numbers are `PREFIX/FY/MON/000001`. Statutory PF/ESI/PT/TDS/LWF sections are reserved at 0 on payslips (Phase 11). Adjustments require a reason; processed/paid cannot be adjusted in place.
+
+Statutory from `statutory_rules` still calculated in the P9 engine. Attendance: leave-written days; unmarked working days count as paid until Phase 4.
+
+Permissions: `payroll.view|process|lock|review|approve|reject|finalize|adjust|payslip.view|export|settings`, `payslip.generate|export`, `compliance.view|export`. HR review/approve/reject/export; PAYROLL process/lock/finalize/adjust/generate; ACCOUNTANT review/approve/reject/export; EMPLOYEE payslip.view (own).
+
+Demo seed: PF 12%/12% ceiling 15000, ESI 0.75%/3.25% max 21000, Karnataka PT slabs, TDS disabled. No pre-calculated run.
 
 ---
 
@@ -237,16 +269,17 @@ Demo seed: Asha ₹20k salary advance (4×₹5k, 1 paid); Meera pending reducing
 - Salary OT/late inputs stubbed; proration not finalized.
 - No `/attendance` route; hitting it 404s.
 - Tax treatment on benefits is stored as a placeholder only.
-- Approved claims are not paid or included in a payroll period from this UI.
-- Loan EMI payroll deduction is exposed as a contract only; this UI does not run payroll.
+- Unmarked working days count as paid in payroll until Phase 4 produces PRESENT/ABSENT.
+- TDS is an optional percentage rule, not a full slab engine.
+- Phase 11 statutory filing / PF-ESI-PT-TDS-LWF calculation on payslips is not started.
 
 ---
 
 ## Current Phase
 
-**Next: Phase 9 Payroll.**
+**Next: Phase 11 statutory/compliance filing, or Phase 4 Attendance.**
 
-Phase 8 loans are complete as master data and recovery. Do not start payroll until attendance days can be produced from punches + leave + holidays + weekly-off (Phase 4 remains a gap). Prefer Phase 4 Attendance before a full payroll run if day totals are required.
+Phase 10 review/finalize/payslip overlay is complete. Day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Prefer Phase 4 before relying on LOP/present accuracy. Do not start Phase 4 unless requested.
 
 ---
 
@@ -258,8 +291,9 @@ Phase 4 should consume, not rebuild:
 - `attendance_punches` and identity maps (P3)
 - `holidays`, leave-written `attendance_days`, leave request days (P5)
 - Salary already reads `attendance_days` via `loadAttendanceInputs` / formula tokens `WORKING_DAYS`, `PRESENT_DAYS`, `LOP_DAYS`
-- Phase 7 `getApprovedPayrollClaimLines` is ready for a later payroll run
-- Phase 8 `getEmployeeLoanDeductions` is ready for a later payroll run
+- Phase 7 `getApprovedPayrollClaimLines` is consumed by payroll
+- Phase 8 `getEmployeeLoanDeductions` is consumed by payroll
+- Phase 9 payroll reads `attendance_days` and treats unmarked working days as paid
 
 Phase 4 must fill PRESENT/ABSENT/WEEKLY_OFF/HOLIDAY (and later late/OT) without erasing leave marks or punch history.
 

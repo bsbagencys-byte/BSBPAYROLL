@@ -54,6 +54,18 @@ import type {
   LoanLedgerType,
   LoanPaymentMethod,
   LoanWorkflowMode,
+  PayrollRunStatus,
+  PayrollRunType,
+  PayrollItemStatus,
+  PayslipStatus,
+  PayrollLineKind,
+  StatutoryHead,
+  ComplianceFilingStatus,
+  PayrollExceptionCode,
+  PayrollExceptionSeverity,
+  PayrollExceptionStatus,
+  PayrollApprovalAction,
+  PayslipSection,
 } from "@/lib/constants";
 
 export type {
@@ -100,6 +112,18 @@ export type {
   LoanLedgerType,
   LoanPaymentMethod,
   LoanWorkflowMode,
+  PayrollRunStatus,
+  PayrollRunType,
+  PayrollItemStatus,
+  PayslipStatus,
+  PayrollLineKind,
+  StatutoryHead,
+  ComplianceFilingStatus,
+  PayrollExceptionCode,
+  PayrollExceptionSeverity,
+  PayrollExceptionStatus,
+  PayrollApprovalAction,
+  PayslipSection,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -1442,4 +1466,301 @@ export interface PayrollLoanDeduction {
   outstandingBalance: number;
   autoDeduct: boolean;
   payrollPeriod: string;
+}
+
+export interface StatutoryRule {
+  id: string;
+  organization_id: string;
+  head: StatutoryHead;
+  name: string;
+  employee_rate: number;
+  employer_rate: number;
+  wage_ceiling: number | null;
+  min_wage: number | null;
+  max_wage: number | null;
+  fixed_amount: number | null;
+  slab_json: string | null;
+  state_code: string | null;
+  effective_from: string;
+  effective_to: string | null;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollRun {
+  id: string;
+  organization_id: string;
+  period: string;
+  period_from: string;
+  period_to: string;
+  pay_date: string | null;
+  status: PayrollRunStatus;
+  run_type: PayrollRunType;
+  employee_count: number;
+  included_count: number;
+  hold_count: number;
+  error_count: number;
+  warning_count: number;
+  total_gross: number;
+  total_earnings: number;
+  total_deductions: number;
+  total_statutory: number;
+  total_reimbursements: number;
+  total_claims: number;
+  total_loans: number;
+  total_net: number;
+  employer_contributions: number;
+  notes: string | null;
+  snapshot_id: string | null;
+  calculated_at: string | null;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  finalized_at: string | null;
+  locked_at: string | null;
+  processed_at: string | null;
+  paid_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollItem {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  employee_id: string;
+  assignment_id: string | null;
+  structure_id: string | null;
+  status: PayrollItemStatus;
+  hold_reason: string | null;
+  error_message: string | null;
+  working_days: number;
+  present_days: number;
+  paid_days: number;
+  lop_days: number;
+  paid_leave_days: number;
+  ctc: number;
+  monthly_gross: number;
+  earnings: number;
+  variable_earnings: number;
+  reimbursements: number;
+  claims: number;
+  deductions: number;
+  loan_deductions: number;
+  pf_employee: number;
+  pf_employer: number;
+  esi_employee: number;
+  esi_employer: number;
+  pt_amount: number;
+  tds_amount: number;
+  statutory_total: number;
+  net_pay: number;
+  employer_cost: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollLine {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  item_id: string;
+  employee_id: string;
+  kind: PayrollLineKind;
+  code: string;
+  name: string;
+  amount: number;
+  taxable: boolean;
+  reference_id: string | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface Payslip {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  item_id: string;
+  employee_id: string;
+  period: string;
+  status: PayslipStatus;
+  payslip_number: string | null;
+  document_path: string | null;
+  snapshot_id: string | null;
+  generated_at: string | null;
+  generated_by: string | null;
+  regenerated_at: string | null;
+  issued_at: string | null;
+  voided_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollException {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  item_id: string | null;
+  employee_id: string | null;
+  code: PayrollExceptionCode;
+  severity: PayrollExceptionSeverity;
+  status: PayrollExceptionStatus;
+  message: string;
+  source_type: string | null;
+  source_id: string | null;
+  acknowledged_by: string | null;
+  acknowledged_at: string | null;
+  acknowledge_note: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollApprovalHistory {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  action: PayrollApprovalAction;
+  previous_status: PayrollRunStatus;
+  new_status: PayrollRunStatus;
+  actor_id: string | null;
+  actor_role: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface PayrollSnapshot {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  period: string;
+  payload_json: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface PayrollFinalizationLog {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  snapshot_id: string | null;
+  validation_json: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
+
+export interface PayrollAdjustment {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  item_id: string | null;
+  employee_id: string;
+  kind: "EARNING" | "DEDUCTION";
+  code: string;
+  name: string;
+  amount: number;
+  reason: string;
+  status: "DRAFT" | "POSTED" | "REVERSED";
+  posted_line_id: string | null;
+  created_by: string | null;
+  posted_at: string | null;
+  reversed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayslipLineItem {
+  id: string;
+  organization_id: string;
+  payslip_id: string;
+  kind: string;
+  code: string;
+  name: string;
+  amount: number;
+  section: PayslipSection | string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface PayslipSequence {
+  organization_id: string;
+  fiscal_year: string;
+  month_code: string;
+  last_value: number;
+  updated_at: string;
+}
+
+export interface ComplianceFiling {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  head: StatutoryHead;
+  period: string;
+  employee_count: number;
+  employee_amount: number;
+  employer_amount: number;
+  total_amount: number;
+  status: ComplianceFilingStatus;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollItemListItem {
+  item: PayrollItem;
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string | null;
+  branchName: string | null;
+}
+
+export interface PayslipView {
+  payslip: Payslip;
+  run: PayrollRun;
+  item: PayrollItem;
+  lines: PayrollLine[];
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string | null;
+  designationName: string | null;
+  branchName: string | null;
+  bankName: string | null;
+  accountNumber: string | null;
+  ifsc: string | null;
+  pan: string | null;
+  uan: string | null;
+  organizationName: string;
+}
+
+export interface PayrollAttendanceSummary {
+  workingDays: number;
+  presentDays: number;
+  paidLeaveDays: number;
+  unpaidLeaveDays: number;
+  holidayDays: number;
+  weeklyOffDays: number;
+  paidDays: number;
+  lopDays: number;
+}
+
+export interface StatutoryBreakdown {
+  pfWage: number;
+  pfEmployee: number;
+  pfEmployer: number;
+  esiWage: number;
+  esiEmployee: number;
+  esiEmployer: number;
+  ptAmount: number;
+  tdsAmount: number;
+  employeeTotal: number;
+  employerTotal: number;
 }

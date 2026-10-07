@@ -4,6 +4,88 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 10 — Review, approval, finalization and payslip foundation
+
+- **Date:** 2026-10-06
+- **Status:** implemented in working tree (not yet committed)
+
+### Implemented
+
+- Overlay on Phase 9 run: DRAFT → CALCULATED → UNDER_REVIEW → APPROVAL_PENDING → APPROVED → FINALIZED → LOCKED → PROCESSED → PAID, plus CANCELLED.
+- Exception scan after calculate. ERROR blocks review/approval. WARNING must be acknowledged and audited.
+- Two-step approve. Reject/return-to-draft require a reason. Finalize writes snapshot + finalization log.
+- Recalculate only DRAFT/CALCULATED. Finalized cannot unlock. Processed/paid cannot be adjusted in place.
+- Payslip numbers `PREFIX/FY/MON/000001`. Server-side PDF in private `payslips` bucket. Statutory sections reserved at 0.
+- Adjustments as earning/deduction lines with required reason.
+
+### Database
+
+- Additive `supabase/phase10.sql`, appended into `combined.sql`.
+- Tables: `payroll_exceptions`, `payroll_approval_history`, `payroll_snapshots`, `payroll_finalization_logs`, `payroll_adjustments`, `payslip_line_items`, `payslip_sequences`.
+- Permissions: `payroll.review|approve|reject|finalize|adjust`, `payslip.generate|export`.
+- Private storage bucket `payslips`. RLS enabled.
+
+### API
+
+- Server actions: submit/approve/reject/return/finalize/cancel, acknowledge/resolve exception, adjustment, generate payslips.
+- CSV: `/api/payroll/reports/{register,sheet,employee,earnings,deductions,approval,bank,payslips}`.
+- PDF: `/api/payroll/payslips/[id]/pdf`.
+
+### UI
+
+- `/payroll/review`, `/payroll/review/[runId]/[employeeId]`, `/payroll/exceptions`.
+- Run detail workflow buttons and approval history.
+- Payslip number, reserved statutory sections, PDF download.
+
+### Limitations
+
+- Phase 4 attendance calculation is not started.
+- Phase 11 statutory filing is not started; payslip PF/ESI/PT/TDS/LWF remain reserved.
+
+---
+
+## Phase 9 — Payroll & Compliance
+
+- **Date:** 2026-10-05
+- **Status:** implemented in working tree (not yet committed)
+
+### Implemented
+
+- Monthly payroll run: DRAFT → CALCULATED → LOCKED → PROCESSED → PAID. One run per YYYY-MM.
+- Recalculate until lock; hold/include employees; process issues payslips; mark paid.
+- Statutory PF (BASIC+DA, ceiling), ESI wage-band, PT slabs, optional TDS %.
+- Consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, `getApprovedPayrollClaimLines`, `getEmployeeLoanDeductions`.
+- Process posts loan EMI via `recordLoanRepayment` (`source: "PAYROLL"`) and marks claims `INCLUDED_IN_PAYROLL`; mark-paid sets claims `PAID`.
+- Unmarked working days count as paid until Phase 4 attendance calculation.
+- Demo seed: PF, ESI, Karnataka PT, disabled TDS. No pre-calculated run.
+
+### Database
+
+- Additive `supabase/phase9.sql`, appended into `combined.sql`.
+- Tables: `statutory_rules`, `payroll_runs`, `payroll_items`, `payroll_lines`, `payslips`, `compliance_filings`.
+- Permissions: `payroll.view`, `payroll.process`, `payroll.lock`, `payroll.payslip.view`, `payroll.export`, `payroll.settings`, `compliance.view`, `compliance.export`.
+- RLS enabled.
+
+### API
+
+- Server actions in `actions/payroll.ts`.
+- CSV: `/api/payroll/reports/{register,sheet,bank,payslips}`, `/api/compliance/reports/{pf,esi,pt,tds}`.
+
+### UI
+
+- `/payroll` and sub-routes: runs, runs/[id], employees, payslips, payslips/[id], reports, settings.
+- `/compliance` and PF/ESI/PT/TDS pages.
+- Nav items Payroll (`Wallet`) and Compliance (`ShieldCheck`).
+- Employee profile Payroll tab and dashboard shortcuts.
+
+### Limitations
+
+- Phase 4 attendance calculation is not started; LOP/present from punches is not available.
+- TDS is an optional percentage, not a full slab engine.
+- Global reports hub remains Phase 10.
+
+---
+
 ## Phase 8 — Loans & Advances
 
 - **Date:** 2026-10-03
@@ -261,6 +343,4 @@ Scaffold / empty project start.
 | Phase | Status |
 |---|---|
 | 4 Attendance calculation | Not started — no SQL, pages, or engine |
-| 7 Payroll processing | Nav disabled |
-| 9 Compliance | Nav disabled |
-| 10 Global reports | Nav disabled; leave/salary have in-module CSV |
+| 11 Statutory filing | Payslip PF/ESI/PT/TDS/LWF reserved at 0 |

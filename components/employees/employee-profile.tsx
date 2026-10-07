@@ -7,6 +7,7 @@ import { EmployeeSalaryPanel } from "@/components/salary/employee-salary";
 import { EmployeeBenefitsPanel } from "@/components/benefits/employee-benefits";
 import { EmployeeClaimsPanel } from "@/components/claims/employee-claims";
 import { EmployeeLoansPanel } from "@/components/loans/employee-loans";
+import { EmployeePayrollPanel } from "@/components/payroll/employee-payroll";
 import { EmployeeDocuments } from "@/components/employees/employee-documents";
 import { EmployeeForm } from "@/components/employees/employee-form";
 import { EmployeeHistoryList } from "@/components/employees/employee-history";
@@ -35,6 +36,9 @@ import type {
   LoanAccountListItem,
   LoanListItem,
   LoanRepayment,
+  PayrollItem,
+  PayrollRun,
+  Payslip,
   SalaryHistory,
   SalaryRevision,
 } from "@/types";
@@ -84,6 +88,8 @@ export function EmployeeProfile({
   loanApplications,
   loanRepayments,
   canViewLoans,
+  payrollRows,
+  canViewPayroll,
 }: {
   record: EmployeeRecord;
   values: Partial<EmployeeFormValues>;
@@ -116,6 +122,8 @@ export function EmployeeProfile({
   loanApplications?: LoanListItem[];
   loanRepayments?: LoanRepayment[];
   canViewLoans?: boolean;
+  payrollRows?: Array<{ payslip: Payslip; run: PayrollRun; item: PayrollItem }>;
+  canViewPayroll?: boolean;
 }) {
   const [tab, setTab] = useState<TabId>("overview");
   const { employee, address, employment, statutory, bank } = record;
@@ -242,7 +250,15 @@ export function EmployeeProfile({
           </Card>
         )
       ) : null}
-      {tab === "payroll" ? <LaterPhase title="Payroll" phase={9} /> : null}
+      {tab === "payroll" ? (
+        canViewPayroll ? (
+          <EmployeePayrollPanel rows={payrollRows ?? []} />
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-sm text-slate-600">You do not have permission to view payroll.</CardContent>
+          </Card>
+        )
+      ) : null}
 
       {tab === "overview" ? (
         <Card>

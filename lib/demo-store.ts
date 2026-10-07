@@ -58,9 +58,22 @@ import type {
   VariableEarning,
   Organization,
   OrganizationUser,
+  PayrollAdjustment,
+  PayrollApprovalHistory,
+  PayrollException,
+  PayrollFinalizationLog,
+  PayrollItem,
+  PayrollLine,
+  PayrollRun,
+  PayrollSnapshot,
+  Payslip,
+  PayslipLineItem,
+  PayslipSequence,
   Role,
   SessionUser,
+  StatutoryRule,
   UserProfile,
+  ComplianceFiling,
 } from "@/types";
 import {
   DEFAULT_EMPLOYMENT_TYPES,
@@ -300,6 +313,19 @@ export type DemoStore = {
   loanAdjustments: LoanAdjustment[];
   loanApprovals: LoanApproval[];
   loanLedger: LoanLedgerEntry[];
+  statutoryRules: StatutoryRule[];
+  payrollRuns: PayrollRun[];
+  payrollItems: PayrollItem[];
+  payrollLines: PayrollLine[];
+  payslips: Payslip[];
+  complianceFilings: ComplianceFiling[];
+  payrollExceptions: PayrollException[];
+  payrollApprovalHistory: PayrollApprovalHistory[];
+  payrollSnapshots: PayrollSnapshot[];
+  payrollFinalizationLogs: PayrollFinalizationLog[];
+  payrollAdjustments: PayrollAdjustment[];
+  payslipLineItems: PayslipLineItem[];
+  payslipSequences: PayslipSequence[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -732,6 +758,7 @@ function createStore(): DemoStore {
     ...createSalarySeed(),
     ...createBenefitsSeed(),
     ...createLoansSeed(),
+    ...createPayrollSeed(),
   };
 }
 
@@ -2080,6 +2107,81 @@ function createLoansSeed(): Pick<
   };
 }
 
+function createPayrollSeed(): Pick<
+  DemoStore,
+  | "statutoryRules"
+  | "payrollRuns"
+  | "payrollItems"
+  | "payrollLines"
+  | "payslips"
+  | "complianceFilings"
+  | "payrollExceptions"
+  | "payrollApprovalHistory"
+  | "payrollSnapshots"
+  | "payrollFinalizationLogs"
+  | "payrollAdjustments"
+  | "payslipLineItems"
+  | "payslipSequences"
+  > {
+  const created = nowIso();
+  const year = new Date().getFullYear();
+  const rule = (
+    id: string,
+    head: StatutoryRule["head"],
+    name: string,
+    extras: Partial<StatutoryRule> = {}
+  ): StatutoryRule => ({
+    id,
+    organization_id: ORG_ID,
+    head,
+    name,
+    employee_rate: 0,
+    employer_rate: 0,
+    wage_ceiling: null,
+    min_wage: null,
+    max_wage: null,
+    fixed_amount: null,
+    slab_json: null,
+    state_code: null,
+    effective_from: `${year}-01-01`,
+    effective_to: null,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+    ...extras,
+  });
+
+  return {
+    statutoryRules: [
+      rule("sr-pf", "PF", "EPF", { employee_rate: 12, employer_rate: 12, wage_ceiling: 15000 }),
+      rule("sr-esi", "ESI", "ESI", { employee_rate: 0.75, employer_rate: 3.25, min_wage: 0, max_wage: 21000 }),
+      rule("sr-pt", "PT", "Karnataka PT", {
+        state_code: "KA",
+        slab_json: JSON.stringify([
+          { from: 0, to: 15000, amount: 0 },
+          { from: 15001, to: 20000, amount: 200 },
+          { from: 20001, to: null, amount: 300 },
+        ]),
+      }),
+      rule("sr-tds", "TDS", "TDS optional", { employee_rate: 0, employer_rate: 0, status: "DISABLED" }),
+    ],
+    payrollRuns: [],
+    payrollItems: [],
+    payrollLines: [],
+    payslips: [],
+    complianceFilings: [],
+    payrollExceptions: [],
+    payrollApprovalHistory: [],
+    payrollSnapshots: [],
+    payrollFinalizationLogs: [],
+    payrollAdjustments: [],
+    payslipLineItems: [],
+    payslipSequences: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -2088,7 +2190,9 @@ export function getDemoStore(): DemoStore {
     !("leaveTypes" in globalStore.__bsbDemo) ||
     !("salaryComponents" in globalStore.__bsbDemo) ||
     !("benefitTypes" in globalStore.__bsbDemo) ||
-    !("loanTypes" in globalStore.__bsbDemo)
+    !("loanTypes" in globalStore.__bsbDemo) ||
+    !("statutoryRules" in globalStore.__bsbDemo) ||
+    !("payrollExceptions" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

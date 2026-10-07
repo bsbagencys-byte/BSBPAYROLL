@@ -1,8 +1,8 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, and Phase 8 loans and advances. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, and Phase 10 review, approval, finalization and payslip foundation. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
-This app does **not** implement payroll runs, statutory PF/ESI/TDS/PT, payslips, full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest.
+This app does **not** implement full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest. Payroll treats unmarked working days as paid until Phase 4.
 
 ## Stack
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql` and `supabase/phase8.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql` and `supabase/phase10.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -160,8 +160,36 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `GET /api/loans/reports/advances`
 - `GET /api/loans/reports/overdue`
 - `GET /api/loans/reports/statement`
+- `/payroll`
+- `/payroll/runs`
+- `/payroll/runs/[id]`
+- `/payroll/review`
+- `/payroll/exceptions`
+- `/payroll/employees`
+- `/payroll/payslips`
+- `/payroll/payslips/[id]`
+- `/payroll/reports`
+- `/payroll/settings`
+- `GET /api/payroll/reports/register`
+- `GET /api/payroll/reports/sheet`
+- `GET /api/payroll/reports/employee`
+- `GET /api/payroll/reports/earnings`
+- `GET /api/payroll/reports/deductions`
+- `GET /api/payroll/reports/approval`
+- `GET /api/payroll/reports/bank`
+- `GET /api/payroll/reports/payslips`
+- `GET /api/payroll/payslips/[id]/pdf`
+- `/compliance`
+- `/compliance/pf`
+- `/compliance/esi`
+- `/compliance/pt`
+- `/compliance/tds`
+- `GET /api/compliance/reports/pf`
+- `GET /api/compliance/reports/esi`
+- `GET /api/compliance/reports/pt`
+- `GET /api/compliance/reports/tds`
 
-Attendance calculation (Phase 4), payroll processing, compliance and full reports remain Coming Soon.
+Attendance calculation (Phase 4) and statutory filing (Phase 11) remain Coming Soon.
 
 ## Leave
 
@@ -178,7 +206,7 @@ Attendance calculation (Phase 4), payroll processing, compliance and full report
 - Calculation methods: FIXED, PERCENTAGE, FORMULA, MANUAL, RESIDUAL. Formulas use a controlled parser (`BASIC * 0.40`), never `eval`.
 - `getEmployeeSalaryForDate(employeeId, date)` returns the assignment covering that date. Overlapping ACTIVE periods are blocked.
 - Revisions close the previous period the day before the new effective date and write `salary_history`. Previous CTC is never overwritten.
-- Variable earnings and reimbursements are stored for later payroll. PF/ESI/TDS and the monthly payroll run are not calculated here.
+- Variable earnings and reimbursements are stored and included when a payroll run is calculated.
 - Attendance and leave are read-only inputs (working days, present, LOP). Salary never writes those tables.
 
 ## Benefits and claims
@@ -188,7 +216,7 @@ Attendance calculation (Phase 4), payroll processing, compliance and full report
 - Claim types, travel policies, draft/submit/approve (single-step or manager then finance).
 - Policy engine checks eligibility, limits, duplicates, receipts and travel fields. FAIL blocks submit; the draft and checks are saved.
 - TA/DA is distance x rate plus days x DA.
-- `getApprovedPayrollClaimLines(organizationId, period)` is the payroll contract. This module does not run payroll.
+- `getApprovedPayrollClaimLines(organizationId, period)` is consumed by payroll. Process marks claims included; mark-paid sets paid.
 - Receipts upload to private `claim-receipts` in live mode. Demo stores metadata only.
 
 ## Loans
@@ -198,17 +226,24 @@ Attendance calculation (Phase 4), payroll processing, compliance and full report
 - Workflow: draft, submit, optional manager-then-finance approval, disburse. Disbursement creates the account, schedule and ledger.
 - Salary advance uses a full recovery schedule, not a single balance field.
 - Ledger is append-only (disbursement, principal/interest/manual repayment, payroll deduction reference, adjustment, waiver, reversal).
-- `getEmployeeLoanDeductions(organizationId, employeeId, payrollPeriod)` is the payroll contract. This module does not run payroll.
+- `getEmployeeLoanDeductions(organizationId, employeeId, payrollPeriod)` is consumed by payroll. Process posts EMI as a payroll repayment.
 
 ## Security
 
 - RLS isolates every business table by `organization_id`
 - Passwords are never stored in plaintext
 - Login is rate-limited
-- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes, loan type/policy/application/disburse/repayment/adjustment changes
+- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes, loan type/policy/application/disburse/repayment/adjustment changes, payroll run create/calculate/lock/process/paid, statutory rule changes
 - Public biometric ingest is token-authenticated and rate-limited; device tokens are stored as hashes only
 - Service role keys must not be prefixed with `NEXT_PUBLIC_`
 
+## Payroll
+
+- One run per calendar month. Workflow: draft, calculate, lock, process, mark paid.
+- Net pay uses salary snapshot, approved variable/reimbursement, approved claims and loan EMI, minus PF/ESI/PT/TDS.
+- Unmarked working days count as paid until Phase 4 attendance calculation exists.
+- Payslips issue on process. Compliance filings (PF, ESI, PT, TDS) are generated from included employees.
+
 ## Later phases
 
-Attendance calculation, payroll processing, payslips, compliance, reports, employee self-service. New biometric vendors add an adapter, not a rewrite.
+Attendance calculation, global reports hub, employee self-service. New biometric vendors add an adapter, not a rewrite.

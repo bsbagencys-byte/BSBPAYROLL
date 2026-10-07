@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Banknote, Building2, Fingerprint, Gift, HandCoins, Palmtree, Receipt, Shield, UserRound, Users } from "lucide-react";
+import { Banknote, Building2, Fingerprint, Gift, HandCoins, Palmtree, Receipt, Shield, ShieldCheck, UserRound, Users, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Company, users, employees, biometric ingest, leave, salary, benefits, claims and loans. Attendance calculation and payroll runs are not enabled yet."
+        description="Company, users, employees, biometric ingest, leave, salary, benefits, claims, loans, payroll and compliance. Attendance calculation is not enabled yet."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -186,6 +186,16 @@ export default async function DashboardPage() {
             <p className="mt-2 font-medium">Loans</p>
             <p className="text-xs text-slate-500">Advances, EMI schedules and repayments</p>
           </Link>
+          <Link href="/payroll" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
+            <Wallet className="h-5 w-5 text-brand-700" />
+            <p className="mt-2 font-medium">Payroll</p>
+            <p className="text-xs text-slate-500">Monthly run, statutory and payslips</p>
+          </Link>
+          <Link href="/compliance" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
+            <ShieldCheck className="h-5 w-5 text-brand-700" />
+            <p className="mt-2 font-medium">Compliance</p>
+            <p className="text-xs text-slate-500">PF, ESI, PT and TDS filings</p>
+          </Link>
           <Link href="/profile" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
             <UserRound className="h-5 w-5 text-brand-700" />
             <p className="mt-2 font-medium">Profile</p>
@@ -196,7 +206,7 @@ export default async function DashboardPage() {
 
       <p className="mt-6 flex items-center gap-2 text-xs text-slate-500">
         <Shield className="h-3.5 w-3.5" />
-        No payroll run or attendance totals are shown. Leave marks attendance days; salary stores CTC; benefits, claims and loans are master data; biometric ingest captures punches only.
+        Attendance calculation is not shown. Leave marks attendance days; unmarked working days count as paid in payroll until Phase 4. Salary, claims and loans feed the monthly run.
       </p>
     </div>
   );

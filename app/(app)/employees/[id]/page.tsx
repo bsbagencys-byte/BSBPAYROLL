@@ -12,6 +12,7 @@ import { listBenefitTypes, listEmployeeBenefits } from "@/lib/claims/repository"
 import { loadClaimListItems } from "@/lib/claims/query";
 import { loadAccountListItems, loadLoanListItems } from "@/lib/loans/query";
 import { listLoanRepayments } from "@/lib/loans/repository";
+import { loadPayslipViews } from "@/lib/payroll/query";
 
 export const metadata = { title: "Employee profile" };
 
@@ -26,7 +27,9 @@ export default async function EmployeeProfilePage({
   const canViewBenefits = hasPermission(user, "benefits.view");
   const canViewClaims = hasPermission(user, "claims.view");
   const canViewLoans = hasPermission(user, "loans.view");
-  const [record, catalog, leave, salary, benefitAssignments, benefitTypes, claims, loanAccounts, loanApplications, loanRepayments] = await Promise.all([
+  const canViewAllPayroll = hasPermission(user, "payroll.view");
+  const canViewOwnPayslip = hasPermission(user, "payroll.payslip.view");
+  const [record, catalog, leave, salary, benefitAssignments, benefitTypes, claims, loanAccounts, loanApplications, loanRepayments, payrollRows] = await Promise.all([
     getEmployeeRecord(user.organization.id, id),
     loadOrgCatalog(user.organization.id),
     loadEmployeeLeave(user.organization.id, id, user.organization.timezone),
@@ -37,14 +40,16 @@ export default async function EmployeeProfilePage({
     canViewLoans ? loadAccountListItems(user.organization.id, user.organization.timezone) : Promise.resolve([]),
     canViewLoans ? loadLoanListItems(user.organization.id) : Promise.resolve([]),
     canViewLoans ? listLoanRepayments(user.organization.id) : Promise.resolve([]),
+    canViewAllPayroll || canViewOwnPayslip ? loadPayslipViews(user.organization.id, id) : Promise.resolve([]),
   ]);
   if (!record) notFound();
+  const canViewPayroll = canViewAllPayroll || (canViewOwnPayslip && record.employee.user_id === user.id);
   const employeeLoanAccounts = loanAccounts.filter((item) => item.account.employee_id === id);
   const employeeLoanAccountIds = new Set(employeeLoanAccounts.map((item) => item.account.id));
 
   return (
     <div>
-      <PageHeader title="Employee profile" description="Master data, documents, leave, salary, benefits, claims and loans. Attendance calculation and payroll runs stay in later phases." />
+      <PageHeader title="Employee profile" description="Master data, documents, leave, salary, benefits, claims, loans and payroll. Attendance calculation stays in a later phase." />
       <EmployeeProfile
         record={record}
         values={recordToFormValues(record)}
@@ -70,6 +75,8 @@ export default async function EmployeeProfilePage({
         loanApplications={loanApplications.filter((item) => item.application.employee_id === id)}
         loanRepayments={loanRepayments.filter((item) => employeeLoanAccountIds.has(item.account_id))}
         canViewLoans={canViewLoans}
+        payrollRows={canViewPayroll ? payrollRows : []}
+        canViewPayroll={canViewPayroll}
       />
     </div>
   );

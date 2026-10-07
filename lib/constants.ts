@@ -47,6 +47,19 @@ export const PERMISSIONS = [
   { code: "attendance.view", group: "Attendance", label: "View attendance" },
   { code: "payroll.view", group: "Payroll", label: "View payroll" },
   { code: "payroll.process", group: "Payroll", label: "Process payroll" },
+  { code: "payroll.lock", group: "Payroll", label: "Lock and unlock payroll" },
+  { code: "payroll.review", group: "Payroll", label: "Review payroll" },
+  { code: "payroll.approve", group: "Payroll", label: "Approve payroll" },
+  { code: "payroll.reject", group: "Payroll", label: "Reject payroll" },
+  { code: "payroll.finalize", group: "Payroll", label: "Finalize payroll" },
+  { code: "payroll.adjust", group: "Payroll", label: "Create payroll adjustments" },
+  { code: "payroll.payslip.view", group: "Payroll", label: "View payslips" },
+  { code: "payroll.export", group: "Payroll", label: "Export payroll" },
+  { code: "payroll.settings", group: "Payroll", label: "Manage payroll settings" },
+  { code: "payslip.generate", group: "Payroll", label: "Generate payslips" },
+  { code: "payslip.export", group: "Payroll", label: "Export payslips" },
+  { code: "compliance.view", group: "Compliance", label: "View compliance" },
+  { code: "compliance.export", group: "Compliance", label: "Export compliance" },
   { code: "settings.manage", group: "Settings", label: "Manage settings" },
   { code: "biometric.view", group: "Biometric", label: "View biometric devices and punches" },
   { code: "biometric.manage", group: "Biometric", label: "Manage biometric devices" },
@@ -106,6 +119,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "organization.department.manage",
     "organization.designation.manage",
     "attendance.view",
+    "payroll.view",
+    "payroll.review",
+    "payroll.approve",
+    "payroll.reject",
+    "payroll.payslip.view",
+    "payroll.export",
+    "payslip.export",
+    "compliance.view",
+    "compliance.export",
     "settings.manage",
     "biometric.view",
     "biometric.manage",
@@ -151,6 +173,19 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "attendance.view",
     "payroll.view",
     "payroll.process",
+    "payroll.lock",
+    "payroll.review",
+    "payroll.approve",
+    "payroll.reject",
+    "payroll.finalize",
+    "payroll.adjust",
+    "payroll.payslip.view",
+    "payroll.export",
+    "payroll.settings",
+    "payslip.generate",
+    "payslip.export",
+    "compliance.view",
+    "compliance.export",
     "biometric.view",
     "leave.view",
     "salary.view",
@@ -170,6 +205,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "organization.view",
     "employee.view",
     "payroll.view",
+    "payroll.review",
+    "payroll.approve",
+    "payroll.reject",
+    "payroll.payslip.view",
+    "payroll.export",
+    "payslip.export",
+    "compliance.view",
+    "compliance.export",
     "leave.view",
     "salary.view",
     "salary.history.view",
@@ -210,6 +253,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "claims.create",
     "loans.view",
     "loans.create",
+    "payroll.payslip.view",
   ],
 };
 
@@ -223,9 +267,9 @@ export const NAV_ITEMS = [
   { href: "/claims", label: "Claims", icon: "Receipt", enabled: true, phase: 7 },
   { href: "/loans", label: "Loans", icon: "HandCoins", enabled: true, phase: 8 },
   { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: true, phase: 3 },
-  { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: false, phase: 9 },
-  { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 10 },
-  { href: "/compliance", label: "Compliance", icon: "ShieldCheck", enabled: false, phase: 9 },
+  { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: true, phase: 9 },
+  { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 11 },
+  { href: "/compliance", label: "Compliance", icon: "ShieldCheck", enabled: true, phase: 9 },
   { href: "/settings/company", label: "Settings", icon: "Settings", enabled: true },
 ] as const;
 
@@ -1008,4 +1052,195 @@ export const LOANS_NAV = [
   { href: "/loans/repayments", label: "Repayments" },
   { href: "/loans/history", label: "History" },
   { href: "/loans/settings", label: "Settings" },
+] as const;
+
+export const PAYROLL_RUN_STATUSES = [
+  "DRAFT",
+  "CALCULATED",
+  "UNDER_REVIEW",
+  "APPROVAL_PENDING",
+  "APPROVED",
+  "FINALIZED",
+  "LOCKED",
+  "PROCESSED",
+  "PAID",
+  "CANCELLED",
+] as const;
+export type PayrollRunStatus = (typeof PAYROLL_RUN_STATUSES)[number];
+
+export const PAYROLL_RUN_STATUS_LABELS: Record<PayrollRunStatus, string> = {
+  DRAFT: "Draft",
+  CALCULATED: "Calculated",
+  UNDER_REVIEW: "Under review",
+  APPROVAL_PENDING: "Approval pending",
+  APPROVED: "Approved",
+  FINALIZED: "Finalized",
+  LOCKED: "Locked",
+  PROCESSED: "Processed",
+  PAID: "Paid",
+  CANCELLED: "Cancelled",
+};
+
+export const PAYROLL_RUN_TYPES = ["MONTHLY", "ADJUSTMENT", "OFF_CYCLE"] as const;
+export type PayrollRunType = (typeof PAYROLL_RUN_TYPES)[number];
+
+export const PAYROLL_RUN_TYPE_LABELS: Record<PayrollRunType, string> = {
+  MONTHLY: "Monthly",
+  ADJUSTMENT: "Adjustment",
+  OFF_CYCLE: "Off-cycle",
+};
+
+export const PAYROLL_ITEM_STATUSES = ["INCLUDED", "ON_HOLD", "EXCLUDED", "ERROR"] as const;
+export type PayrollItemStatus = (typeof PAYROLL_ITEM_STATUSES)[number];
+
+export const PAYROLL_ITEM_STATUS_LABELS: Record<PayrollItemStatus, string> = {
+  INCLUDED: "Included",
+  ON_HOLD: "On hold",
+  EXCLUDED: "Excluded",
+  ERROR: "Error",
+};
+
+export const PAYSLIP_STATUSES = ["DRAFT", "ISSUED", "VOID"] as const;
+export type PayslipStatus = (typeof PAYSLIP_STATUSES)[number];
+
+export const PAYSLIP_STATUS_LABELS: Record<PayslipStatus, string> = {
+  DRAFT: "Draft",
+  ISSUED: "Issued",
+  VOID: "Void",
+};
+
+export const PAYROLL_LINE_KINDS = [
+  "EARNING",
+  "DEDUCTION",
+  "REIMBURSEMENT",
+  "CLAIM",
+  "LOAN",
+  "STATUTORY",
+  "EMPLOYER",
+  "ADJUSTMENT",
+] as const;
+export type PayrollLineKind = (typeof PAYROLL_LINE_KINDS)[number];
+
+export const PAYROLL_LINE_KIND_LABELS: Record<PayrollLineKind, string> = {
+  EARNING: "Earning",
+  DEDUCTION: "Deduction",
+  REIMBURSEMENT: "Reimbursement",
+  CLAIM: "Claim",
+  LOAN: "Loan",
+  STATUTORY: "Statutory",
+  EMPLOYER: "Employer contribution",
+  ADJUSTMENT: "Adjustment",
+};
+
+export const PAYROLL_EXCEPTION_CODES = [
+  "MISSING_SALARY_STRUCTURE",
+  "MISSING_ATTENDANCE",
+  "UNRESOLVED_ATTENDANCE_EXCEPTION",
+  "UNRESOLVED_LEAVE",
+  "INVALID_SALARY_PERIOD",
+  "DUPLICATE_SOURCE",
+  "LOAN_MISMATCH",
+  "NEGATIVE_RESULT",
+  "INVALID_EMPLOYEE_STATE",
+  "OTHER_CALCULATION_ERROR",
+] as const;
+export type PayrollExceptionCode = (typeof PAYROLL_EXCEPTION_CODES)[number];
+
+export const PAYROLL_EXCEPTION_CODE_LABELS: Record<PayrollExceptionCode, string> = {
+  MISSING_SALARY_STRUCTURE: "Missing salary structure",
+  MISSING_ATTENDANCE: "Missing attendance",
+  UNRESOLVED_ATTENDANCE_EXCEPTION: "Unresolved attendance exception",
+  UNRESOLVED_LEAVE: "Unresolved leave",
+  INVALID_SALARY_PERIOD: "Invalid salary period",
+  DUPLICATE_SOURCE: "Duplicate source",
+  LOAN_MISMATCH: "Loan mismatch",
+  NEGATIVE_RESULT: "Negative result",
+  INVALID_EMPLOYEE_STATE: "Invalid employee state",
+  OTHER_CALCULATION_ERROR: "Other calculation error",
+};
+
+export const PAYROLL_EXCEPTION_SEVERITIES = ["ERROR", "WARNING"] as const;
+export type PayrollExceptionSeverity = (typeof PAYROLL_EXCEPTION_SEVERITIES)[number];
+
+export const PAYROLL_EXCEPTION_STATUSES = ["OPEN", "ACKNOWLEDGED", "RESOLVED"] as const;
+export type PayrollExceptionStatus = (typeof PAYROLL_EXCEPTION_STATUSES)[number];
+
+export const PAYROLL_EXCEPTION_STATUS_LABELS: Record<PayrollExceptionStatus, string> = {
+  OPEN: "Open",
+  ACKNOWLEDGED: "Acknowledged",
+  RESOLVED: "Resolved",
+};
+
+export const PAYROLL_APPROVAL_ACTIONS = [
+  "SUBMIT_REVIEW",
+  "APPROVE",
+  "REJECT",
+  "RETURN_DRAFT",
+  "FINALIZE",
+  "LOCK",
+  "UNLOCK",
+  "CANCEL",
+  "PROCESS",
+  "PAID",
+] as const;
+export type PayrollApprovalAction = (typeof PAYROLL_APPROVAL_ACTIONS)[number];
+
+export const PAYROLL_APPROVAL_ACTION_LABELS: Record<PayrollApprovalAction, string> = {
+  SUBMIT_REVIEW: "Submitted for review",
+  APPROVE: "Approved",
+  REJECT: "Rejected",
+  RETURN_DRAFT: "Returned to draft",
+  FINALIZE: "Finalized",
+  LOCK: "Locked",
+  UNLOCK: "Unlocked",
+  CANCEL: "Cancelled",
+  PROCESS: "Processed",
+  PAID: "Marked paid",
+};
+
+export const PAYSLIP_SECTIONS = [
+  "EARNING",
+  "REIMBURSEMENT",
+  "DEDUCTION",
+  "STATUTORY_RESERVED",
+  "TOTAL",
+] as const;
+export type PayslipSection = (typeof PAYSLIP_SECTIONS)[number];
+
+export const STATUTORY_HEADS = ["PF", "ESI", "PT", "TDS"] as const;
+export type StatutoryHead = (typeof STATUTORY_HEADS)[number];
+
+export const STATUTORY_HEAD_LABELS: Record<StatutoryHead, string> = {
+  PF: "Provident Fund",
+  ESI: "ESI",
+  PT: "Professional Tax",
+  TDS: "TDS",
+};
+
+export const COMPLIANCE_FILING_STATUSES = ["DRAFT", "READY", "EXPORTED"] as const;
+export type ComplianceFilingStatus = (typeof COMPLIANCE_FILING_STATUSES)[number];
+
+export const COMPLIANCE_FILING_STATUS_LABELS: Record<ComplianceFilingStatus, string> = {
+  DRAFT: "Draft",
+  READY: "Ready",
+  EXPORTED: "Exported",
+};
+
+export const PAYROLL_NAV = [
+  { href: "/payroll", label: "Overview" },
+  { href: "/payroll/runs", label: "Runs" },
+  { href: "/payroll/review", label: "Review" },
+  { href: "/payroll/exceptions", label: "Exceptions" },
+  { href: "/payroll/employees", label: "Employees" },
+  { href: "/payroll/payslips", label: "Payslips" },
+  { href: "/payroll/reports", label: "Reports" },
+  { href: "/payroll/settings", label: "Settings" },
+] as const;
+
+export const COMPLIANCE_NAV = [
+  { href: "/compliance", label: "Overview" },
+  { href: "/compliance/pf", label: "PF" },
+  { href: "/compliance/esi", label: "ESI" },
+  { href: "/compliance/pt", label: "PT" },
+  { href: "/compliance/tds", label: "TDS" },
 ] as const;

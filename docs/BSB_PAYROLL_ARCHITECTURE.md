@@ -26,7 +26,7 @@ Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
 - **Public HTTP:** biometric ingest only (`/api/biometric/push`, `/api/biometric/webhook`).
-- **Authenticated HTTP:** CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*` and `/api/loans/reports/*`.
+- **Authenticated HTTP:** CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*` and `/api/compliance/reports/*`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
 - **Rate limit:** in-memory for login and biometric ingest.
@@ -37,13 +37,13 @@ No standalone API gateway or worker queue.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
 See `BSB_PAYROLL_PROJECT_STATE.md` for the table list. There is no Phase 4 schema file.
 
-Storage: private buckets `employee-documents` and `claim-receipts`.
+Storage: private buckets `employee-documents`, `claim-receipts` and `payslips`.
 
 ---
 
@@ -158,13 +158,13 @@ Implemented:
 - `getEmployeeSalaryForDate(orgId, employeeId, date)` — contract for payroll.
 - Variable earnings and reimbursements stored.
 
-Planned (Phase 9+): monthly payroll run, proration using real attendance, PF/ESI/TDS/PT, payslips, processing variable/reimbursement/approved claims into net pay.
+Payroll (Phase 9) consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, and prorates using leave-written attendance days (unmarked working days paid until Phase 4).
 
 Salary never writes attendance or leave tables.
 
 ---
 
-## Benefits and claims — IMPLEMENTED (master) / PLANNED (payroll)
+## Benefits and claims — IMPLEMENTED
 
 Implemented:
 
@@ -176,13 +176,13 @@ Implemented:
 - `getApprovedPayrollClaimLines(orgId, period)` — contract for payroll.
 - Receipts in `claim-receipts` (demo stores metadata only).
 
-Planned (Phase 9): include approved claims in a payroll run, mark `INCLUDED_IN_PAYROLL` / `PAID`, statutory tax on benefits.
+Payroll (Phase 9) includes approved claims, marks `INCLUDED_IN_PAYROLL` on process and `PAID` on mark-paid. Statutory tax on benefits is still a placeholder.
 
 Claims never write salary, attendance or leave tables.
 
 ---
 
-## Loans — IMPLEMENTED (master) / PLANNED (payroll)
+## Loans — IMPLEMENTED
 
 Implemented:
 
@@ -194,9 +194,23 @@ Implemented:
 - `quoteLoan` / `validateLoanApplication` in `lib/loans/engine.ts` — calculations are not in the UI.
 - `getEmployeeLoanDeductions(orgId, employeeId, payrollPeriod)` — contract for payroll.
 
-Planned (Phase 9): deduct EMI during a payroll run, write PAYROLL_DEDUCTION_REFERENCE ledger rows, mark installments payroll-paid.
+Payroll (Phase 9) deducts EMI via `getEmployeeLoanDeductions` and posts `recordLoanRepayment` (`source: "PAYROLL"`).
 
-Loans never write salary, attendance, leave or payroll tables.
+Loans never write salary, attendance or leave tables.
+
+---
+
+## Payroll and compliance — IMPLEMENTED
+
+- Monthly run workflow: DRAFT → CALCULATED → UNDER_REVIEW → APPROVAL_PENDING → APPROVED → FINALIZED → LOCKED → PROCESSED → PAID (CANCELLED).
+- Engine in `lib/payroll/engine.ts`: period bounds, attendance summary, proration, PF/ESI/PT/TDS.
+- Overlay in `lib/payroll/{workflow,exceptions,numbering,pdf}.ts`: review, exceptions, finalize snapshot, payslip PDF.
+- Service consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, `getApprovedPayrollClaimLines`, `getEmployeeLoanDeductions`.
+- Unmarked working days count as paid until Phase 4 attendance calculation exists.
+- Process posts loan EMI (`source: "PAYROLL"`), marks claims `INCLUDED_IN_PAYROLL`, generates numbered PDFs if missing. Mark-paid sets claims `PAID`.
+- Compliance filings (PF/ESI/PT/TDS) generated on process. Payslip statutory sections reserved at 0 until Phase 11.
+
+Payroll never writes attendance or leave tables.
 
 ---
 
@@ -207,8 +221,9 @@ Do not implement these until the named phase:
 - **Phase 4:** shift/rules, punch-to-day, late/early, OT minutes, weekly-off/holiday application that does not erase leave.
 - **Phase 7:** benefits, reimbursements, TA/DA and claims (implemented).
 - **Phase 8:** loans and advances (implemented).
-- **Phase 9:** payroll run consuming `getEmployeeSalaryForDate` + attendance inputs + approved variable/reimbursement + `getApprovedPayrollClaimLines` + `getEmployeeLoanDeductions`. Compliance filings.
-- **Phase 10:** global reports hub (leave/salary/benefits/claims/loans already have in-module CSV).
+- **Phase 9:** payroll run and compliance (implemented). Consumes salary, leave-written days, claims and loans.
+- **Phase 10:** review, approval, finalization, lock and payslip foundation (implemented).
+- **Phase 11:** statutory filing / PF ESI PT TDS LWF on payslips.
 - **Later:** employee self-service beyond `/profile`, Face/QR/GPS, smart auto attendance.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.
