@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePermissionOrRedirect } from "@/lib/auth/guards";
 import { hasPermission } from "@/lib/auth/session";
-import { filterPayrollReview, loadPayrollOverview, loadPayrollRunDetail, netBeforeStatutory } from "@/lib/payroll/query";
+import { filterPayrollReview, loadPayrollOverview, loadPayrollRunDetail } from "@/lib/payroll/query";
 import { periodLabel } from "@/lib/payroll/engine";
 import { formatCurrency } from "@/lib/utils";
 
@@ -91,7 +91,7 @@ export default async function PayrollReviewPage({
         <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Metric title="Gross earnings" value={formatCurrency(detail.summary.grossEarnings)} hint={`${formatCurrency(detail.summary.reimbursements)} reimbursements`} />
           <Metric title="Deductions" value={formatCurrency(detail.summary.deductions)} hint={`${formatCurrency(detail.summary.adjustments)} adjustments`} />
-          <Metric title="Net before statutory" value={formatCurrency(detail.summary.netBeforeStatutory)} hint="PF/ESI/PT/TDS reserved for Phase 11" />
+          <Metric title="Net pay" value={formatCurrency(detail.run.total_net)} hint={`${formatCurrency(detail.run.total_statutory)} statutory deducted`} />
           <Metric title="Flags" value={`${detail.summary.errorEmployees} errors`} hint={`${detail.summary.warningEmployees} warnings`} />
         </div>
       ) : null}
@@ -107,7 +107,7 @@ export default async function PayrollReviewPage({
                 <th className="px-4 py-3">Department</th>
                 <th className="px-4 py-3">Paid / LOP</th>
                 <th className="px-4 py-3">Gross</th>
-                <th className="px-4 py-3">Net before statutory</th>
+                <th className="px-4 py-3">Net pay</th>
                 <th className="px-4 py-3">Flags</th>
                 <th className="px-4 py-3">Status</th>
               </tr>
@@ -129,7 +129,7 @@ export default async function PayrollReviewPage({
                       {row.item.paid_days} / {row.item.lop_days}
                     </td>
                     <td className="px-4 py-3">{formatCurrency(row.item.earnings + row.item.variable_earnings)}</td>
-                    <td className="px-4 py-3 font-medium">{formatCurrency(netBeforeStatutory(row.item))}</td>
+                    <td className="px-4 py-3 font-medium">{formatCurrency(row.item.net_pay)}</td>
                     <td className="px-4 py-3 text-xs">
                       {errors ? <p className="text-red-600">{errors} error</p> : null}
                       {warnings ? <p className="text-amber-700">{warnings} warning</p> : null}

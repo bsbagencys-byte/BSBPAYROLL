@@ -66,6 +66,10 @@ import type {
   PayrollExceptionStatus,
   PayrollApprovalAction,
   PayslipSection,
+  StatutoryRuleVersionStatus,
+  TaxRegime,
+  TaxDeclarationStatus,
+  TaxProofStatus,
 } from "@/lib/constants";
 
 export type {
@@ -124,6 +128,10 @@ export type {
   PayrollExceptionStatus,
   PayrollApprovalAction,
   PayslipSection,
+  StatutoryRuleVersionStatus,
+  TaxRegime,
+  TaxDeclarationStatus,
+  TaxProofStatus,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -288,6 +296,11 @@ export interface EmployeeStatutory {
   pf_applicable: boolean;
   esi_applicable: boolean;
   pt_applicable: boolean;
+  lwf_applicable: boolean;
+  tds_applicable: boolean;
+  tax_regime: TaxRegime;
+  pf_number: string | null;
+  pt_state_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -1560,6 +1573,8 @@ export interface PayrollItem {
   esi_employer: number;
   pt_amount: number;
   tds_amount: number;
+  lwf_employee: number;
+  lwf_employer: number;
   statutory_total: number;
   net_pay: number;
   employer_cost: number;
@@ -1756,11 +1771,156 @@ export interface StatutoryBreakdown {
   pfWage: number;
   pfEmployee: number;
   pfEmployer: number;
+  pfEps: number;
+  pfEpf: number;
   esiWage: number;
   esiEmployee: number;
   esiEmployer: number;
   ptAmount: number;
+  ptStateCode: string | null;
+  lwfEmployee: number;
+  lwfEmployer: number;
   tdsAmount: number;
+  tdsRegime: TaxRegime | null;
+  taxableIncome: number;
   employeeTotal: number;
   employerTotal: number;
+  ruleVersions: Array<{ head: StatutoryHead; versionId: string; versionCode: string; verified: boolean }>;
+  warnings: string[];
+}
+
+export interface StatutoryRuleVersion {
+  id: string;
+  organization_id: string;
+  head: StatutoryHead;
+  version_code: string;
+  name: string;
+  jurisdiction: string;
+  state_code: string | null;
+  tax_year: string | null;
+  regime: TaxRegime | string | null;
+  effective_from: string;
+  effective_to: string | null;
+  status: StatutoryRuleVersionStatus;
+  verified: boolean;
+  source_name: string | null;
+  source_url: string | null;
+  source_citation: string | null;
+  config_json: string;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrgStatutorySettings {
+  organization_id: string;
+  pf_enabled: boolean;
+  esi_enabled: boolean;
+  pt_enabled: boolean;
+  lwf_enabled: boolean;
+  tds_enabled: boolean;
+  pf_restrict_to_ceiling: boolean;
+  default_state_code: string | null;
+  tds_default_regime: TaxRegime;
+  show_employer_on_payslip: boolean;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeTaxDeclaration {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  tax_year: string;
+  regime: TaxRegime;
+  status: TaxDeclarationStatus;
+  submitted_at: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeTaxDeclarationItem {
+  id: string;
+  organization_id: string;
+  declaration_id: string;
+  section_code: string;
+  name: string;
+  amount: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeTaxProof {
+  id: string;
+  organization_id: string;
+  declaration_id: string;
+  item_id: string | null;
+  employee_id: string;
+  file_name: string;
+  file_path: string;
+  mime_type: string | null;
+  file_size: number | null;
+  status: TaxProofStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollStatutoryResult {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  item_id: string;
+  employee_id: string;
+  period: string;
+  rule_versions_json: string;
+  pf_wage: number;
+  pf_employee: number;
+  pf_employer: number;
+  pf_eps: number;
+  pf_epf: number;
+  esi_wage: number;
+  esi_employee: number;
+  esi_employer: number;
+  pt_amount: number;
+  pt_state_code: string | null;
+  lwf_employee: number;
+  lwf_employer: number;
+  tds_amount: number;
+  tds_regime: string | null;
+  taxable_income: number;
+  employee_total: number;
+  employer_total: number;
+  notes_json: string | null;
+  created_at: string;
+}
+
+export interface PayrollStatutoryLine {
+  id: string;
+  organization_id: string;
+  result_id: string;
+  run_id: string;
+  employee_id: string;
+  head: StatutoryHead;
+  party: "EMPLOYEE" | "EMPLOYER";
+  code: string;
+  name: string;
+  amount: number;
+  wage_base: number;
+  rate: number | null;
+  rule_version_id: string | null;
+  sort_order: number;
+  created_at: string;
 }

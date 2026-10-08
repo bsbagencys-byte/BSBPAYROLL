@@ -20,7 +20,7 @@ export default async function PayslipsPage() {
 
   return (
     <div>
-      <PageHeader title="Payslips" description="Numbered PDFs generated after finalization. Statutory sections are reserved." />
+      <PageHeader title="Payslips" description="Numbered PDFs generated after finalization, including statutory deductions and employer contributions." />
       <PayrollSubnav />
       {rows.length === 0 ? (
         <EmptyState title="No payslips" description="Process a locked payroll run to issue payslips." />

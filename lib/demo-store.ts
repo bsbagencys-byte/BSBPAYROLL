@@ -72,6 +72,13 @@ import type {
   Role,
   SessionUser,
   StatutoryRule,
+  StatutoryRuleVersion,
+  OrgStatutorySettings,
+  EmployeeTaxDeclaration,
+  EmployeeTaxDeclarationItem,
+  EmployeeTaxProof,
+  PayrollStatutoryResult,
+  PayrollStatutoryLine,
   UserProfile,
   ComplianceFiling,
 } from "@/types";
@@ -314,6 +321,13 @@ export type DemoStore = {
   loanApprovals: LoanApproval[];
   loanLedger: LoanLedgerEntry[];
   statutoryRules: StatutoryRule[];
+  statutoryRuleVersions: StatutoryRuleVersion[];
+  orgStatutorySettings: OrgStatutorySettings[];
+  employeeTaxDeclarations: EmployeeTaxDeclaration[];
+  employeeTaxDeclarationItems: EmployeeTaxDeclarationItem[];
+  employeeTaxProofs: EmployeeTaxProof[];
+  payrollStatutoryResults: PayrollStatutoryResult[];
+  payrollStatutoryLines: PayrollStatutoryLine[];
   payrollRuns: PayrollRun[];
   payrollItems: PayrollItem[];
   payrollLines: PayrollLine[];
@@ -580,6 +594,11 @@ function createStore(): DemoStore {
         pf_applicable: true,
         esi_applicable: false,
         pt_applicable: true,
+        lwf_applicable: false,
+        tds_applicable: true,
+        tax_regime: "NEW_ACT_2025",
+        pf_number: null,
+        pt_state_code: "KA",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -594,6 +613,11 @@ function createStore(): DemoStore {
         pf_applicable: true,
         esi_applicable: false,
         pt_applicable: true,
+        lwf_applicable: false,
+        tds_applicable: true,
+        tax_regime: "NEW_ACT_2025",
+        pf_number: null,
+        pt_state_code: "KA",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -608,6 +632,11 @@ function createStore(): DemoStore {
         pf_applicable: true,
         esi_applicable: false,
         pt_applicable: true,
+        lwf_applicable: false,
+        tds_applicable: true,
+        tax_regime: "NEW_ACT_2025",
+        pf_number: null,
+        pt_state_code: "KA",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -2110,6 +2139,13 @@ function createLoansSeed(): Pick<
 function createPayrollSeed(): Pick<
   DemoStore,
   | "statutoryRules"
+  | "statutoryRuleVersions"
+  | "orgStatutorySettings"
+  | "employeeTaxDeclarations"
+  | "employeeTaxDeclarationItems"
+  | "employeeTaxProofs"
+  | "payrollStatutoryResults"
+  | "payrollStatutoryLines"
   | "payrollRuns"
   | "payrollItems"
   | "payrollLines"
@@ -2167,6 +2203,191 @@ function createPayrollSeed(): Pick<
       }),
       rule("sr-tds", "TDS", "TDS optional", { employee_rate: 0, employer_rate: 0, status: "DISABLED" }),
     ],
+    statutoryRuleVersions: [
+      {
+        id: "srv-pf",
+        organization_id: ORG_ID,
+        head: "PF",
+        version_code: "EPF-UNVERIFIED",
+        name: "EPF (unverified template)",
+        jurisdiction: "INDIA",
+        state_code: null,
+        tax_year: null,
+        regime: null,
+        effective_from: `${year}-01-01`,
+        effective_to: null,
+        status: "DISABLED",
+        verified: false,
+        source_name: "EPFO — verification pending",
+        source_url: "https://www.epfindia.gov.in/",
+        source_citation: "Rates not independently verified in this environment.",
+        config_json: JSON.stringify({
+          employeeRate: 12,
+          employerRate: 12,
+          wageCeiling: 15000,
+          epsRate: 8.33,
+          epsCeiling: 15000,
+          wageComponents: ["BASIC", "DA"],
+          rounding: "NEAREST_RUPEE",
+        }),
+        notes: "Disabled until source-verified. Payroll falls back to Phase 9 statutory_rules.",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "srv-esi",
+        organization_id: ORG_ID,
+        head: "ESI",
+        version_code: "ESI-UNVERIFIED",
+        name: "ESI (unverified template)",
+        jurisdiction: "INDIA",
+        state_code: null,
+        tax_year: null,
+        regime: null,
+        effective_from: `${year}-01-01`,
+        effective_to: null,
+        status: "DISABLED",
+        verified: false,
+        source_name: "ESIC — verification pending",
+        source_url: "https://www.esic.gov.in/",
+        source_citation: "Rates not independently verified in this environment.",
+        config_json: JSON.stringify({
+          employeeRate: 0.75,
+          employerRate: 3.25,
+          minWage: 0,
+          maxWage: 21000,
+          rounding: "NEAREST_RUPEE",
+        }),
+        notes: "Disabled until source-verified.",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "srv-pt-ka",
+        organization_id: ORG_ID,
+        head: "PT",
+        version_code: "PT-KA-UNVERIFIED",
+        name: "Karnataka PT (unverified template)",
+        jurisdiction: "INDIA",
+        state_code: "KA",
+        tax_year: null,
+        regime: null,
+        effective_from: `${year}-01-01`,
+        effective_to: null,
+        status: "DISABLED",
+        verified: false,
+        source_name: "Karnataka Commercial Taxes — verification pending",
+        source_url: null,
+        source_citation: "Slabs not independently verified in this environment.",
+        config_json: JSON.stringify({
+          rounding: "NEAREST_RUPEE",
+          slabs: [
+            { from: 0, to: 15000, amount: 0 },
+            { from: 15001, to: 20000, amount: 200 },
+            { from: 20001, to: null, amount: 300 },
+          ],
+        }),
+        notes: "Disabled until source-verified.",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "srv-lwf-ka",
+        organization_id: ORG_ID,
+        head: "LWF",
+        version_code: "LWF-KA-UNVERIFIED",
+        name: "Karnataka LWF (unverified template)",
+        jurisdiction: "INDIA",
+        state_code: "KA",
+        tax_year: null,
+        regime: null,
+        effective_from: `${year}-01-01`,
+        effective_to: null,
+        status: "DISABLED",
+        verified: false,
+        source_name: "Karnataka LWF — verification pending",
+        source_url: null,
+        source_citation: "Amounts not independently verified in this environment.",
+        config_json: JSON.stringify({
+          employeeRate: 20,
+          employerRate: 40,
+          months: [12],
+          rounding: "NEAREST_RUPEE",
+        }),
+        notes: "Disabled until source-verified. Org LWF remains off.",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "srv-tds-2025",
+        organization_id: ORG_ID,
+        head: "TDS",
+        version_code: "TDS-ACT2025-UNVERIFIED",
+        name: "Income Tax Act 2025 (unverified template)",
+        jurisdiction: "INDIA",
+        state_code: null,
+        tax_year: `${year}-${String(year + 1).slice(2)}`,
+        regime: "NEW_ACT_2025",
+        effective_from: `${year}-04-01`,
+        effective_to: null,
+        status: "DISABLED",
+        verified: false,
+        source_name: "Income Tax Department — verification pending",
+        source_url: "https://www.incometax.gov.in/",
+        source_citation: "Slabs not independently verified in this environment. Do not mix with old Act.",
+        config_json: JSON.stringify({
+          rounding: "NEAREST_RUPEE",
+          standardDeduction: 75000,
+          cessRate: 4,
+          rebateLimit: 1200000,
+          rebateAmount: null,
+          slabs: [
+            { from: 0, to: 400000, rate: 0 },
+            { from: 400000, to: 800000, rate: 5 },
+            { from: 800000, to: 1200000, rate: 10 },
+            { from: 1200000, to: 1600000, rate: 15 },
+            { from: 1600000, to: 2000000, rate: 20 },
+            { from: 2000000, to: 2400000, rate: 25 },
+            { from: 2400000, to: null, rate: 30 },
+          ],
+        }),
+        notes: "Disabled. Org TDS remains off until a verified version is activated.",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    orgStatutorySettings: [
+      {
+        organization_id: ORG_ID,
+        pf_enabled: true,
+        esi_enabled: true,
+        pt_enabled: true,
+        lwf_enabled: false,
+        tds_enabled: false,
+        pf_restrict_to_ceiling: true,
+        default_state_code: "KA",
+        tds_default_regime: "NEW_ACT_2025",
+        show_employer_on_payslip: true,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    employeeTaxDeclarations: [],
+    employeeTaxDeclarationItems: [],
+    employeeTaxProofs: [],
+    payrollStatutoryResults: [],
+    payrollStatutoryLines: [],
     payrollRuns: [],
     payrollItems: [],
     payrollLines: [],
@@ -2192,7 +2413,8 @@ export function getDemoStore(): DemoStore {
     !("benefitTypes" in globalStore.__bsbDemo) ||
     !("loanTypes" in globalStore.__bsbDemo) ||
     !("statutoryRules" in globalStore.__bsbDemo) ||
-    !("payrollExceptions" in globalStore.__bsbDemo)
+    !("payrollExceptions" in globalStore.__bsbDemo) ||
+    !("statutoryRuleVersions" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

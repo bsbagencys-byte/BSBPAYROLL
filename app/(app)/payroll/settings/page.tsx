@@ -20,7 +20,7 @@ export default async function PayrollSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Settings" description="PF, ESI, PT slabs and optional TDS. Attendance still uses leave-written days until Phase 4." />
+      <PageHeader title="Settings" description="Legacy Phase 9 PF/ESI/PT slabs. Versioned rules live under Compliance. Attendance still uses leave-written days until Phase 4." />
       <PayrollSubnav />
       {canManage ? (
         <div className="mb-6">

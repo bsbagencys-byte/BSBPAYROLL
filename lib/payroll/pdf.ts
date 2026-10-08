@@ -35,11 +35,14 @@ export function buildPayslipPdf(input: {
   earnings: Array<{ name: string; amount: string }>;
   reimbursements: Array<{ name: string; amount: string }>;
   deductions: Array<{ name: string; amount: string }>;
-  statutoryReserved: Array<{ name: string; amount: string }>;
+  statutory: Array<{ name: string; amount: string }>;
+  employer?: Array<{ name: string; amount: string }>;
   gross: string;
   reimbursementTotal: string;
   deductionTotal: string;
-  netBeforeStatutory: string;
+  statutoryTotal: string;
+  netPay: string;
+  employerCost?: string;
   generatedAt: string;
 }) {
   const lines: string[] = [];
@@ -77,14 +80,15 @@ export function buildPayslipPdf(input: {
   table("Earnings", input.earnings);
   table("Reimbursements", input.reimbursements);
   table("Deductions", input.deductions);
-  table("Statutory (reserved — Phase 11)", input.statutoryReserved);
+  table("Statutory deductions", input.statutory);
+  if (input.employer?.length) table("Employer contributions (not deducted from net)", input.employer);
   y -= 6;
   add(`Gross  ${input.gross}`, 11);
   add(`Reimbursements  ${input.reimbursementTotal}`, 10);
-  add(`Current deductions  ${input.deductionTotal}`, 10);
-  add(`Net before statutory  ${input.netBeforeStatutory}`, 12);
-  y -= 10;
-  add("PF, ESI, PT, TDS and LWF are reserved and not calculated in this phase.", 8);
+  add(`Other deductions  ${input.deductionTotal}`, 10);
+  add(`Statutory deductions  ${input.statutoryTotal}`, 10);
+  add(`Net pay  ${input.netPay}`, 12);
+  if (input.employerCost) add(`Employer cost  ${input.employerCost}`, 10);
 
   const content = lines.join("\n");
   const objects: string[] = [];

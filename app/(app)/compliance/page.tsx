@@ -19,11 +19,11 @@ export default async function CompliancePage() {
     <div>
       <PageHeader
         title="Compliance"
-        description="PF, ESI, PT and TDS summaries generated when a payroll run is processed."
+        description="PF, ESI, PT, LWF and TDS summaries generated when a payroll run is processed."
       />
       <ComplianceSubnav />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {(["PF", "ESI", "PT", "TDS"] as const).map((head) => {
+        {(["PF", "ESI", "PT", "TDS", "LWF"] as const).map((head) => {
           const filing = overview.filings.find((item) => item.head === head);
           return (
             <Card key={head}>
@@ -43,7 +43,7 @@ export default async function CompliancePage() {
           {overview.latest ? `Latest processed · ${periodLabel(overview.latest.period)}` : "Filings"}
         </h2>
         {overview.filings.length === 0 ? (
-          <EmptyState title="No filings" description="Process a payroll run to generate PF, ESI, PT and TDS summaries." />
+          <EmptyState title="No filings" description="Process a payroll run to generate PF, ESI, PT, LWF and TDS summaries." />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="min-w-full text-left text-sm">

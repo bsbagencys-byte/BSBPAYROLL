@@ -4,7 +4,6 @@ import { listEmployment, listHolidays } from "@/lib/leave/repository";
 import { getEmployeeLoanDeductions, recordLoanRepayment } from "@/lib/loans/service";
 import { loadOrgCatalog } from "@/lib/org-data";
 import {
-  calculateStatutory,
   eligibleEmployee,
   lineKindFromSalary,
   overlapsPeriod,
@@ -14,6 +13,19 @@ import {
   roundMoney,
   summarizeAttendance,
 } from "@/lib/payroll/engine";
+import {
+  calculateStatutoryBreakdown,
+  defaultOrgStatutorySettings,
+  indianFinancialYear,
+  statutoryPayrollLines,
+} from "@/lib/statutory/engine";
+import {
+  getOrgStatutorySettings,
+  listStatutoryRuleVersions,
+  listTaxDeclarationItems,
+  listTaxDeclarations,
+  replacePayrollStatutoryResults,
+} from "@/lib/statutory/repository";
 import {
   getPayrollException,
   getPayrollItem,
@@ -88,6 +100,8 @@ import type {
   PayrollSnapshot,
   Payslip,
   PayslipLineItem,
+  PayrollStatutoryLine,
+  PayrollStatutoryResult,
   StatutoryRule,
 } from "@/types";
 import type { PayrollApprovalAction, PayrollRunStatus } from "@/lib/constants";
@@ -142,7 +156,9 @@ function totalsFromItems(items: PayrollItem[]) {
     total_claims: roundMoney(included.reduce((sum, item) => sum + item.claims, 0)),
     total_loans: roundMoney(included.reduce((sum, item) => sum + item.loan_deductions, 0)),
     total_net: roundMoney(included.reduce((sum, item) => sum + item.net_pay, 0)),
-    employer_contributions: roundMoney(included.reduce((sum, item) => sum + item.pf_employer + item.esi_employer, 0)),
+    employer_contributions: roundMoney(
+      included.reduce((sum, item) => sum + item.pf_employer + item.esi_employer + item.lwf_employer, 0)
+    ),
   };
 }
 
@@ -215,18 +231,26 @@ export async function calculatePayrollRun(organizationId: string, runId: string,
   }
   const org = await loadOrganization(organizationId);
   if (!org) throw new Error("Organization not found.");
-  const [catalog, employment, holidays, days, rules, variables, reimbursements, claims] = await Promise.all([
+  const [catalog, employment, holidays, days, rules, versions, settingsRow, declarations, declarationItems, variables, reimbursements, claims] = await Promise.all([
     loadOrgCatalog(organizationId),
     listEmployment(organizationId),
     listHolidays(organizationId),
     listAttendanceDays(organizationId, run.period_from, run.period_to),
     listStatutoryRules(organizationId),
+    listStatutoryRuleVersions(organizationId),
+    getOrgStatutorySettings(organizationId),
+    listTaxDeclarations(organizationId),
+    listTaxDeclarationItems(organizationId),
     listVariableEarnings(organizationId),
     listReimbursements(organizationId),
     getApprovedPayrollClaimLines(organizationId, run.period),
   ]);
+  const settings = settingsRow ?? defaultOrgStatutorySettings(organizationId, stamp());
+  const taxYear = indianFinancialYear(run.period_to);
   const items: PayrollItem[] = [];
   const lines: PayrollLine[] = [];
+  const statutoryResults: PayrollStatutoryResult[] = [];
+  const statutoryDetailLines: PayrollStatutoryLine[] = [];
 
   for (const employee of catalog.employees) {
     const job = employment.find((item) => item.employee_id === employee.id);
@@ -271,6 +295,8 @@ export async function calculatePayrollRun(organizationId: string, runId: string,
         esi_employer: 0,
         pt_amount: 0,
         tds_amount: 0,
+        lwf_employee: 0,
+        lwf_employer: 0,
         statutory_total: 0,
         net_pay: 0,
         employer_cost: 0,
@@ -409,117 +435,86 @@ export async function calculatePayrollRun(organizationId: string, runId: string,
     }
 
     const statutoryRow = await loadStatutory(organizationId, employee.id);
-    const statutory = calculateStatutory({
+    const declaration = declarations.find((item) => item.employee_id === employee.id && item.tax_year === taxYear) ?? null;
+    const statutory = calculateStatutoryBreakdown({
       snapshot,
       proratedEarnings: earnings,
+      taxableEarnings: earnings + variableTotal,
       statutory: statutoryRow,
-      rules,
+      legacyRules: rules,
+      versions,
+      settings,
       onDate: run.period_to,
+      stateCode: statutoryRow?.pt_state_code || org.state || "KA",
+      declaration,
+      declarationItems: declaration ? declarationItems.filter((item) => item.declaration_id === declaration.id) : [],
     });
-    if (statutory.pfEmployee > 0) {
-      lines.push({
+    const nowStamp = stamp();
+    lines.push(
+      ...statutoryPayrollLines({
+        organizationId,
+        runId: run.id,
+        itemId,
+        employeeId: employee.id,
+        breakdown: statutory,
+        createdAt: nowStamp,
+      })
+    );
+    const resultId = crypto.randomUUID();
+    statutoryResults.push({
+      id: resultId,
+      organization_id: organizationId,
+      run_id: run.id,
+      item_id: itemId,
+      employee_id: employee.id,
+      period: run.period,
+      rule_versions_json: JSON.stringify(statutory.ruleVersions),
+      pf_wage: statutory.pfWage,
+      pf_employee: statutory.pfEmployee,
+      pf_employer: statutory.pfEmployer,
+      pf_eps: statutory.pfEps,
+      pf_epf: statutory.pfEpf,
+      esi_wage: statutory.esiWage,
+      esi_employee: statutory.esiEmployee,
+      esi_employer: statutory.esiEmployer,
+      pt_amount: statutory.ptAmount,
+      pt_state_code: statutory.ptStateCode,
+      lwf_employee: statutory.lwfEmployee,
+      lwf_employer: statutory.lwfEmployer,
+      tds_amount: statutory.tdsAmount,
+      tds_regime: statutory.tdsRegime,
+      taxable_income: statutory.taxableIncome,
+      employee_total: statutory.employeeTotal,
+      employer_total: statutory.employerTotal,
+      notes_json: JSON.stringify(statutory.warnings),
+      created_at: nowStamp,
+    });
+    statutoryDetailLines.push(
+      ...statutoryPayrollLines({
+        organizationId,
+        runId: run.id,
+        itemId,
+        employeeId: employee.id,
+        breakdown: statutory,
+        createdAt: nowStamp,
+      }).map((line, index) => ({
         id: crypto.randomUUID(),
         organization_id: organizationId,
+        result_id: resultId,
         run_id: run.id,
-        item_id: itemId,
         employee_id: employee.id,
-        kind: "STATUTORY",
-        code: "PF",
-        name: "Provident Fund",
-        amount: statutory.pfEmployee,
-        taxable: false,
-        reference_id: null,
-        notes: `Wage ${statutory.pfWage}`,
-        sort_order: 90,
-        created_at: stamp(),
-      });
-      lines.push({
-        id: crypto.randomUUID(),
-        organization_id: organizationId,
-        run_id: run.id,
-        item_id: itemId,
-        employee_id: employee.id,
-        kind: "EMPLOYER",
-        code: "PF_ER",
-        name: "Employer PF",
-        amount: statutory.pfEmployer,
-        taxable: false,
-        reference_id: null,
-        notes: null,
-        sort_order: 91,
-        created_at: stamp(),
-      });
-    }
-    if (statutory.esiEmployee > 0) {
-      lines.push({
-        id: crypto.randomUUID(),
-        organization_id: organizationId,
-        run_id: run.id,
-        item_id: itemId,
-        employee_id: employee.id,
-        kind: "STATUTORY",
-        code: "ESI",
-        name: "ESI",
-        amount: statutory.esiEmployee,
-        taxable: false,
-        reference_id: null,
-        notes: null,
-        sort_order: 92,
-        created_at: stamp(),
-      });
-      lines.push({
-        id: crypto.randomUUID(),
-        organization_id: organizationId,
-        run_id: run.id,
-        item_id: itemId,
-        employee_id: employee.id,
-        kind: "EMPLOYER",
-        code: "ESI_ER",
-        name: "Employer ESI",
-        amount: statutory.esiEmployer,
-        taxable: false,
-        reference_id: null,
-        notes: null,
-        sort_order: 93,
-        created_at: stamp(),
-      });
-    }
-    if (statutory.ptAmount > 0) {
-      lines.push({
-        id: crypto.randomUUID(),
-        organization_id: organizationId,
-        run_id: run.id,
-        item_id: itemId,
-        employee_id: employee.id,
-        kind: "STATUTORY",
-        code: "PT",
-        name: "Professional Tax",
-        amount: statutory.ptAmount,
-        taxable: false,
-        reference_id: null,
-        notes: null,
-        sort_order: 94,
-        created_at: stamp(),
-      });
-    }
-    if (statutory.tdsAmount > 0) {
-      lines.push({
-        id: crypto.randomUUID(),
-        organization_id: organizationId,
-        run_id: run.id,
-        item_id: itemId,
-        employee_id: employee.id,
-        kind: "STATUTORY",
-        code: "TDS",
-        name: "TDS",
-        amount: statutory.tdsAmount,
-        taxable: false,
-        reference_id: null,
-        notes: null,
-        sort_order: 95,
-        created_at: stamp(),
-      });
-    }
+        head: (line.code.replace("_ER", "") as "PF" | "ESI" | "PT" | "TDS" | "LWF"),
+        party: line.kind === "EMPLOYER" ? "EMPLOYER" as const : "EMPLOYEE" as const,
+        code: line.code,
+        name: line.name,
+        amount: line.amount,
+        wage_base: line.code.startsWith("PF") ? statutory.pfWage : line.code.startsWith("ESI") ? statutory.esiWage : earnings,
+        rate: null,
+        rule_version_id: statutory.ruleVersions.find((item) => item.head === line.code.replace("_ER", ""))?.versionId ?? null,
+        sort_order: index,
+        created_at: nowStamp,
+      }))
+    );
 
     const net = roundMoney(
       earnings + variableTotal + reimbursementTotal + claimTotal - loanTotal - statutory.employeeTotal
@@ -553,16 +548,19 @@ export async function calculatePayrollRun(organizationId: string, runId: string,
       esi_employer: statutory.esiEmployer,
       pt_amount: statutory.ptAmount,
       tds_amount: statutory.tdsAmount,
+      lwf_employee: statutory.lwfEmployee,
+      lwf_employer: statutory.lwfEmployer,
       statutory_total: statutory.employeeTotal,
       net_pay: net,
       employer_cost: roundMoney(earnings + variableTotal + statutory.employerTotal),
-      created_at: stamp(),
-      updated_at: stamp(),
+      created_at: nowStamp,
+      updated_at: nowStamp,
     });
   }
 
   await replacePayrollItems(organizationId, run.id, items);
   await replacePayrollLines(organizationId, run.id, lines);
+  await replacePayrollStatutoryResults(organizationId, run.id, statutoryResults, statutoryDetailLines);
   const exceptions = await scanPayrollExceptions(organizationId, { ...run, status: "CALCULATED" });
   await replacePayrollExceptions(organizationId, run.id, exceptions);
   const counts = exceptionCounts(exceptions);
@@ -741,6 +739,22 @@ export async function processPayrollRun(organizationId: string, runId: string, a
       employee_count: included.filter((item) => item.tds_amount > 0).length,
       employee_amount: roundMoney(included.reduce((sum, item) => sum + item.tds_amount, 0)),
       employer_amount: 0,
+      total_amount: 0,
+      status: "READY",
+      notes: null,
+      created_by: actorId,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: crypto.randomUUID(),
+      organization_id: organizationId,
+      run_id: runId,
+      head: "LWF",
+      period: run.period,
+      employee_count: included.filter((item) => item.lwf_employee > 0 || item.lwf_employer > 0).length,
+      employee_amount: roundMoney(included.reduce((sum, item) => sum + item.lwf_employee, 0)),
+      employer_amount: roundMoney(included.reduce((sum, item) => sum + item.lwf_employer, 0)),
       total_amount: 0,
       status: "READY",
       notes: null,
@@ -1173,14 +1187,9 @@ function payslipSectionsFromLines(lines: PayrollLine[]) {
   const earnings = lines.filter((item) => item.kind === "EARNING");
   const reimbursements = lines.filter((item) => item.kind === "REIMBURSEMENT" || item.kind === "CLAIM");
   const deductions = lines.filter((item) => item.kind === "DEDUCTION" || item.kind === "LOAN" || item.kind === "ADJUSTMENT");
-  const reserved = [
-    { code: "PF", name: "Provident Fund", amount: 0 },
-    { code: "ESI", name: "ESI", amount: 0 },
-    { code: "PT", name: "Professional Tax", amount: 0 },
-    { code: "TDS", name: "TDS", amount: 0 },
-    { code: "LWF", name: "Labour Welfare Fund", amount: 0 },
-  ];
-  return { earnings, reimbursements, deductions, reserved };
+  const statutory = lines.filter((item) => item.kind === "STATUTORY");
+  const employer = lines.filter((item) => item.kind === "EMPLOYER");
+  return { earnings, reimbursements, deductions, statutory, employer };
 }
 
 export async function generatePayslipsForRun(
@@ -1195,11 +1204,13 @@ export async function generatePayslipsForRun(
   }
   const org = await loadOrganization(organizationId);
   const catalog = await loadOrgCatalog(organizationId);
-  const [items, lines, existing] = await Promise.all([
+  const [items, lines, existing, settingsRow] = await Promise.all([
     listPayrollItems(organizationId, runId),
     listPayrollLines(organizationId, runId),
     listPayslips(organizationId, runId),
+    getOrgStatutorySettings(organizationId),
   ]);
+  const showEmployer = settingsRow?.show_employer_on_payslip !== false;
   const included = items.filter((item) => item.status === "INCLUDED");
   const now = stamp();
   const meta = payslipPeriodMeta(run.period);
@@ -1299,19 +1310,36 @@ export async function generatePayslipsForRun(
       });
       sort += 1;
     }
-    for (const reserved of sections.reserved) {
+    for (const line of sections.statutory) {
       pdfRows.push({
         id: crypto.randomUUID(),
         organization_id: organizationId,
         payslip_id: slip.id,
-        kind: "STATUTORY",
-        code: reserved.code,
-        name: reserved.name,
-        amount: 0,
-        section: "STATUTORY_RESERVED",
-        sort_order: 200 + sort,
+        kind: line.kind,
+        code: line.code,
+        name: line.name,
+        amount: line.amount,
+        section: "STATUTORY",
+        sort_order: sort,
         created_at: now,
       });
+      sort += 1;
+    }
+    const employerLines = showEmployer ? sections.employer : [];
+    for (const line of employerLines) {
+      pdfRows.push({
+        id: crypto.randomUUID(),
+        organization_id: organizationId,
+        payslip_id: slip.id,
+        kind: line.kind,
+        code: line.code,
+        name: line.name,
+        amount: line.amount,
+        section: "EMPLOYER",
+        sort_order: sort,
+        created_at: now,
+      });
+      sort += 1;
     }
     await replacePayslipLineItems(organizationId, slip.id, pdfRows);
     const pdf = buildPayslipPdf({
@@ -1330,11 +1358,14 @@ export async function generatePayslipsForRun(
       earnings: sections.earnings.map((line) => ({ name: line.name, amount: String(line.amount) })),
       reimbursements: sections.reimbursements.map((line) => ({ name: line.name, amount: String(line.amount) })),
       deductions: sections.deductions.map((line) => ({ name: line.name, amount: String(line.amount) })),
-      statutoryReserved: sections.reserved.map((line) => ({ name: line.name, amount: "Reserved" })),
+      statutory: sections.statutory.map((line) => ({ name: line.name, amount: String(line.amount) })),
+      employer: employerLines.map((line) => ({ name: line.name, amount: String(line.amount) })),
       gross: String(item.earnings + item.variable_earnings),
       reimbursementTotal: String(item.reimbursements + item.claims),
       deductionTotal: String(item.deductions),
-      netBeforeStatutory: String(netBeforeStatutory(item)),
+      statutoryTotal: String(item.statutory_total),
+      netPay: String(item.net_pay),
+      employerCost: showEmployer ? String(item.employer_cost) : undefined,
       generatedAt: now,
     });
     const path = `${organizationId}/${run.period}/${slip.id}.pdf`;
@@ -1365,9 +1396,13 @@ export async function loadPayslipPdf(organizationId: string, payslip: Payslip) {
     const employee = catalog.employees.find((row) => row.id === payslip.employee_id);
     const run = await getPayrollRun(organizationId, payslip.run_id);
     const item = (await listPayrollItems(organizationId, payslip.run_id)).find((row) => row.id === payslip.item_id);
-    const lines = await listPayrollLines(organizationId, payslip.run_id, payslip.item_id);
+    const [lines, settingsRow] = await Promise.all([
+      listPayrollLines(organizationId, payslip.run_id, payslip.item_id),
+      getOrgStatutorySettings(organizationId),
+    ]);
     if (!run || !item) return null;
     const sections = payslipSectionsFromLines(lines);
+    const showEmployerPdf = settingsRow?.show_employer_on_payslip !== false;
     return buildPayslipPdf({
       organizationName: org?.display_name || org?.name || "Organization",
       organizationAddress: [org?.address_line1, org?.city, org?.state].filter(Boolean).join(", ") || "—",
@@ -1384,11 +1419,14 @@ export async function loadPayslipPdf(organizationId: string, payslip: Payslip) {
       earnings: sections.earnings.map((line) => ({ name: line.name, amount: String(line.amount) })),
       reimbursements: sections.reimbursements.map((line) => ({ name: line.name, amount: String(line.amount) })),
       deductions: sections.deductions.map((line) => ({ name: line.name, amount: String(line.amount) })),
-      statutoryReserved: sections.reserved.map((line) => ({ name: line.name, amount: "Reserved" })),
+      statutory: sections.statutory.map((line) => ({ name: line.name, amount: String(line.amount) })),
+      employer: showEmployerPdf ? sections.employer.map((line) => ({ name: line.name, amount: String(line.amount) })) : [],
       gross: String(item.earnings + item.variable_earnings),
       reimbursementTotal: String(item.reimbursements + item.claims),
       deductionTotal: String(item.deductions),
-      netBeforeStatutory: String(netBeforeStatutory(item)),
+      statutoryTotal: String(item.statutory_total),
+      netPay: String(item.net_pay),
+      employerCost: showEmployerPdf ? String(item.employer_cost) : undefined,
       generatedAt: payslip.generated_at ?? stamp(),
     });
   }

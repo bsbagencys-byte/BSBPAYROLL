@@ -15,6 +15,8 @@ import {
   EMPLOYEE_STATUSES,
   GENDER_LABELS,
   GENDERS,
+  TAX_REGIME_LABELS,
+  TAX_REGIMES,
 } from "@/lib/constants";
 import type { EmployeeFormValues } from "@/lib/validations/employee";
 import type { ActionResult, Branch, Department, Designation, Employee, EmploymentType, Location } from "@/types";
@@ -228,7 +230,19 @@ export function EmployeeForm({
           <Field label="PAN" name="pan" defaultValue={values.pan} error={state?.errors?.pan?.[0]} disabled={!canEdit} />
           <Field label="Aadhaar last 4" name="aadhaarLast4" defaultValue={values.aadhaarLast4} error={state?.errors?.aadhaarLast4?.[0]} disabled={!canEdit} />
           <Field label="UAN" name="uan" defaultValue={values.uan} disabled={!canEdit} />
+          <Field label="PF number" name="pfNumber" defaultValue={values.pfNumber} disabled={!canEdit} />
           <Field label="ESIC number" name="esicNumber" defaultValue={values.esicNumber} disabled={!canEdit} />
+          <Field label="PT state code" name="ptStateCode" defaultValue={values.ptStateCode} disabled={!canEdit} />
+          <div>
+            <Label htmlFor="taxRegime">Tax regime</Label>
+            <Select id="taxRegime" name="taxRegime" className="mt-1" defaultValue={values.taxRegime || "NEW_ACT_2025"} disabled={!canEdit}>
+              {TAX_REGIMES.map((regime) => (
+                <option key={regime} value={regime}>
+                  {TAX_REGIME_LABELS[regime]}
+                </option>
+              ))}
+            </Select>
+          </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="pfApplicable" defaultChecked={Boolean(values.pfApplicable)} disabled={!canEdit} />
             PF applicable
@@ -240,6 +254,14 @@ export function EmployeeForm({
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="ptApplicable" defaultChecked={Boolean(values.ptApplicable)} disabled={!canEdit} />
             PT applicable
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="lwfApplicable" defaultChecked={Boolean(values.lwfApplicable)} disabled={!canEdit} />
+            LWF applicable
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="tdsApplicable" defaultChecked={values.tdsApplicable !== false} disabled={!canEdit} />
+            TDS applicable
           </label>
         </CardContent>
       </Card>

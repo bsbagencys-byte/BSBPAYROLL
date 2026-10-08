@@ -203,12 +203,12 @@ Loans never write salary, attendance or leave tables.
 ## Payroll and compliance — IMPLEMENTED
 
 - Monthly run workflow: DRAFT → CALCULATED → UNDER_REVIEW → APPROVAL_PENDING → APPROVED → FINALIZED → LOCKED → PROCESSED → PAID (CANCELLED).
-- Engine in `lib/payroll/engine.ts`: period bounds, attendance summary, proration, PF/ESI/PT/TDS.
+- Engine in `lib/payroll/engine.ts`: period bounds, attendance summary, proration. Statutory overlay in `lib/statutory/engine.ts`.
 - Overlay in `lib/payroll/{workflow,exceptions,numbering,pdf}.ts`: review, exceptions, finalize snapshot, payslip PDF.
-- Service consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, `getApprovedPayrollClaimLines`, `getEmployeeLoanDeductions`.
+- Service consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, `getApprovedPayrollClaimLines`, `getEmployeeLoanDeductions`, `calculateStatutoryBreakdown`.
 - Unmarked working days count as paid until Phase 4 attendance calculation exists.
 - Process posts loan EMI (`source: "PAYROLL"`), marks claims `INCLUDED_IN_PAYROLL`, generates numbered PDFs if missing. Mark-paid sets claims `PAID`.
-- Compliance filings (PF/ESI/PT/TDS) generated on process. Payslip statutory sections reserved at 0 until Phase 11.
+- Compliance filings (PF/ESI/PT/TDS/LWF) generated on process. Payslips show employee statutory deductions; employer cost is separate from net.
 
 Payroll never writes attendance or leave tables.
 
@@ -223,7 +223,7 @@ Do not implement these until the named phase:
 - **Phase 8:** loans and advances (implemented).
 - **Phase 9:** payroll run and compliance (implemented). Consumes salary, leave-written days, claims and loans.
 - **Phase 10:** review, approval, finalization, lock and payslip foundation (implemented).
-- **Phase 11:** statutory filing / PF ESI PT TDS LWF on payslips.
+- **Phase 11:** versioned statutory/tax engine (implemented). Do not hard-code rates in payroll.
 - **Later:** employee self-service beyond `/profile`, Face/QR/GPS, smart auto attendance.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

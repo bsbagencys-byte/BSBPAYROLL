@@ -136,7 +136,7 @@ export default async function PayrollRunDetailPage({ params }: { params: Promise
 
       <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric title="Included" value={String(run.included_count)} hint={`${run.hold_count} held · ${run.error_count} excluded`} />
-        <Metric title="Net before statutory" value={formatCurrency(detail.summary?.netBeforeStatutory ?? run.total_net)} hint={`${formatCurrency(run.total_earnings)} earnings`} />
+        <Metric title="Net pay" value={formatCurrency(run.total_net)} hint={`${formatCurrency(run.total_statutory)} statutory`} />
         <Metric title="Exceptions" value={`${openErrors} errors`} hint={`${openWarnings} unacked warnings`} />
         <Metric title="Claims / loans" value={formatCurrency(run.total_claims)} hint={`${formatCurrency(run.total_loans)} EMI`} />
       </div>

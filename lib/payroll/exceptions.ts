@@ -1,7 +1,21 @@
 import { listAttendanceDays } from "@/lib/leave/attendance";
 import { listEmployment, listRequests } from "@/lib/leave/repository";
 import { listPayrollItems, listPayrollLines } from "@/lib/payroll/repository";
-import type { PayrollException, PayrollExceptionCode, PayrollItem, PayrollLine, PayrollRun } from "@/types";
+import { getDemoStore } from "@/lib/demo-store";
+import { listPayrollStatutoryResults } from "@/lib/statutory/repository";
+import { hasSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { EmployeeStatutory, PayrollException, PayrollExceptionCode, PayrollItem, PayrollLine, PayrollRun } from "@/types";
+
+async function loadEmployeeStatutory(employeeId: string): Promise<EmployeeStatutory | null> {
+  if (!hasSupabaseConfig() || isDemoMode()) {
+    return getDemoStore().employeeStatutory.find((item) => item.employee_id === employeeId) ?? null;
+  }
+  const admin = createAdminClient();
+  if (!admin) return null;
+  const { data } = await admin.from("employee_statutory").select("*").eq("employee_id", employeeId).maybeSingle();
+  return (data as EmployeeStatutory | null) ?? null;
+}
 
 function stamp() {
   return new Date().toISOString();
@@ -39,12 +53,13 @@ function exception(input: {
 }
 
 export async function scanPayrollExceptions(organizationId: string, run: PayrollRun): Promise<PayrollException[]> {
-  const [items, lines, employment, leaveRequests, days] = await Promise.all([
+  const [items, lines, employment, leaveRequests, days, statutoryResults] = await Promise.all([
     listPayrollItems(organizationId, run.id),
     listPayrollLines(organizationId, run.id),
     listEmployment(organizationId),
     listRequests(organizationId),
     listAttendanceDays(organizationId, run.period_from, run.period_to),
+    listPayrollStatutoryResults(organizationId, run.id),
   ]);
   const found: PayrollException[] = [];
   const pendingLeave = leaveRequests.filter(
@@ -197,6 +212,74 @@ export async function scanPayrollExceptions(organizationId: string, run: Payroll
           message: item.hold_reason || "Employee is on hold for this run.",
         })
       );
+    }
+    if (item.status === "INCLUDED") {
+      const statutoryFlags = await loadEmployeeStatutory(item.employee_id);
+      const result = statutoryResults.find((row) => row.item_id === item.id);
+      const warnings = result?.notes_json
+        ? (() => {
+            try {
+              const parsed = JSON.parse(result.notes_json) as string[];
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return [] as string[];
+            }
+          })()
+        : [];
+      if (warnings.some((text) => text.toLowerCase().includes("no active") || text.toLowerCase().includes("not calculated"))) {
+        found.push(
+          exception({
+            organizationId,
+            run,
+            item,
+            code: "STATUTORY_RULE_MISSING",
+            severity: "WARNING",
+            message: warnings.find((text) => text.toLowerCase().includes("no active") || text.toLowerCase().includes("not calculated")) || "Statutory rule missing.",
+            sourceType: "statutory",
+          })
+        );
+      }
+      if (warnings.some((text) => text.toLowerCase().includes("not source-verified"))) {
+        found.push(
+          exception({
+            organizationId,
+            run,
+            item,
+            code: "STATUTORY_UNVERIFIED_RULE",
+            severity: "WARNING",
+            message: "A statutory rule used for this employee is not source-verified.",
+            sourceType: "statutory",
+          })
+        );
+      }
+      if (statutoryFlags?.pf_applicable !== false && item.pf_employee > 0 && !statutoryFlags?.uan) {
+        found.push(
+          exception({
+            organizationId,
+            run,
+            item,
+            code: "STATUTORY_UAN_MISSING",
+            severity: "WARNING",
+            message: "PF is deducted but the employee has no UAN.",
+            sourceType: "employee_statutory",
+            sourceId: item.employee_id,
+          })
+        );
+      }
+      if (item.tds_amount > 0 && !statutoryFlags?.pan) {
+        found.push(
+          exception({
+            organizationId,
+            run,
+            item,
+            code: "STATUTORY_PAN_MISSING",
+            severity: "WARNING",
+            message: "TDS is deducted but the employee has no PAN.",
+            sourceType: "employee",
+            sourceId: item.employee_id,
+          })
+        );
+      }
     }
   }
 

@@ -190,13 +190,22 @@ export function calculateStatutory(input: {
     pfWage: 0,
     pfEmployee: 0,
     pfEmployer: 0,
+    pfEps: 0,
+    pfEpf: 0,
     esiWage: 0,
     esiEmployee: 0,
     esiEmployer: 0,
     ptAmount: 0,
+    ptStateCode: null,
+    lwfEmployee: 0,
+    lwfEmployer: 0,
     tdsAmount: 0,
+    tdsRegime: null,
+    taxableIncome: 0,
     employeeTotal: 0,
     employerTotal: 0,
+    ruleVersions: [],
+    warnings: ["Legacy calculateStatutory is a fallback only. Use lib/statutory/engine."],
   };
   const pfRule = ruleForHead(input.rules, "PF", input.onDate);
   const esiRule = ruleForHead(input.rules, "ESI", input.onDate);
@@ -214,28 +223,29 @@ export function calculateStatutory(input: {
 
   if (pfApplicable && pfRule && pfWage > 0) {
     empty.pfWage = pfWage;
-    empty.pfEmployee = roundMoney((pfWage * (pfRule.employee_rate || 12)) / 100);
-    empty.pfEmployer = roundMoney((pfWage * (pfRule.employer_rate || 12)) / 100);
+    empty.pfEmployee = roundMoney((pfWage * pfRule.employee_rate) / 100);
+    empty.pfEmployer = roundMoney((pfWage * pfRule.employer_rate) / 100);
   }
 
   empty.esiWage = input.proratedEarnings;
-  const esiMax = esiRule?.max_wage ?? 21000;
+  const esiMax = esiRule?.max_wage ?? null;
   const esiMin = esiRule?.min_wage ?? 0;
-  if (esiApplicable && esiRule && empty.esiWage >= esiMin && empty.esiWage <= esiMax) {
-    empty.esiEmployee = roundMoney((empty.esiWage * (esiRule.employee_rate || 0.75)) / 100);
-    empty.esiEmployer = roundMoney((empty.esiWage * (esiRule.employer_rate || 3.25)) / 100);
+  if (esiApplicable && esiRule && empty.esiWage >= esiMin && (esiMax == null || empty.esiWage <= esiMax)) {
+    empty.esiEmployee = roundMoney((empty.esiWage * esiRule.employee_rate) / 100);
+    empty.esiEmployer = roundMoney((empty.esiWage * esiRule.employer_rate) / 100);
   }
 
   if (ptApplicable && ptRule) {
     empty.ptAmount = ptFromSlabs(input.proratedEarnings, ptRule);
+    empty.ptStateCode = ptRule.state_code;
   }
 
   if (tdsRule && (tdsRule.employee_rate || 0) > 0) {
     empty.tdsAmount = roundMoney((input.proratedEarnings * tdsRule.employee_rate) / 100);
   }
 
-  empty.employeeTotal = roundMoney(empty.pfEmployee + empty.esiEmployee + empty.ptAmount + empty.tdsAmount);
-  empty.employerTotal = roundMoney(empty.pfEmployer + empty.esiEmployer);
+  empty.employeeTotal = roundMoney(empty.pfEmployee + empty.esiEmployee + empty.ptAmount + empty.lwfEmployee + empty.tdsAmount);
+  empty.employerTotal = roundMoney(empty.pfEmployer + empty.esiEmployer + empty.lwfEmployer);
   return empty;
 }
 

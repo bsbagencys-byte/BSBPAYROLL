@@ -4,6 +4,34 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 11 — Versioned India statutory and tax engine
+
+- **Date:** 2026-10-08
+- **Status:** implemented in working tree (not yet committed)
+
+### Implemented
+
+- Versioned PF/ESI/PT/LWF/TDS engine in `lib/statutory/engine.ts`. Payroll calculate persists `payroll_statutory_results` / `lines`.
+- Employer contributions are not deducted from net pay. Payslips show real statutory amounts; employer section is optional.
+- ACTIVE versioned rules win; otherwise Phase 9 `statutory_rules` with a warning. Unverified versions warn; missing TDS/LWF leave amounts at 0.
+- Org LWF and TDS default off. Employee flags: LWF, TDS, tax regime, PF number, PT state.
+- Exception codes: `STATUTORY_RULE_MISSING`, `STATUTORY_UAN_MISSING`, `STATUTORY_PAN_MISSING`, `STATUTORY_UNVERIFIED_RULE`.
+- Compliance pages: rules, settings, declarations, proofs, forms, reports, LWF CSV.
+
+### Database
+
+- Additive `supabase/phase11.sql`, appended into `combined.sql`.
+- Tables: `statutory_rule_versions`, `org_statutory_settings`, tax declarations/items/proofs, `payroll_statutory_results` / `lines`.
+- Permissions: `compliance.manage|rules.manage|tax.manage|proofs.review`.
+- Private storage bucket `tax-proofs`.
+
+### Limitations
+
+- Seed rule versions are DISABLED and unverified. Official rates were not independently verified in this environment.
+- Phase 4 attendance calculation is not started.
+
+---
+
 ## Phase 10 — Review, approval, finalization and payslip foundation
 
 - **Date:** 2026-10-06
@@ -343,4 +371,3 @@ Scaffold / empty project start.
 | Phase | Status |
 |---|---|
 | 4 Attendance calculation | Not started — no SQL, pages, or engine |
-| 11 Statutory filing | Payslip PF/ESI/PT/TDS/LWF reserved at 0 |

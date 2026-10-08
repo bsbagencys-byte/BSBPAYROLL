@@ -1,6 +1,6 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, and Phase 10 review, approval, finalization and payslip foundation. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, and Phase 11 versioned India statutory and tax engine. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
 This app does **not** implement full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest. Payroll treats unmarked working days as paid until Phase 4.
 
@@ -180,16 +180,24 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `GET /api/payroll/reports/payslips`
 - `GET /api/payroll/payslips/[id]/pdf`
 - `/compliance`
+- `/compliance/rules`
 - `/compliance/pf`
 - `/compliance/esi`
 - `/compliance/pt`
+- `/compliance/lwf`
 - `/compliance/tds`
+- `/compliance/declarations`
+- `/compliance/proofs`
+- `/compliance/forms`
+- `/compliance/reports`
+- `/compliance/settings`
 - `GET /api/compliance/reports/pf`
 - `GET /api/compliance/reports/esi`
 - `GET /api/compliance/reports/pt`
+- `GET /api/compliance/reports/lwf`
 - `GET /api/compliance/reports/tds`
 
-Attendance calculation (Phase 4) and statutory filing (Phase 11) remain Coming Soon.
+Attendance calculation (Phase 4) remains Coming Soon.
 
 ## Leave
 

@@ -1,7 +1,7 @@
 import { getSessionUser, hasPermission } from "@/lib/auth/session";
 import { PAYROLL_APPROVAL_ACTION_LABELS, PAYROLL_LINE_KIND_LABELS, PAYROLL_RUN_STATUS_LABELS, STATUTORY_HEAD_LABELS } from "@/lib/constants";
 import { toCsv } from "@/lib/payroll/engine";
-import { loadPayrollOverview, loadPayrollRunDetail, toPayrollItemList, netBeforeStatutory } from "@/lib/payroll/query";
+import { loadPayrollOverview, loadPayrollRunDetail, toPayrollItemList } from "@/lib/payroll/query";
 import { listComplianceFilings, listPayrollApprovalHistory, listPayrollItems, listPayrollLines, listPayrollRuns, listPayslips } from "@/lib/payroll/repository";
 import { loadOrgCatalog } from "@/lib/org-data";
 import { listEmployment } from "@/lib/leave/repository";
@@ -18,9 +18,10 @@ export async function payrollCsvResponse(
     | "approval"
     | "pf"
     | "esi"
-    | "pt"
-    | "tds"
-) {
+     | "pt"
+     | "tds"
+     | "lwf"
+   ) {
   const user = await getSessionUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
   const needsPayroll =
@@ -90,7 +91,7 @@ export async function payrollCsvResponse(
         filename = "payroll-bank.csv";
       } else {
         csv = toCsv(
-          ["Employee", "Code", "Department", "Paid days", "LOP", "Earnings", "Variable", "Claims", "Loans", "Deductions", "Net before statutory"],
+          ["Employee", "Code", "Department", "Paid days", "LOP", "Earnings", "Variable", "Claims", "Loans", "Deductions", "PF", "ESI", "PT", "TDS", "LWF", "Statutory", "Net pay"],
           rows.map((item) => [
             item.employeeName,
             item.employeeCode,
@@ -102,7 +103,13 @@ export async function payrollCsvResponse(
             item.item.claims,
             item.item.loan_deductions,
             item.item.deductions,
-            netBeforeStatutory(item.item),
+            item.item.pf_employee,
+            item.item.esi_employee,
+            item.item.pt_amount,
+            item.item.tds_amount,
+            item.item.lwf_employee,
+            item.item.statutory_total,
+            item.item.net_pay,
           ])
         );
         filename = "payroll-sheet.csv";
@@ -128,7 +135,7 @@ export async function payrollCsvResponse(
       const detail = await loadPayrollRunDetail(orgId, run.id);
       if (kind === "employee") {
         csv = toCsv(
-          ["Employee", "Code", "Department", "Branch", "Status", "Paid days", "LOP", "Gross", "Net before statutory"],
+          ["Employee", "Code", "Department", "Branch", "Status", "Paid days", "LOP", "Gross", "Statutory", "Net pay"],
           detail.items.map((item) => [
             item.employeeName,
             item.employeeCode,
@@ -138,13 +145,14 @@ export async function payrollCsvResponse(
             item.item.paid_days,
             item.item.lop_days,
             item.item.earnings + item.item.variable_earnings,
-            netBeforeStatutory(item.item),
+            item.item.statutory_total,
+            item.item.net_pay,
           ])
         );
         filename = "payroll-employee.csv";
       } else if (kind === "earnings" || kind === "deductions") {
         const lines = await listPayrollLines(orgId, run.id);
-        const wanted = kind === "earnings" ? ["EARNING", "REIMBURSEMENT", "CLAIM"] : ["DEDUCTION", "LOAN", "ADJUSTMENT"];
+        const wanted = kind === "earnings" ? ["EARNING", "REIMBURSEMENT", "CLAIM"] : ["DEDUCTION", "LOAN", "ADJUSTMENT", "STATUTORY"];
         const mapped = lines
           .filter((line) => wanted.includes(line.kind))
           .map((line) => {
@@ -177,7 +185,7 @@ export async function payrollCsvResponse(
     }
   } else {
     const filings = await listComplianceFilings(orgId);
-    const head = kind.toUpperCase() as "PF" | "ESI" | "PT" | "TDS";
+    const head = kind.toUpperCase() as "PF" | "ESI" | "PT" | "TDS" | "LWF";
     const filtered = filings.filter((item) => item.head === head);
     csv = toCsv(
       ["Head", "Period", "Employees", "Employee amount", "Employer amount", "Total", "Status"],

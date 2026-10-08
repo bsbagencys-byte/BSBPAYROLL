@@ -53,6 +53,11 @@ export const employeeSchema = z.object({
   pfApplicable: z.boolean().optional(),
   esiApplicable: z.boolean().optional(),
   ptApplicable: z.boolean().optional(),
+  lwfApplicable: z.boolean().optional(),
+  tdsApplicable: z.boolean().optional(),
+  taxRegime: z.enum(["OLD", "NEW", "NEW_ACT_2025"]).optional(),
+  pfNumber: z.string().trim().max(40).optional().or(z.literal("")),
+  ptStateCode: z.string().trim().max(12).optional().or(z.literal("")),
   accountHolderName: z.string().trim().max(80).optional().or(z.literal("")),
   bankName: z.string().trim().max(80).optional().or(z.literal("")),
   accountNumber: z

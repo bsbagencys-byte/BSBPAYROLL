@@ -60,6 +60,10 @@ export const PERMISSIONS = [
   { code: "payslip.export", group: "Payroll", label: "Export payslips" },
   { code: "compliance.view", group: "Compliance", label: "View compliance" },
   { code: "compliance.export", group: "Compliance", label: "Export compliance" },
+  { code: "compliance.manage", group: "Compliance", label: "Manage compliance filings" },
+  { code: "compliance.rules.manage", group: "Compliance", label: "Manage statutory rule versions" },
+  { code: "compliance.tax.manage", group: "Compliance", label: "Manage tax declarations and TDS" },
+  { code: "compliance.proofs.review", group: "Compliance", label: "Review tax proofs" },
   { code: "settings.manage", group: "Settings", label: "Manage settings" },
   { code: "biometric.view", group: "Biometric", label: "View biometric devices and punches" },
   { code: "biometric.manage", group: "Biometric", label: "Manage biometric devices" },
@@ -128,6 +132,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "payslip.export",
     "compliance.view",
     "compliance.export",
+    "compliance.manage",
+    "compliance.rules.manage",
+    "compliance.tax.manage",
+    "compliance.proofs.review",
     "settings.manage",
     "biometric.view",
     "biometric.manage",
@@ -213,6 +221,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "payslip.export",
     "compliance.view",
     "compliance.export",
+    "compliance.tax.manage",
+    "compliance.proofs.review",
     "leave.view",
     "salary.view",
     "salary.history.view",
@@ -1143,6 +1153,10 @@ export const PAYROLL_EXCEPTION_CODES = [
   "NEGATIVE_RESULT",
   "INVALID_EMPLOYEE_STATE",
   "OTHER_CALCULATION_ERROR",
+  "STATUTORY_RULE_MISSING",
+  "STATUTORY_UAN_MISSING",
+  "STATUTORY_PAN_MISSING",
+  "STATUTORY_UNVERIFIED_RULE",
 ] as const;
 export type PayrollExceptionCode = (typeof PAYROLL_EXCEPTION_CODES)[number];
 
@@ -1157,6 +1171,10 @@ export const PAYROLL_EXCEPTION_CODE_LABELS: Record<PayrollExceptionCode, string>
   NEGATIVE_RESULT: "Negative result",
   INVALID_EMPLOYEE_STATE: "Invalid employee state",
   OTHER_CALCULATION_ERROR: "Other calculation error",
+  STATUTORY_RULE_MISSING: "Statutory rule missing",
+  STATUTORY_UAN_MISSING: "UAN missing for PF",
+  STATUTORY_PAN_MISSING: "PAN missing for TDS",
+  STATUTORY_UNVERIFIED_RULE: "Unverified statutory rule",
 };
 
 export const PAYROLL_EXCEPTION_SEVERITIES = ["ERROR", "WARNING"] as const;
@@ -1202,12 +1220,14 @@ export const PAYSLIP_SECTIONS = [
   "EARNING",
   "REIMBURSEMENT",
   "DEDUCTION",
+  "STATUTORY",
   "STATUTORY_RESERVED",
+  "EMPLOYER",
   "TOTAL",
 ] as const;
 export type PayslipSection = (typeof PAYSLIP_SECTIONS)[number];
 
-export const STATUTORY_HEADS = ["PF", "ESI", "PT", "TDS"] as const;
+export const STATUTORY_HEADS = ["PF", "ESI", "PT", "TDS", "LWF"] as const;
 export type StatutoryHead = (typeof STATUTORY_HEADS)[number];
 
 export const STATUTORY_HEAD_LABELS: Record<StatutoryHead, string> = {
@@ -1215,7 +1235,49 @@ export const STATUTORY_HEAD_LABELS: Record<StatutoryHead, string> = {
   ESI: "ESI",
   PT: "Professional Tax",
   TDS: "TDS",
+  LWF: "Labour Welfare Fund",
 };
+
+export const STATUTORY_RULE_STATUSES = ["DRAFT", "ACTIVE", "DISABLED", "ARCHIVED"] as const;
+export type StatutoryRuleVersionStatus = (typeof STATUTORY_RULE_STATUSES)[number];
+
+export const STATUTORY_RULE_STATUS_LABELS: Record<StatutoryRuleVersionStatus, string> = {
+  DRAFT: "Draft",
+  ACTIVE: "Active",
+  DISABLED: "Disabled",
+  ARCHIVED: "Archived",
+};
+
+export const TAX_REGIMES = ["OLD", "NEW", "NEW_ACT_2025"] as const;
+export type TaxRegime = (typeof TAX_REGIMES)[number];
+
+export const TAX_REGIME_LABELS: Record<TaxRegime, string> = {
+  OLD: "Old regime (Income-tax Act, 1961)",
+  NEW: "New regime (section 115BAC)",
+  NEW_ACT_2025: "Income Tax Act, 2025",
+};
+
+export const TAX_DECLARATION_STATUSES = ["DRAFT", "SUBMITTED", "APPROVED", "REJECTED"] as const;
+export type TaxDeclarationStatus = (typeof TAX_DECLARATION_STATUSES)[number];
+
+export const TAX_DECLARATION_STATUS_LABELS: Record<TaxDeclarationStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
+export const TAX_PROOF_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
+export type TaxProofStatus = (typeof TAX_PROOF_STATUSES)[number];
+
+export const TAX_PROOF_STATUS_LABELS: Record<TaxProofStatus, string> = {
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
+export const STATUTORY_ROUNDING_MODES = ["NEAREST_RUPEE", "NEAREST_PAISE", "FLOOR_RUPEE"] as const;
+export type StatutoryRoundingMode = (typeof STATUTORY_ROUNDING_MODES)[number];
 
 export const COMPLIANCE_FILING_STATUSES = ["DRAFT", "READY", "EXPORTED"] as const;
 export type ComplianceFilingStatus = (typeof COMPLIANCE_FILING_STATUSES)[number];
@@ -1239,8 +1301,15 @@ export const PAYROLL_NAV = [
 
 export const COMPLIANCE_NAV = [
   { href: "/compliance", label: "Overview" },
-  { href: "/compliance/pf", label: "PF" },
+  { href: "/compliance/rules", label: "Rules" },
+  { href: "/compliance/pf", label: "EPF" },
   { href: "/compliance/esi", label: "ESI" },
   { href: "/compliance/pt", label: "PT" },
+  { href: "/compliance/lwf", label: "LWF" },
   { href: "/compliance/tds", label: "TDS" },
+  { href: "/compliance/declarations", label: "Declarations" },
+  { href: "/compliance/proofs", label: "Proofs" },
+  { href: "/compliance/forms", label: "Forms" },
+  { href: "/compliance/reports", label: "Reports" },
+  { href: "/compliance/settings", label: "Settings" },
 ] as const;

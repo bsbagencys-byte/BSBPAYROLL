@@ -47,7 +47,7 @@ export default async function EmployeePayrollReviewPage({
       <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric title="Gross" value={formatCurrency(review.row.item.earnings + review.row.item.variable_earnings)} hint={`${review.row.item.paid_days} paid days`} />
         <Metric title="Claims / loans" value={formatCurrency(review.row.item.claims)} hint={`${formatCurrency(review.row.item.loan_deductions)} EMI`} />
-        <Metric title="Net before statutory" value={formatCurrency(review.netBeforeStatutory)} hint="Statutory reserved for Phase 11" />
+        <Metric title="Net pay" value={formatCurrency(review.row.item.net_pay)} hint={`${formatCurrency(review.row.item.statutory_total)} statutory`} />
         <Metric title="Exceptions" value={String(review.exceptions.length)} hint={`${review.adjustments.length} adjustments`} />
       </div>
       <div className="mb-6 grid gap-4 lg:grid-cols-2">

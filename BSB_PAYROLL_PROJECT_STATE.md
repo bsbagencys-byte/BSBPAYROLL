@@ -10,7 +10,7 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 - **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `main` (Phase 8–10 uncommitted)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10 implemented. Phase 4 Attendance is not started. Phase 11 statutory filing is not started.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11 implemented. Phase 4 Attendance is not started.
 
 ---
 
@@ -29,7 +29,8 @@ Status is from code, not README.
 | 7 Benefits, Reimbursements, TA/DA & Claims | **COMPLETE**; consumed by P9 | Types, policies, assignments, claims, approvals, policy engine, TA/DA calc, receipts, CSV. `getApprovedPayrollClaimLines` used by payroll. Process marks `INCLUDED_IN_PAYROLL`; mark-paid sets `PAID`. |
 | 8 Loans & Advances | **COMPLETE**; consumed by P9 | Types, policies, applications, accounts, EMI schedule, ledger, repayments, adjustments. `getEmployeeLoanDeductions` used by payroll. Process posts `recordLoanRepayment` (`source: "PAYROLL"`). |
 | 9 Payroll & Compliance | **COMPLETE** with Phase 4 attendance gap | Monthly run, proration from leave-written days (unmarked working days paid), PF/ESI/PT/TDS, payslips, lock/process/paid, CSV, compliance filings. |
-| 10 Review / Finalize / Payslip | **COMPLETE** overlay on P9 | Review, exceptions, two-step approval, finalize+snapshot, lock after finalize, numbered PDF payslips, adjustments. Statutory payslip sections reserved at 0. |
+| 10 Review / Finalize / Payslip | **COMPLETE** overlay on P9 | Review, exceptions, two-step approval, finalize+snapshot, lock after finalize, numbered PDF payslips, adjustments. |
+| 11 Statutory / tax engine | **COMPLETE** overlay on P9/P10 | Versioned PF/ESI/PT/LWF/TDS, org settings, tax declarations, payroll statutory snapshots, real payslip deductions. Seed versions DISABLED/unverified. |
 
 ---
 
@@ -251,13 +252,13 @@ Demo seed: Asha ₹20k salary advance (4×₹5k, 1 paid); Meera pending reducing
 
 Monthly run overlay: DRAFT → CALCULATED → UNDER_REVIEW → APPROVAL_PENDING → APPROVED → FINALIZED → LOCKED → PROCESSED → PAID (CANCELLED added). Recalculate only DRAFT/CALCULATED. ERROR exceptions block review/approval; WARNING must be acknowledged. Finalize writes an immutable snapshot. Unlock is blocked after finalize. Process posts loan EMI and marks claims; generates numbered PDFs if none exist.
 
-Payslip numbers are `PREFIX/FY/MON/000001`. Statutory PF/ESI/PT/TDS/LWF sections are reserved at 0 on payslips (Phase 11). Adjustments require a reason; processed/paid cannot be adjusted in place.
+Payslip numbers are `PREFIX/FY/MON/000001`. Payslips show PF/ESI/PT/TDS/LWF employee deductions; employer contributions are not deducted from net. Adjustments require a reason; processed/paid cannot be adjusted in place.
 
-Statutory from `statutory_rules` still calculated in the P9 engine. Attendance: leave-written days; unmarked working days count as paid until Phase 4.
+Statutory: versioned `statutory_rule_versions` when ACTIVE, else Phase 9 `statutory_rules` with a warning. Attendance: leave-written days; unmarked working days count as paid until Phase 4.
 
-Permissions: `payroll.view|process|lock|review|approve|reject|finalize|adjust|payslip.view|export|settings`, `payslip.generate|export`, `compliance.view|export`. HR review/approve/reject/export; PAYROLL process/lock/finalize/adjust/generate; ACCOUNTANT review/approve/reject/export; EMPLOYEE payslip.view (own).
+Permissions: `payroll.view|process|lock|review|approve|reject|finalize|adjust|payslip.view|export|settings`, `payslip.generate|export`, `compliance.view|export|manage|rules.manage|tax.manage|proofs.review`. HR all four compliance manage; ACCOUNTANT tax+proofs; PAYROLL view/export only.
 
-Demo seed: PF 12%/12% ceiling 15000, ESI 0.75%/3.25% max 21000, Karnataka PT slabs, TDS disabled. No pre-calculated run.
+Demo seed: PF 12%/12% ceiling 15000, ESI 0.75%/3.25% max 21000, Karnataka PT slabs, TDS/LWF org default off. Versioned templates exist as DISABLED/unverified. No pre-calculated run.
 
 ---
 
@@ -270,16 +271,15 @@ Demo seed: PF 12%/12% ceiling 15000, ESI 0.75%/3.25% max 21000, Karnataka PT sla
 - No `/attendance` route; hitting it 404s.
 - Tax treatment on benefits is stored as a placeholder only.
 - Unmarked working days count as paid in payroll until Phase 4 produces PRESENT/ABSENT.
-- TDS is an optional percentage rule, not a full slab engine.
-- Phase 11 statutory filing / PF-ESI-PT-TDS-LWF calculation on payslips is not started.
+- Seed statutory versions are DISABLED/unverified; official rates were not independently verified in this environment.
 
 ---
 
 ## Current Phase
 
-**Next: Phase 11 statutory/compliance filing, or Phase 4 Attendance.**
+**Next: Phase 4 Attendance, or Phase 12 F&F if requested.**
 
-Phase 10 review/finalize/payslip overlay is complete. Day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Prefer Phase 4 before relying on LOP/present accuracy. Do not start Phase 4 unless requested.
+Phase 11 statutory overlay is complete. Day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Prefer Phase 4 before relying on LOP/present accuracy. Do not start Phase 4 unless requested.
 
 ---
 

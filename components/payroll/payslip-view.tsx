@@ -10,13 +10,8 @@ export function PayslipDocument({ view }: { view: PayslipView }) {
   const earnings = view.lines.filter((item) => item.kind === "EARNING");
   const reimbursements = view.lines.filter((item) => item.kind === "REIMBURSEMENT" || item.kind === "CLAIM");
   const deductions = view.lines.filter((item) => item.kind === "DEDUCTION" || item.kind === "LOAN" || item.kind === "ADJUSTMENT");
-  const reserved = [
-    { id: "pf", name: "Provident Fund", amount: 0 },
-    { id: "esi", name: "ESI", amount: 0 },
-    { id: "pt", name: "Professional Tax", amount: 0 },
-    { id: "tds", name: "TDS", amount: 0 },
-    { id: "lwf", name: "Labour Welfare Fund", amount: 0 },
-  ];
+  const statutory = view.lines.filter((item) => item.kind === "STATUTORY");
+  const employer = view.lines.filter((item) => item.kind === "EMPLOYER");
   return (
     <div className="space-y-4 print:space-y-3">
       <Card>
@@ -49,30 +44,17 @@ export function PayslipDocument({ view }: { view: PayslipView }) {
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <LineCard title="Deductions" rows={deductions} />
-        <Card>
-          <CardHeader>
-            <CardTitle>Statutory (reserved)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <table className="min-w-full text-left text-sm">
-              <tbody>
-                {reserved.map((item) => (
-                  <tr key={item.id} className="border-b last:border-0">
-                    <td className="py-2 pr-3">{item.name}</td>
-                    <td className="py-2 text-right text-slate-500">Reserved</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-3 text-xs text-slate-500">PF, ESI, PT, TDS and LWF are reserved for Phase 11 and are not deducted here.</p>
-          </CardContent>
-        </Card>
+        <LineCard title="Statutory deductions" rows={statutory} />
       </div>
+      {employer.length > 0 ? (
+        <LineCard title="Employer contributions (not deducted from net)" rows={employer} />
+      ) : null}
       <Card>
-        <CardContent className="grid gap-3 p-6 text-sm sm:grid-cols-3">
+        <CardContent className="grid gap-3 p-6 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Gross / earnings" value={formatCurrency(view.item.earnings + view.item.variable_earnings)} />
           <Metric label="Reimbursements" value={formatCurrency(view.item.reimbursements + view.item.claims)} />
-          <Metric label="Net before statutory" value={formatCurrency(view.item.earnings + view.item.variable_earnings + view.item.reimbursements + view.item.claims - view.item.deductions)} />
+          <Metric label="Statutory deductions" value={formatCurrency(view.item.statutory_total)} />
+          <Metric label="Net pay" value={formatCurrency(view.item.net_pay)} />
         </CardContent>
       </Card>
     </div>
