@@ -1,6 +1,6 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, and Phase 11 versioned India statutory and tax engine. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, and Phase 12 employee exit, full & final settlement and contractor payroll. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
 This app does **not** implement full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest. Payroll treats unmarked working days as paid until Phase 4.
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql` and `supabase/phase10.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10 + Phase 11 + Phase 12). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql`, `supabase/phase10.sql`, `supabase/phase11.sql` and `supabase/phase12.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -196,6 +196,35 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `GET /api/compliance/reports/pt`
 - `GET /api/compliance/reports/lwf`
 - `GET /api/compliance/reports/tds`
+- `/employees/exits`
+- `/employees/exits/new`
+- `/employees/exits/[id]`
+- `/employees/exits/clearance`
+- `/employees/exits/reports`
+- `GET /api/exits/reports/register`
+- `GET /api/exits/reports/notice`
+- `GET /api/exits/reports/clearance`
+- `/settlements`
+- `/settlements/new`
+- `/settlements/[id]`
+- `/settlements/reports`
+- `GET /api/settlements/reports/register`
+- `GET /api/settlements/reports/pending`
+- `GET /api/settlements/reports/paid`
+- `GET /api/settlements/[id]/pdf`
+- `/contractors`
+- `/contractors/new`
+- `/contractors/[id]`
+- `/contractors/engagements`
+- `/contractors/reports`
+- `/contractor-payments`
+- `/contractor-payments/new`
+- `/contractor-payments/[id]`
+- `/contractor-payments/approvals`
+- `GET /api/contractors/reports/register`
+- `GET /api/contractors/reports/engagements`
+- `GET /api/contractors/reports/invoices`
+- `GET /api/contractors/reports/withholding`
 
 Attendance calculation (Phase 4) remains Coming Soon.
 
@@ -241,7 +270,7 @@ Attendance calculation (Phase 4) remains Coming Soon.
 - RLS isolates every business table by `organization_id`
 - Passwords are never stored in plaintext
 - Login is rate-limited
-- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes, loan type/policy/application/disburse/repayment/adjustment changes, payroll run create/calculate/lock/process/paid, statutory rule changes
+- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes, loan type/policy/application/disburse/repayment/adjustment changes, payroll run create/calculate/lock/process/paid, statutory rule changes, employee exit/clearance/settlement changes, contractor invoice and payment changes
 - Public biometric ingest is token-authenticated and rate-limited; device tokens are stored as hashes only
 - Service role keys must not be prefixed with `NEXT_PUBLIC_`
 
@@ -251,6 +280,20 @@ Attendance calculation (Phase 4) remains Coming Soon.
 - Net pay uses salary snapshot, approved variable/reimbursement, approved claims and loan EMI, minus PF/ESI/PT/TDS.
 - Unmarked working days count as paid until Phase 4 attendance calculation exists.
 - Payslips issue on process. Compliance filings (PF, ESI, PT, TDS) are generated from included employees.
+- Exited employees whose last working date is before the period are excluded from ordinary payroll.
+
+## Exits and settlements
+
+- Exit types: resignation, termination, retirement, contract expiry, other. Workflow includes notice, clearance and settlement.
+- Required clearance must complete before F&F. Optional tasks do not block.
+- Settlement uses salary on last working date, unpaid salary through LWD, leave encashment for encashable types, notice recovery or notice pay, outstanding loans, and versioned statutory deductions.
+- Settlement PDF is available after finalization. Finalized settlements are not silently edited.
+
+## Contractors
+
+- Contractors are not employees and are not included in ordinary payroll runs.
+- Engagements, invoices, verified TDS withholding, payment and cancel.
+- Duplicate invoice numbers require an authorized override reason.
 
 ## Later phases
 

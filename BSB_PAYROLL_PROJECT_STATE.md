@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `main` (Phase 8–10 uncommitted)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261010-feat-exit-settlement-contractors` (Phase 12 overlay)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11 implemented. Phase 4 Attendance is not started.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12 implemented. Phase 4 Attendance is not started.
 
 ---
 
@@ -31,6 +31,7 @@ Status is from code, not README.
 | 9 Payroll & Compliance | **COMPLETE** with Phase 4 attendance gap | Monthly run, proration from leave-written days (unmarked working days paid), PF/ESI/PT/TDS, payslips, lock/process/paid, CSV, compliance filings. |
 | 10 Review / Finalize / Payslip | **COMPLETE** overlay on P9 | Review, exceptions, two-step approval, finalize+snapshot, lock after finalize, numbered PDF payslips, adjustments. |
 | 11 Statutory / tax engine | **COMPLETE** overlay on P9/P10 | Versioned PF/ESI/PT/LWF/TDS, org settings, tax declarations, payroll statutory snapshots, real payslip deductions. Seed versions DISABLED/unverified. |
+| 12 Exit, F&F, contractors | **COMPLETE** overlay on P9–P11 | Employee exits + clearance, full & final settlement, contractor register/engagements/invoices. Ordinary payroll excludes exited employees whose LWD is before the period. |
 
 ---
 
@@ -63,7 +64,7 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Compliance, Settings.
+Enabled nav: Dashboard, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Compliance, Settings.
 
 Disabled nav (no pages): `/attendance` (P4). Global reports hub remains later; payroll has in-module CSV.
 
@@ -120,6 +121,23 @@ Disabled nav (no pages): `/attendance` (P4). Global reports hub remains later; p
 - `/compliance`, `/compliance/pf`, `/compliance/esi`, `/compliance/pt`, `/compliance/tds`
 - CSV: `/api/compliance/reports/{pf,esi,pt,tds}`
 
+### Exits (P12)
+
+- `/employees/exits`, `/employees/exits/new`, `/employees/exits/[id]`, `/employees/exits/clearance`, `/employees/exits/reports`
+- CSV: `/api/exits/reports/{register,notice,clearance}`
+
+### Settlements (P12)
+
+- `/settlements`, `/settlements/new`, `/settlements/[id]`, `/settlements/reports`
+- CSV: `/api/settlements/reports/{register,pending,paid}`
+- PDF: `/api/settlements/[id]/pdf` (FINALIZED / PARTIALLY_PAID / PAID only)
+
+### Contractors (P12)
+
+- `/contractors`, `/contractors/new`, `/contractors/[id]`, `/contractors/engagements`, `/contractors/reports`
+- `/contractor-payments`, `/contractor-payments/new`, `/contractor-payments/[id]`, `/contractor-payments/approvals`
+- CSV: `/api/contractors/reports/{register,engagements,invoices,withholding}`
+
 ### Employee profile tabs
 
 Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, loans, payroll.
@@ -128,7 +146,7 @@ Overview, employment, statutory, bank, documents, history, attendance (later P4 
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -150,6 +168,10 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 **P10:** `payroll_exceptions`, `payroll_approval_history`, `payroll_snapshots`, `payroll_finalization_logs`, `payroll_adjustments`, `payslip_line_items`, `payslip_sequences` + storage bucket `payslips`
 
+**P11:** `statutory_rule_versions`, `org_statutory_settings`, tax declarations/items/proofs, `payroll_statutory_results` / `lines` + storage bucket `tax-proofs`
+
+**P12:** `exit_clearance_items`, `employee_exits`, `exit_clearance_tasks`, `final_settlements`, `settlement_line_items`, `settlement_approvals`, `settlement_payments`, `contractors`, `contractor_engagements`, `contractor_invoices`, `contractor_payment_items`, `contractor_payment_records` + storage bucket `settlement-statements`
+
 **Not present:** shifts, attendance rules, overtime, LOP calc from punches.
 
 `login_attempts` and `username_lookup` are service-role only. Biometric raw insert from the client is denied; ingest uses admin/demo store.
@@ -158,22 +180,23 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 ## APIs / Services
 
-Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans}.ts`.
+Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans,exits}.ts`.
 
 | Area | Code |
 |---|---|
 | Session / RBAC | `lib/auth/session.ts`, `lib/auth/guards.ts` |
 | Audit | `lib/audit.ts` (free-form action strings) |
-| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, or `loanTypes` missing |
+| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, `loanTypes`, `statutoryRules`, `payrollExceptions`, `statutoryRuleVersions`, or `employeeExits` missing |
 | Biometric | `lib/biometric/{gateway,repository,query,hash,time}.ts`, `lib/biometric/adapters/{essl,generic,index,types}.ts` |
 | Leave | `lib/leave/{engine,service,repository,query,csv,dates,attendance}.ts` |
 | Salary | `lib/salary/{formula,engine,service,repository,query,csv}.ts` |
 | Benefits/Claims | `lib/claims/{engine,service,repository,query,csv}.ts`, `lib/validations/benefits.ts` |
 | Loans | `lib/loans/{engine,service,repository,query,csv}.ts`, `lib/validations/loans.ts` |
 | Payroll | `lib/payroll/{engine,service,repository,query,csv,workflow,exceptions,numbering,pdf}.ts`, `lib/validations/payroll.ts` |
+| Exits / F&F / contractors | `lib/exits/{engine,service,settlement,contractors,repository,query,csv,pdf}.ts`, `lib/validations/exits.ts` |
 | Proxy | `proxy.ts` — public prefixes for login/reset and biometric ingest |
 
-Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getApprovedPayrollClaimLines` (`lib/claims/service.ts`); `getEmployeeLoanDeductions` / `recordLoanRepayment` (`lib/loans/service.ts`); leave-written `attendance_days`.
+Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getApprovedPayrollClaimLines` (`lib/claims/service.ts`); `getEmployeeLoanDeductions` / `recordLoanRepayment` (`lib/loans/service.ts`); leave-written `attendance_days`; `employeeExcludedFromOrdinaryPayroll` (`lib/exits/service.ts`).
 
 ---
 
@@ -262,6 +285,22 @@ Demo seed: PF 12%/12% ceiling 15000, ESI 0.75%/3.25% max 21000, Karnataka PT sla
 
 ---
 
+## Exits, settlements and contractors
+
+Employee exits: DRAFT → SUBMITTED → APPROVED → IN_NOTICE / CLEARANCE_PENDING → SETTLEMENT_PENDING → SETTLED (CANCELLED). Cancel restores employee `ACTIVE`. Required clearance (HR/FINANCE/IT/MANAGER templates) must complete before settlement; optional ADMIN template does not block. Default templates seed if the org has none.
+
+F&F: DRAFT → CALCULATED / HAS_EXCEPTIONS → UNDER_REVIEW → APPROVED → FINALIZED → PARTIALLY_PAID / PAID (CANCELLED). Calc uses `getEmployeeSalaryForDate` on LWD, leave-written attendance through LWD, approved variables/reimbursements/claims, leave types with `encashment_allowed` × daily basic, notice shortfall recovery or termination extra notice pay, outstanding loan principal+interest, and `calculateStatutoryBreakdown`. `loadStatutory` is local in `lib/exits/settlement.ts`. Finalized rows are not silently edited. PDF after FINALIZED/PARTIALLY_PAID/PAID. Full payment calls `markExitSettled` and posts `recordLoanRepayment` (`source: "PAYROLL"`).
+
+Ordinary payroll: `calculatePayrollRun` skips employees via `employeeExcludedFromOrdinaryPayroll` when a non-draft/submitted/cancelled exit has `last_working_date` before `period_from`. `eligibleEmployee` still requires `status === "ACTIVE"`.
+
+Contractors are not employees. Invoice workflow: DRAFT → SUBMITTED → APPROVED / REJECTED → PARTIALLY_PAID / PAID (CANCELLED). Duplicate invoice numbers need `duplicateOverrideReason`. Withholding uses Phase 11 verified TDS versions; missing/unverified rules block calculation.
+
+Permissions: `exits.view|create|edit|approve|cancel|export`, `clearance.view|manage`, `settlements.view|calculate|review|approve|finalize|pay|adjust|export`, `contractors.view|manage|engagements.manage|invoices.create|invoices.approve|pay|withholding.manage|export`. HR all; PAYROLL view/export/calculate; ACCOUNTANT settlements review/approve/finalize/pay plus contractor invoices; MANAGER exits approve + clearance; EMPLOYEE none.
+
+Demo seed: five clearance templates; no exits, settlements or contractors.
+
+---
+
 ## Known Issues
 
 - `app/(app)/coming-soon.tsx` is unused; disabled nav items are non-links with a Soon badge.
@@ -272,14 +311,15 @@ Demo seed: PF 12%/12% ceiling 15000, ESI 0.75%/3.25% max 21000, Karnataka PT sla
 - Tax treatment on benefits is stored as a placeholder only.
 - Unmarked working days count as paid in payroll until Phase 4 produces PRESENT/ABSENT.
 - Seed statutory versions are DISABLED/unverified; official rates were not independently verified in this environment.
+- Contractor withholding is blocked until a verified TDS rule version exists for the invoice date.
 
 ---
 
 ## Current Phase
 
-**Next: Phase 4 Attendance, or Phase 12 F&F if requested.**
+**Next: Phase 4 Attendance, or Phase 13 ESS if requested.**
 
-Phase 11 statutory overlay is complete. Day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Prefer Phase 4 before relying on LOP/present accuracy. Do not start Phase 4 unless requested.
+Phase 12 exit / F&F / contractor overlay is complete. Day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Prefer Phase 4 before relying on LOP/present accuracy. Do not start Phase 4 unless requested.
 
 ---
 
@@ -294,6 +334,7 @@ Phase 4 should consume, not rebuild:
 - Phase 7 `getApprovedPayrollClaimLines` is consumed by payroll
 - Phase 8 `getEmployeeLoanDeductions` is consumed by payroll
 - Phase 9 payroll reads `attendance_days` and treats unmarked working days as paid
+- Phase 12 F&F also prorates through LWD using the same attendance summary
 
 Phase 4 must fill PRESENT/ABSENT/WEEKLY_OFF/HOLIDAY (and later late/OT) without erasing leave marks or punch history.
 

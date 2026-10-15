@@ -70,6 +70,23 @@ import type {
   TaxRegime,
   TaxDeclarationStatus,
   TaxProofStatus,
+  ExitType,
+  ExitStatus,
+  ClearanceDepartment,
+  ClearanceTaskStatus,
+  SettlementStatus,
+  SettlementLineKind,
+  SettlementLineDirection,
+  SettlementApprovalStep,
+  SettlementApprovalDecision,
+  SettlementPaymentMethod,
+  ContractorBusinessType,
+  ContractorStatus,
+  EngagementRateUnit,
+  EngagementFrequency,
+  EngagementStatus,
+  ContractorInvoiceStatus,
+  ContractorPaymentItemKind,
 } from "@/lib/constants";
 
 export type {
@@ -132,6 +149,23 @@ export type {
   TaxRegime,
   TaxDeclarationStatus,
   TaxProofStatus,
+  ExitType,
+  ExitStatus,
+  ClearanceDepartment,
+  ClearanceTaskStatus,
+  SettlementStatus,
+  SettlementLineKind,
+  SettlementLineDirection,
+  SettlementApprovalStep,
+  SettlementApprovalDecision,
+  SettlementPaymentMethod,
+  ContractorBusinessType,
+  ContractorStatus,
+  EngagementRateUnit,
+  EngagementFrequency,
+  EngagementStatus,
+  ContractorInvoiceStatus,
+  ContractorPaymentItemKind,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -1923,4 +1957,286 @@ export interface PayrollStatutoryLine {
   rule_version_id: string | null;
   sort_order: number;
   created_at: string;
+}
+
+export interface ExitClearanceItem {
+  id: string;
+  organization_id: string;
+  department: ClearanceDepartment;
+  code: string;
+  name: string;
+  description: string | null;
+  required: boolean;
+  default_due_days: number;
+  sort_order: number;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeExit {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  reference_number: string | null;
+  exit_type: ExitType;
+  notice_date: string;
+  last_working_date: string;
+  notice_period_days: number;
+  notice_served_days: number;
+  reason: string | null;
+  remarks: string | null;
+  attachment_name: string | null;
+  approver_id: string | null;
+  status: ExitStatus;
+  submitted_at: string | null;
+  approved_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExitClearanceTask {
+  id: string;
+  organization_id: string;
+  exit_id: string;
+  item_id: string | null;
+  department: ClearanceDepartment;
+  name: string;
+  required: boolean;
+  owner_id: string | null;
+  due_date: string | null;
+  status: ClearanceTaskStatus;
+  remarks: string | null;
+  completed_by: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FinalSettlement {
+  id: string;
+  organization_id: string;
+  exit_id: string;
+  employee_id: string;
+  reference_number: string | null;
+  period: string;
+  period_from: string;
+  period_to: string;
+  last_working_date: string;
+  working_days: number;
+  paid_days: number;
+  lop_days: number;
+  earnings_total: number;
+  reimbursement_total: number;
+  encashment_total: number;
+  recovery_total: number;
+  deduction_total: number;
+  statutory_employee_total: number;
+  statutory_employer_total: number;
+  adjustment_total: number;
+  gross_payable: number;
+  net_payable: number;
+  paid_amount: number;
+  status: SettlementStatus;
+  exceptions_json: string | null;
+  snapshot_json: string | null;
+  document_path: string | null;
+  calculated_at: string | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  finalized_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SettlementLineItem {
+  id: string;
+  organization_id: string;
+  settlement_id: string;
+  kind: SettlementLineKind;
+  direction: SettlementLineDirection;
+  code: string;
+  name: string;
+  amount: number;
+  source_type: string | null;
+  source_id: string | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface SettlementApproval {
+  id: string;
+  organization_id: string;
+  settlement_id: string;
+  step: SettlementApprovalStep;
+  decision: SettlementApprovalDecision;
+  reason: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
+
+export interface SettlementPayment {
+  id: string;
+  organization_id: string;
+  settlement_id: string;
+  amount: number;
+  payment_date: string;
+  method: SettlementPaymentMethod;
+  reference: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface Contractor {
+  id: string;
+  organization_id: string;
+  contractor_code: string;
+  legal_name: string;
+  display_name: string;
+  business_type: ContractorBusinessType;
+  pan: string | null;
+  gstin: string | null;
+  email: string | null;
+  phone: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  pin: string | null;
+  bank_name: string | null;
+  account_number: string | null;
+  ifsc: string | null;
+  reporting_manager_id: string | null;
+  status: ContractorStatus;
+  notes: string | null;
+  document_name: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractorEngagement {
+  id: string;
+  organization_id: string;
+  contractor_id: string;
+  reference_number: string | null;
+  scope: string;
+  start_date: string;
+  end_date: string | null;
+  fee_amount: number;
+  rate_unit: EngagementRateUnit;
+  payment_frequency: EngagementFrequency;
+  invoice_terms: string | null;
+  approver_id: string | null;
+  status: EngagementStatus;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractorInvoice {
+  id: string;
+  organization_id: string;
+  contractor_id: string;
+  engagement_id: string | null;
+  invoice_number: string;
+  invoice_date: string;
+  service_from: string;
+  service_to: string;
+  due_date: string | null;
+  gross_amount: number;
+  adjustment_amount: number;
+  withholding_amount: number;
+  net_payable: number;
+  withholding_basis: number;
+  withholding_section: string | null;
+  rule_version_id: string | null;
+  rule_version_code: string | null;
+  duplicate_override_reason: string | null;
+  attachment_name: string | null;
+  status: ContractorInvoiceStatus;
+  reject_reason: string | null;
+  paid_amount: number;
+  submitted_at: string | null;
+  approved_at: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractorPaymentItem {
+  id: string;
+  organization_id: string;
+  invoice_id: string;
+  kind: ContractorPaymentItemKind;
+  name: string;
+  amount: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ContractorPaymentRecord {
+  id: string;
+  organization_id: string;
+  invoice_id: string;
+  amount: number;
+  payment_date: string;
+  method: SettlementPaymentMethod;
+  reference: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface ExitListItem {
+  exit: EmployeeExit;
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string;
+  pendingRequired: number;
+  blockedRequired: number;
+}
+
+export interface SettlementListItem {
+  settlement: FinalSettlement;
+  employeeName: string;
+  employeeCode: string;
+  exitType: ExitType;
+  lastWorkingDate: string;
+}
+
+export interface ContractorListItem {
+  contractor: Contractor;
+  managerName: string;
+  activeEngagements: number;
+}
+
+export interface EngagementListItem {
+  engagement: ContractorEngagement;
+  contractorName: string;
+  contractorCode: string;
+  daysToExpiry: number | null;
+}
+
+export interface InvoiceListItem {
+  invoice: ContractorInvoice;
+  contractorName: string;
+  contractorCode: string;
+  engagementScope: string;
 }

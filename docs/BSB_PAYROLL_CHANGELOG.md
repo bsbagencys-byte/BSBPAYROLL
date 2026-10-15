@@ -4,6 +4,49 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 12 — Employee exit, full & final settlement, contractor payroll
+
+- **Date:** 2026-10-10
+- **Status:** implemented on `261010-feat-exit-settlement-contractors`
+
+### Implemented
+
+- Additive overlay. Phases 1–11 unchanged. Phase 4 attendance still not started.
+- Employee exits: DRAFT → SUBMITTED → APPROVED → IN_NOTICE / CLEARANCE_PENDING → SETTLEMENT_PENDING → SETTLED (CANCELLED). Cancel restores employee `ACTIVE`.
+- Default clearance templates seed if the org has none. Required tasks block settlement; optional tasks do not.
+- F&F settlement: DRAFT → CALCULATED / HAS_EXCEPTIONS → UNDER_REVIEW → APPROVED → FINALIZED → PARTIALLY_PAID / PAID (CANCELLED). Finalized rows are not silently edited.
+- Calc uses effective-date salary on LWD, leave-written attendance, approved variables/claims, encashable leave × daily basic, notice shortfall/extra, outstanding loans, and Phase 11 `calculateStatutoryBreakdown`. `loadStatutory` is local in `lib/exits/settlement.ts`.
+- Ordinary payroll excludes employees whose last working date is before the period (`employeeExcludedFromOrdinaryPayroll`).
+- Settlement PDF after FINALIZED / PARTIALLY_PAID / PAID. Full payment marks the exit SETTLED and posts `recordLoanRepayment`.
+- Contractors are distinct from employees. Invoice duplicate numbers need an authorized override reason. Withholding uses verified TDS rule versions; missing/unverified rules block calculation.
+
+### Database
+
+- Additive `supabase/phase12.sql`, appended into `combined.sql`.
+- Tables: `exit_clearance_items`, `employee_exits`, `exit_clearance_tasks`, `final_settlements`, `settlement_line_items`, `settlement_approvals`, `settlement_payments`, `contractors`, `contractor_engagements`, `contractor_invoices`, `contractor_payment_items`, `contractor_payment_records`.
+- Permissions: `exits.*`, `clearance.*`, `settlements.*`, `contractors.*`.
+- Private storage bucket `settlement-statements`.
+
+### API
+
+- Server actions in `actions/exits.ts` with `writeAudit`.
+- CSV: `/api/exits/reports/{register,notice,clearance}`, `/api/settlements/reports/{register,pending,paid}`, `/api/contractors/reports/{register,engagements,invoices,withholding}`.
+- PDF: `/api/settlements/[id]/pdf`.
+
+### UI
+
+- `/employees/exits`, `/settlements`, `/contractors`, `/contractor-payments`.
+- Dashboard shortcuts for Exits, Settlements, Contractors.
+- Nav items: Exits, Settlements, Contractors.
+
+### Limitations
+
+- Seed statutory versions remain DISABLED/unverified; contractor withholding is blocked until a verified TDS version exists.
+- Phase 4 attendance calculation is not started. F&F proration uses leave-written days plus unmarked working days as paid.
+- No demo exits, settlements or contractors; only clearance templates are seeded.
+
+---
+
 ## Phase 11 — Versioned India statutory and tax engine
 
 - **Date:** 2026-10-08

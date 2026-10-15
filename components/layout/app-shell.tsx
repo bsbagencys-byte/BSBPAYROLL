@@ -7,7 +7,9 @@ import {
   Banknote,
   BarChart3,
   Bell,
+  Briefcase,
   CalendarCheck,
+  FileSignature,
   Fingerprint,
   Gift,
   HandCoins,
@@ -18,6 +20,7 @@ import {
   Receipt,
   Settings,
   ShieldCheck,
+  UserMinus,
   Users,
   Wallet,
   X,
@@ -44,6 +47,9 @@ const ICONS = {
   BarChart3,
   ShieldCheck,
   Settings,
+  UserMinus,
+  FileSignature,
+  Briefcase,
 } as const;
 
 const NAV = NAV_ITEMS;

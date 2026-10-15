@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Banknote, Building2, Fingerprint, Gift, HandCoins, Palmtree, Receipt, Shield, ShieldCheck, UserRound, Users, Wallet } from "lucide-react";
+import { Banknote, Briefcase, Building2, FileSignature, Fingerprint, Gift, HandCoins, Palmtree, Receipt, Shield, ShieldCheck, UserMinus, UserRound, Users, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Company, users, employees, biometric ingest, leave, salary, benefits, claims, loans, payroll and compliance. Attendance calculation is not enabled yet."
+        description="Company, users, employees, biometric ingest, leave, salary, benefits, claims, loans, payroll, exits, settlements, contractors and compliance. Attendance calculation is not enabled yet."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -190,6 +190,21 @@ export default async function DashboardPage() {
             <Wallet className="h-5 w-5 text-brand-700" />
             <p className="mt-2 font-medium">Payroll</p>
             <p className="text-xs text-slate-500">Monthly run, statutory and payslips</p>
+          </Link>
+          <Link href="/employees/exits" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
+            <UserMinus className="h-5 w-5 text-brand-700" />
+            <p className="mt-2 font-medium">Exits</p>
+            <p className="text-xs text-slate-500">Notice, clearance and last working date</p>
+          </Link>
+          <Link href="/settlements" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
+            <FileSignature className="h-5 w-5 text-brand-700" />
+            <p className="mt-2 font-medium">Settlements</p>
+            <p className="text-xs text-slate-500">Full and final calculation and payout</p>
+          </Link>
+          <Link href="/contractors" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
+            <Briefcase className="h-5 w-5 text-brand-700" />
+            <p className="mt-2 font-medium">Contractors</p>
+            <p className="text-xs text-slate-500">Vendors, invoices and withholding</p>
           </Link>
           <Link href="/compliance" className="rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-500">
             <ShieldCheck className="h-5 w-5 text-brand-700" />

@@ -81,6 +81,18 @@ import type {
   PayrollStatutoryLine,
   UserProfile,
   ComplianceFiling,
+  Contractor,
+  ContractorEngagement,
+  ContractorInvoice,
+  ContractorPaymentItem,
+  ContractorPaymentRecord,
+  EmployeeExit,
+  ExitClearanceItem,
+  ExitClearanceTask,
+  FinalSettlement,
+  SettlementApproval,
+  SettlementLineItem,
+  SettlementPayment,
 } from "@/types";
 import {
   DEFAULT_EMPLOYMENT_TYPES,
@@ -93,6 +105,7 @@ import {
   type RoleCode,
 } from "@/lib/constants";
 import { sha256, tokenHint } from "@/lib/biometric/hash";
+import { DEFAULT_CLEARANCE_TEMPLATES } from "@/lib/exits/engine";
 
 const SESSION_COOKIE = "bsb_demo_session";
 
@@ -340,6 +353,18 @@ export type DemoStore = {
   payrollAdjustments: PayrollAdjustment[];
   payslipLineItems: PayslipLineItem[];
   payslipSequences: PayslipSequence[];
+  exitClearanceItems: ExitClearanceItem[];
+  employeeExits: EmployeeExit[];
+  exitClearanceTasks: ExitClearanceTask[];
+  finalSettlements: FinalSettlement[];
+  settlementLineItems: SettlementLineItem[];
+  settlementApprovals: SettlementApproval[];
+  settlementPayments: SettlementPayment[];
+  contractors: Contractor[];
+  contractorEngagements: ContractorEngagement[];
+  contractorInvoices: ContractorInvoice[];
+  contractorPaymentItems: ContractorPaymentItem[];
+  contractorPaymentRecords: ContractorPaymentRecord[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -788,6 +813,7 @@ function createStore(): DemoStore {
     ...createBenefitsSeed(),
     ...createLoansSeed(),
     ...createPayrollSeed(),
+    ...createExitsSeed(),
   };
 }
 
@@ -2403,6 +2429,53 @@ function createPayrollSeed(): Pick<
   };
 }
 
+function createExitsSeed(): Pick<
+  DemoStore,
+  | "exitClearanceItems"
+  | "employeeExits"
+  | "exitClearanceTasks"
+  | "finalSettlements"
+  | "settlementLineItems"
+  | "settlementApprovals"
+  | "settlementPayments"
+  | "contractors"
+  | "contractorEngagements"
+  | "contractorInvoices"
+  | "contractorPaymentItems"
+  | "contractorPaymentRecords"
+> {
+  const created = nowIso();
+  return {
+    exitClearanceItems: DEFAULT_CLEARANCE_TEMPLATES.map((item, index) => ({
+      id: `eci-${index + 1}`,
+      organization_id: ORG_ID,
+      department: item.department,
+      code: item.code,
+      name: item.name,
+      description: null,
+      required: item.required,
+      default_due_days: item.default_due_days,
+      sort_order: item.sort_order,
+      status: "ACTIVE" as const,
+      created_by: null,
+      updated_by: null,
+      created_at: created,
+      updated_at: created,
+    })),
+    employeeExits: [],
+    exitClearanceTasks: [],
+    finalSettlements: [],
+    settlementLineItems: [],
+    settlementApprovals: [],
+    settlementPayments: [],
+    contractors: [],
+    contractorEngagements: [],
+    contractorInvoices: [],
+    contractorPaymentItems: [],
+    contractorPaymentRecords: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -2414,7 +2487,8 @@ export function getDemoStore(): DemoStore {
     !("loanTypes" in globalStore.__bsbDemo) ||
     !("statutoryRules" in globalStore.__bsbDemo) ||
     !("payrollExceptions" in globalStore.__bsbDemo) ||
-    !("statutoryRuleVersions" in globalStore.__bsbDemo)
+    !("statutoryRuleVersions" in globalStore.__bsbDemo) ||
+    !("employeeExits" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

@@ -1,4 +1,5 @@
 import { getApprovedPayrollClaimLines } from "@/lib/claims/service";
+import { employeeExcludedFromOrdinaryPayroll } from "@/lib/exits/service";
 import { listAttendanceDays } from "@/lib/leave/attendance";
 import { listEmployment, listHolidays } from "@/lib/leave/repository";
 import { getEmployeeLoanDeductions, recordLoanRepayment } from "@/lib/loans/service";
@@ -254,7 +255,10 @@ export async function calculatePayrollRun(organizationId: string, runId: string,
 
   for (const employee of catalog.employees) {
     const job = employment.find((item) => item.employee_id === employee.id);
-    const check = eligibleEmployee(employee, job, run.period_to);
+    const excluded = await employeeExcludedFromOrdinaryPayroll(organizationId, employee.id, run.period_from);
+    const check = excluded
+      ? { ok: false, reason: "Employee last working date is before this payroll period." }
+      : eligibleEmployee(employee, job, run.period_to);
     const itemId = crypto.randomUUID();
     const attendance = summarizeAttendance({
       from: run.period_from,

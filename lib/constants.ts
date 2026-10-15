@@ -101,6 +101,30 @@ export const PERMISSIONS = [
   { code: "loans.adjust", group: "Loans", label: "Adjust, waive or defer loans" },
   { code: "loans.export", group: "Loans", label: "Export loans" },
   { code: "loans.settings", group: "Loans", label: "Manage loan types and policies" },
+  { code: "exits.view", group: "Exits", label: "View employee exits" },
+  { code: "exits.create", group: "Exits", label: "Create employee exits" },
+  { code: "exits.edit", group: "Exits", label: "Edit employee exits" },
+  { code: "exits.approve", group: "Exits", label: "Approve employee exits" },
+  { code: "exits.cancel", group: "Exits", label: "Cancel employee exits" },
+  { code: "exits.export", group: "Exits", label: "Export employee exits" },
+  { code: "clearance.view", group: "Exits", label: "View exit clearance" },
+  { code: "clearance.manage", group: "Exits", label: "Manage exit clearance" },
+  { code: "settlements.view", group: "Settlements", label: "View settlements" },
+  { code: "settlements.calculate", group: "Settlements", label: "Calculate settlements" },
+  { code: "settlements.review", group: "Settlements", label: "Review settlements" },
+  { code: "settlements.approve", group: "Settlements", label: "Approve settlements" },
+  { code: "settlements.finalize", group: "Settlements", label: "Finalize settlements" },
+  { code: "settlements.pay", group: "Settlements", label: "Record settlement payments" },
+  { code: "settlements.adjust", group: "Settlements", label: "Adjust settlements" },
+  { code: "settlements.export", group: "Settlements", label: "Export settlements" },
+  { code: "contractors.view", group: "Contractors", label: "View contractors" },
+  { code: "contractors.manage", group: "Contractors", label: "Manage contractors" },
+  { code: "contractors.engagements.manage", group: "Contractors", label: "Manage contractor engagements" },
+  { code: "contractors.invoices.create", group: "Contractors", label: "Create contractor invoices" },
+  { code: "contractors.invoices.approve", group: "Contractors", label: "Approve contractor invoices" },
+  { code: "contractors.pay", group: "Contractors", label: "Record contractor payments" },
+  { code: "contractors.withholding.manage", group: "Contractors", label: "Manage contractor withholding" },
+  { code: "contractors.export", group: "Contractors", label: "Export contractor data" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -173,6 +197,30 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "loans.adjust",
     "loans.export",
     "loans.settings",
+    "exits.view",
+    "exits.create",
+    "exits.edit",
+    "exits.approve",
+    "exits.cancel",
+    "exits.export",
+    "clearance.view",
+    "clearance.manage",
+    "settlements.view",
+    "settlements.calculate",
+    "settlements.review",
+    "settlements.approve",
+    "settlements.finalize",
+    "settlements.pay",
+    "settlements.adjust",
+    "settlements.export",
+    "contractors.view",
+    "contractors.manage",
+    "contractors.engagements.manage",
+    "contractors.invoices.create",
+    "contractors.invoices.approve",
+    "contractors.pay",
+    "contractors.withholding.manage",
+    "contractors.export",
   ],
   PAYROLL: [
     "organization.view",
@@ -208,6 +256,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "loans.disburse",
     "loans.repayment.manage",
     "loans.export",
+    "exits.view",
+    "exits.export",
+    "clearance.view",
+    "settlements.view",
+    "settlements.calculate",
+    "settlements.export",
+    "contractors.view",
+    "contractors.export",
   ],
   ACCOUNTANT: [
     "organization.view",
@@ -235,6 +291,20 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "loans.disburse",
     "loans.repayment.manage",
     "loans.export",
+    "exits.view",
+    "clearance.view",
+    "settlements.view",
+    "settlements.review",
+    "settlements.approve",
+    "settlements.finalize",
+    "settlements.pay",
+    "settlements.export",
+    "contractors.view",
+    "contractors.invoices.create",
+    "contractors.invoices.approve",
+    "contractors.pay",
+    "contractors.withholding.manage",
+    "contractors.export",
   ],
   MANAGER: [
     "organization.view",
@@ -252,6 +322,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "loans.view",
     "loans.create",
     "loans.approve",
+    "exits.view",
+    "exits.approve",
+    "clearance.view",
+    "clearance.manage",
+    "contractors.view",
   ],
   EMPLOYEE: [
     "organization.view",
@@ -278,6 +353,9 @@ export const NAV_ITEMS = [
   { href: "/loans", label: "Loans", icon: "HandCoins", enabled: true, phase: 8 },
   { href: "/biometric", label: "Biometric", icon: "Fingerprint", enabled: true, phase: 3 },
   { href: "/payroll", label: "Payroll", icon: "Wallet", enabled: true, phase: 9 },
+  { href: "/employees/exits", label: "Exits", icon: "UserMinus", enabled: true, phase: 12 },
+  { href: "/settlements", label: "Settlements", icon: "FileSignature", enabled: true, phase: 12 },
+  { href: "/contractors", label: "Contractors", icon: "Briefcase", enabled: true, phase: 12 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 11 },
   { href: "/compliance", label: "Compliance", icon: "ShieldCheck", enabled: true, phase: 9 },
   { href: "/settings/company", label: "Settings", icon: "Settings", enabled: true },
@@ -1312,4 +1390,223 @@ export const COMPLIANCE_NAV = [
   { href: "/compliance/forms", label: "Forms" },
   { href: "/compliance/reports", label: "Reports" },
   { href: "/compliance/settings", label: "Settings" },
+] as const;
+
+export const EXIT_TYPES = ["RESIGNATION", "TERMINATION", "RETIREMENT", "CONTRACT_EXPIRY", "OTHER"] as const;
+export type ExitType = (typeof EXIT_TYPES)[number];
+export const EXIT_TYPE_LABELS: Record<ExitType, string> = {
+  RESIGNATION: "Resignation",
+  TERMINATION: "Termination",
+  RETIREMENT: "Retirement",
+  CONTRACT_EXPIRY: "Contract expiry",
+  OTHER: "Other",
+};
+
+export const EXIT_STATUSES = [
+  "DRAFT",
+  "SUBMITTED",
+  "APPROVED",
+  "IN_NOTICE",
+  "CLEARANCE_PENDING",
+  "SETTLEMENT_PENDING",
+  "SETTLED",
+  "CANCELLED",
+] as const;
+export type ExitStatus = (typeof EXIT_STATUSES)[number];
+export const EXIT_STATUS_LABELS: Record<ExitStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  APPROVED: "Approved",
+  IN_NOTICE: "In notice",
+  CLEARANCE_PENDING: "Clearance pending",
+  SETTLEMENT_PENDING: "Settlement pending",
+  SETTLED: "Settled",
+  CANCELLED: "Cancelled",
+};
+
+export const CLEARANCE_DEPARTMENTS = ["HR", "FINANCE", "IT", "ADMIN", "MANAGER"] as const;
+export type ClearanceDepartment = (typeof CLEARANCE_DEPARTMENTS)[number];
+export const CLEARANCE_DEPARTMENT_LABELS: Record<ClearanceDepartment, string> = {
+  HR: "HR",
+  FINANCE: "Finance",
+  IT: "IT / Assets",
+  ADMIN: "Administration",
+  MANAGER: "Reporting manager",
+};
+
+export const CLEARANCE_TASK_STATUSES = ["PENDING", "CLEARED", "BLOCKED", "NOT_APPLICABLE"] as const;
+export type ClearanceTaskStatus = (typeof CLEARANCE_TASK_STATUSES)[number];
+export const CLEARANCE_TASK_STATUS_LABELS: Record<ClearanceTaskStatus, string> = {
+  PENDING: "Pending",
+  CLEARED: "Cleared",
+  BLOCKED: "Blocked",
+  NOT_APPLICABLE: "Not applicable",
+};
+
+export const SETTLEMENT_STATUSES = [
+  "DRAFT",
+  "CALCULATED",
+  "HAS_EXCEPTIONS",
+  "UNDER_REVIEW",
+  "APPROVED",
+  "FINALIZED",
+  "PARTIALLY_PAID",
+  "PAID",
+  "CANCELLED",
+] as const;
+export type SettlementStatus = (typeof SETTLEMENT_STATUSES)[number];
+export const SETTLEMENT_STATUS_LABELS: Record<SettlementStatus, string> = {
+  DRAFT: "Draft",
+  CALCULATED: "Calculated",
+  HAS_EXCEPTIONS: "Has exceptions",
+  UNDER_REVIEW: "Under review",
+  APPROVED: "Approved",
+  FINALIZED: "Finalized",
+  PARTIALLY_PAID: "Partially paid",
+  PAID: "Paid",
+  CANCELLED: "Cancelled",
+};
+
+export const SETTLEMENT_LINE_KINDS = [
+  "UNPAID_SALARY",
+  "VARIABLE_EARNING",
+  "BONUS",
+  "ARREAR",
+  "REIMBURSEMENT",
+  "LEAVE_ENCASHMENT",
+  "NOTICE_PAY",
+  "NOTICE_RECOVERY",
+  "LOAN_RECOVERY",
+  "STATUTORY",
+  "EMPLOYER_STATUTORY",
+  "ADJUSTMENT",
+] as const;
+export type SettlementLineKind = (typeof SETTLEMENT_LINE_KINDS)[number];
+export const SETTLEMENT_LINE_KIND_LABELS: Record<SettlementLineKind, string> = {
+  UNPAID_SALARY: "Unpaid salary",
+  VARIABLE_EARNING: "Variable earning",
+  BONUS: "Bonus",
+  ARREAR: "Arrear",
+  REIMBURSEMENT: "Reimbursement",
+  LEAVE_ENCASHMENT: "Leave encashment",
+  NOTICE_PAY: "Notice pay",
+  NOTICE_RECOVERY: "Notice recovery",
+  LOAN_RECOVERY: "Loan / advance recovery",
+  STATUTORY: "Statutory deduction",
+  EMPLOYER_STATUTORY: "Employer statutory",
+  ADJUSTMENT: "Adjustment",
+};
+
+export const SETTLEMENT_LINE_DIRECTIONS = ["EARNING", "DEDUCTION", "EMPLOYER"] as const;
+export type SettlementLineDirection = (typeof SETTLEMENT_LINE_DIRECTIONS)[number];
+
+export const SETTLEMENT_APPROVAL_STEPS = ["REVIEW", "APPROVAL", "FINALIZE", "REJECT", "ADJUST"] as const;
+export type SettlementApprovalStep = (typeof SETTLEMENT_APPROVAL_STEPS)[number];
+export const SETTLEMENT_APPROVAL_DECISIONS = ["APPROVED", "REJECTED", "RETURNED"] as const;
+export type SettlementApprovalDecision = (typeof SETTLEMENT_APPROVAL_DECISIONS)[number];
+
+export const SETTLEMENT_PAYMENT_METHODS = ["BANK_TRANSFER", "CHEQUE", "CASH", "UPI", "OTHER"] as const;
+export type SettlementPaymentMethod = (typeof SETTLEMENT_PAYMENT_METHODS)[number];
+export const SETTLEMENT_PAYMENT_METHOD_LABELS: Record<SettlementPaymentMethod, string> = {
+  BANK_TRANSFER: "Bank transfer",
+  CHEQUE: "Cheque",
+  CASH: "Cash",
+  UPI: "UPI",
+  OTHER: "Other",
+};
+
+export const CONTRACTOR_BUSINESS_TYPES = ["INDIVIDUAL", "PROPRIETORSHIP", "PARTNERSHIP", "COMPANY", "LLP", "OTHER"] as const;
+export type ContractorBusinessType = (typeof CONTRACTOR_BUSINESS_TYPES)[number];
+export const CONTRACTOR_BUSINESS_TYPE_LABELS: Record<ContractorBusinessType, string> = {
+  INDIVIDUAL: "Individual",
+  PROPRIETORSHIP: "Proprietorship",
+  PARTNERSHIP: "Partnership",
+  COMPANY: "Company",
+  LLP: "LLP",
+  OTHER: "Other",
+};
+
+export const CONTRACTOR_STATUSES = ["ACTIVE", "INACTIVE", "BLACKLISTED"] as const;
+export type ContractorStatus = (typeof CONTRACTOR_STATUSES)[number];
+export const CONTRACTOR_STATUS_LABELS: Record<ContractorStatus, string> = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+  BLACKLISTED: "Blacklisted",
+};
+
+export const ENGAGEMENT_RATE_UNITS = ["MONTHLY", "DAILY", "HOURLY", "MILESTONE", "ONE_TIME"] as const;
+export type EngagementRateUnit = (typeof ENGAGEMENT_RATE_UNITS)[number];
+export const ENGAGEMENT_RATE_UNIT_LABELS: Record<EngagementRateUnit, string> = {
+  MONTHLY: "Monthly",
+  DAILY: "Daily",
+  HOURLY: "Hourly",
+  MILESTONE: "Milestone",
+  ONE_TIME: "One-time",
+};
+
+export const ENGAGEMENT_FREQUENCIES = ["MONTHLY", "MILESTONE", "ONE_TIME"] as const;
+export type EngagementFrequency = (typeof ENGAGEMENT_FREQUENCIES)[number];
+export const ENGAGEMENT_FREQUENCY_LABELS: Record<EngagementFrequency, string> = {
+  MONTHLY: "Monthly",
+  MILESTONE: "Milestone",
+  ONE_TIME: "One-time",
+};
+
+export const ENGAGEMENT_STATUSES = ["DRAFT", "ACTIVE", "EXPIRED", "CLOSED", "CANCELLED"] as const;
+export type EngagementStatus = (typeof ENGAGEMENT_STATUSES)[number];
+export const ENGAGEMENT_STATUS_LABELS: Record<EngagementStatus, string> = {
+  DRAFT: "Draft",
+  ACTIVE: "Active",
+  EXPIRED: "Expired",
+  CLOSED: "Closed",
+  CANCELLED: "Cancelled",
+};
+
+export const CONTRACTOR_INVOICE_STATUSES = [
+  "DRAFT",
+  "SUBMITTED",
+  "UNDER_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "SCHEDULED",
+  "PARTIALLY_PAID",
+  "PAID",
+  "CANCELLED",
+] as const;
+export type ContractorInvoiceStatus = (typeof CONTRACTOR_INVOICE_STATUSES)[number];
+export const CONTRACTOR_INVOICE_STATUS_LABELS: Record<ContractorInvoiceStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  UNDER_REVIEW: "Under review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  SCHEDULED: "Scheduled",
+  PARTIALLY_PAID: "Partially paid",
+  PAID: "Paid",
+  CANCELLED: "Cancelled",
+};
+
+export const CONTRACTOR_PAYMENT_ITEM_KINDS = ["GROSS", "ADJUSTMENT", "WITHHOLDING", "NET"] as const;
+export type ContractorPaymentItemKind = (typeof CONTRACTOR_PAYMENT_ITEM_KINDS)[number];
+
+export const EXITS_NAV = [
+  { href: "/employees/exits", label: "Register" },
+  { href: "/employees/exits/new", label: "New exit" },
+  { href: "/employees/exits/clearance", label: "Clearance" },
+  { href: "/employees/exits/reports", label: "Reports" },
+] as const;
+
+export const SETTLEMENTS_NAV = [
+  { href: "/settlements", label: "Register" },
+  { href: "/settlements/new", label: "New settlement" },
+  { href: "/settlements/reports", label: "Reports" },
+] as const;
+
+export const CONTRACTORS_NAV = [
+  { href: "/contractors", label: "Register" },
+  { href: "/contractors/new", label: "New contractor" },
+  { href: "/contractors/engagements", label: "Engagements" },
+  { href: "/contractor-payments", label: "Invoices" },
+  { href: "/contractor-payments/approvals", label: "Approvals" },
+  { href: "/contractors/reports", label: "Reports" },
 ] as const;

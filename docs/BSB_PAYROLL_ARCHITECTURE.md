@@ -26,7 +26,7 @@ Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
 - **Public HTTP:** biometric ingest only (`/api/biometric/push`, `/api/biometric/webhook`).
-- **Authenticated HTTP:** CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*` and `/api/compliance/reports/*`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`.
+- **Authenticated HTTP:** CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*` and `/api/contractors/reports/*`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
 - **Rate limit:** in-memory for login and biometric ingest.
@@ -37,13 +37,13 @@ No standalone API gateway or worker queue.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
 See `BSB_PAYROLL_PROJECT_STATE.md` for the table list. There is no Phase 4 schema file.
 
-Storage: private buckets `employee-documents`, `claim-receipts` and `payslips`.
+Storage: private buckets `employee-documents`, `claim-receipts`, `payslips`, `tax-proofs` and `settlement-statements`.
 
 ---
 
@@ -214,6 +214,20 @@ Payroll never writes attendance or leave tables.
 
 ---
 
+## Employee exit, F&F and contractors — IMPLEMENTED
+
+- Exit workflow: DRAFT → SUBMITTED → APPROVED → IN_NOTICE / CLEARANCE_PENDING → SETTLEMENT_PENDING → SETTLED (CANCELLED). Cancel restores employee `ACTIVE`.
+- Clearance templates seed if the org has none. Required tasks block settlement; optional tasks do not.
+- Settlement workflow: DRAFT → CALCULATED / HAS_EXCEPTIONS → UNDER_REVIEW → APPROVED → FINALIZED → PARTIALLY_PAID / PAID (CANCELLED). Finalized rows are not silently edited.
+- Calc in `lib/exits/settlement.ts` uses `getEmployeeSalaryForDate` on LWD, leave-written attendance, approved variables/claims, encashable leave × daily basic, notice shortfall/extra, outstanding loans, and `calculateStatutoryBreakdown`. `loadStatutory` is local (no payroll-service import).
+- Ordinary payroll excludes employees whose last working date is before the period (`employeeExcludedFromOrdinaryPayroll` in `lib/exits/service.ts`).
+- Settlement PDF after FINALIZED / PARTIALLY_PAID / PAID. Full payment marks the exit SETTLED and posts `recordLoanRepayment`.
+- Contractors are not employees. Invoices: DRAFT → SUBMITTED → APPROVED / REJECTED → PARTIALLY_PAID / PAID. Duplicate invoice numbers require an authorized override reason. Withholding uses verified Phase 11 TDS versions; missing/unverified rules block calculation.
+
+Exits never write attendance or leave tables.
+
+---
+
 ## Future integration boundaries
 
 Do not implement these until the named phase:
@@ -224,6 +238,7 @@ Do not implement these until the named phase:
 - **Phase 9:** payroll run and compliance (implemented). Consumes salary, leave-written days, claims and loans.
 - **Phase 10:** review, approval, finalization, lock and payslip foundation (implemented).
 - **Phase 11:** versioned statutory/tax engine (implemented). Do not hard-code rates in payroll.
-- **Later:** employee self-service beyond `/profile`, Face/QR/GPS, smart auto attendance.
+- **Phase 12:** employee exit, F&F settlement and contractor payroll (implemented). Do not mix contractor invoices into employee payroll runs.
+- **Later:** employee self-service beyond `/profile` (Phase 13), Face/QR/GPS, smart auto attendance.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.
