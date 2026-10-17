@@ -20,6 +20,7 @@ import {
   Receipt,
   Settings,
   ShieldCheck,
+  UserCircle,
   UserMinus,
   Users,
   Wallet,
@@ -50,6 +51,7 @@ const ICONS = {
   UserMinus,
   FileSignature,
   Briefcase,
+  UserCircle,
 } as const;
 
 const NAV = NAV_ITEMS;
@@ -140,9 +142,9 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
           </div>
           <div className="flex items-center gap-3">
             <Badge>{user.roleName}</Badge>
-            <button className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100" aria-label="Notifications">
+            <Link href="/my/notifications" className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100" aria-label="Notifications">
               <Bell className="h-4 w-4" />
-            </button>
+            </Link>
             <Link href="/profile" className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-50">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-700 text-xs font-semibold text-white">
                 {initials(user.displayName)}

@@ -87,6 +87,8 @@ import type {
   ContractorPaymentItem,
   ContractorPaymentRecord,
   EmployeeExit,
+  EssChangeRequest,
+  EssNotification,
   ExitClearanceItem,
   ExitClearanceTask,
   FinalSettlement,
@@ -365,6 +367,8 @@ export type DemoStore = {
   contractorInvoices: ContractorInvoice[];
   contractorPaymentItems: ContractorPaymentItem[];
   contractorPaymentRecords: ContractorPaymentRecord[];
+  essNotifications: EssNotification[];
+  essChangeRequests: EssChangeRequest[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -814,6 +818,7 @@ function createStore(): DemoStore {
     ...createLoansSeed(),
     ...createPayrollSeed(),
     ...createExitsSeed(),
+    ...createEssSeed(),
   };
 }
 
@@ -2476,6 +2481,59 @@ function createExitsSeed(): Pick<
   };
 }
 
+function createEssSeed(): Pick<DemoStore, "essNotifications" | "essChangeRequests"> {
+  const created = nowIso();
+  return {
+    essChangeRequests: [
+      {
+        id: "ecr-demo-1",
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_STAFF_ID,
+        requested_by: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        category: "BANK",
+        field_key: "bank.account_number",
+        current_value: "****4782",
+        requested_value: "50100123456789",
+        reason: "Salary account changed after relocation.",
+        status: "PENDING",
+        reviewer_id: null,
+        review_reason: null,
+        reviewed_at: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    essNotifications: [
+      {
+        id: "en-demo-1",
+        organization_id: ORG_ID,
+        user_id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        type: "INFO",
+        title: "Welcome to My Space",
+        body: "Review your payslips, leave and documents from one place.",
+        href: "/my",
+        entity_type: null,
+        entity_id: null,
+        read_at: null,
+        created_at: created,
+      },
+      {
+        id: "en-demo-2",
+        organization_id: ORG_ID,
+        user_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        type: "ACTION",
+        title: "Profile change request awaiting review",
+        body: "Rahul Sharma requested a bank account change.",
+        href: "/my/requests",
+        entity_type: "ess_change_request",
+        entity_id: "ecr-demo-1",
+        read_at: null,
+        created_at: created,
+      },
+    ],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -2488,7 +2546,8 @@ export function getDemoStore(): DemoStore {
     !("statutoryRules" in globalStore.__bsbDemo) ||
     !("payrollExceptions" in globalStore.__bsbDemo) ||
     !("statutoryRuleVersions" in globalStore.__bsbDemo) ||
-    !("employeeExits" in globalStore.__bsbDemo)
+    !("employeeExits" in globalStore.__bsbDemo) ||
+    !("essNotifications" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

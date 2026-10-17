@@ -87,6 +87,9 @@ import type {
   EngagementStatus,
   ContractorInvoiceStatus,
   ContractorPaymentItemKind,
+  EssChangeCategory,
+  EssChangeRequestStatus,
+  EssNotificationType,
 } from "@/lib/constants";
 
 export type {
@@ -166,6 +169,9 @@ export type {
   EngagementStatus,
   ContractorInvoiceStatus,
   ContractorPaymentItemKind,
+  EssChangeCategory,
+  EssChangeRequestStatus,
+  EssNotificationType,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -2239,4 +2245,44 @@ export interface InvoiceListItem {
   contractorName: string;
   contractorCode: string;
   engagementScope: string;
+}
+
+export interface EssNotification {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  type: EssNotificationType;
+  title: string;
+  body: string | null;
+  href: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface EssChangeRequest {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  requested_by: string;
+  category: EssChangeCategory;
+  field_key: string;
+  current_value: string | null;
+  requested_value: string;
+  reason: string | null;
+  status: EssChangeRequestStatus;
+  reviewer_id: string | null;
+  review_reason: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EssChangeRequestListItem {
+  request: EssChangeRequest;
+  employeeName: string;
+  employeeCode: string;
+  requestedByName: string;
+  reviewerName: string | null;
 }

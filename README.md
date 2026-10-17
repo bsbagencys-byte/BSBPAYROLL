@@ -1,6 +1,6 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, and Phase 12 employee exit, full & final settlement and contractor payroll. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, Phase 12 employee exit, full & final settlement and contractor payroll, and Phase 13 employee self-service. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
 This app does **not** implement full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest. Payroll treats unmarked working days as paid until Phase 4.
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10 + Phase 11 + Phase 12). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql`, `supabase/phase10.sql`, `supabase/phase11.sql` and `supabase/phase12.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10 + Phase 11 + Phase 12 + Phase 13). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql`, `supabase/phase10.sql`, `supabase/phase11.sql`, `supabase/phase12.sql` and `supabase/phase13.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -67,6 +67,8 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `/setup` company wizard (required before app access)
 - `/dashboard`
 - `/profile`
+- `/my` employee self-service (dashboard, profile, attendance, leave, payslips, salary, claims, loans, documents, tax documents, requests, notifications)
+- `/my/team` manager view of direct reports
 - `/settings/company`
 - `/settings/branches`
 - `/settings/departments`
@@ -295,6 +297,17 @@ Attendance calculation (Phase 4) remains Coming Soon.
 - Engagements, invoices, verified TDS withholding, payment and cancel.
 - Duplicate invoice numbers require an authorized override reason.
 
+## Employee self-service
+
+- `/my` is an additive overlay. Identity is always resolved server-side from the signed-in user; a browser-supplied employee id is never trusted for authorisation.
+- Users with no linked employee record see a setup state instead of employee data.
+- Own attendance, leave, payslips, salary, claims, loans, documents and tax declarations reuse existing services. No second attendance or approval engine.
+- Profile changes go through requests. Bank and statutory changes are sensitive and are never auto-applied by approval; HR applies them in the employee master.
+- Sensitive values are masked (bank account, PAN, Aadhaar last 4, UAN, ESIC). Documents use short-lived signed URLs; there are no public document URLs.
+- Notifications are in-app only. No email or WhatsApp delivery is claimed.
+- Managers only see direct reports (`reporting_manager_id`) and act through the existing leave/claims/loans screens.
+- Not implemented: QR, GPS, face recognition, smart auto attendance, raw punch editing.
+
 ## Later phases
 
-Attendance calculation, global reports hub, employee self-service. New biometric vendors add an adapter, not a rewrite.
+Attendance calculation, global reports hub. New biometric vendors add an adapter, not a rewrite.

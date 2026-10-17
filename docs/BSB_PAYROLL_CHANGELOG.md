@@ -4,6 +4,42 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 13 — Employee self-service portal
+
+- **Date:** 2026-10-17
+- **Status:** implemented on `261015-feat-ess-portal`
+
+### Implemented
+
+- Additive overlay. Phases 1–12 unchanged. Phase 4 attendance still not started.
+- `/my` mobile-first ESS: home, profile, attendance, leave, payslips, salary, claims, loans, documents, tax documents, requests, notifications and manager team view.
+- Identity is always resolved server-side from the session (`resolveSelfEmployee`); browser-supplied employee ids are never trusted for authorisation. Unlinked users get an explicit setup state and no other employee/org data renders.
+- Reuses existing services for leave, claims, loans, payslips, salary, attendance days, documents, holidays and tax declarations. No second attendance or approval engine.
+- Profile change requests (`ess_change_requests`): pending → approved/rejected/cancelled. Bank and statutory categories are sensitive and are never auto-applied; approval records the decision, notifies the employee, and HR applies the value through the employee master.
+- Sensitive values masked (bank account, PAN, Aadhaar last 4, UAN, ESIC).
+- Documents use short-lived signed URLs re-checked against the signed-in employee. Payslips use the existing PDF endpoint. No public document URLs.
+- In-app notifications only (`ess_notifications`), with read/unread. No email or WhatsApp delivery claimed.
+- Manager view is limited to direct reports (`reporting_manager_id`) and links to existing module approval screens.
+- Explicitly not implemented: QR, GPS, face recognition, smart auto attendance, raw punch editing.
+
+### Database
+
+- Additive `supabase/phase13.sql`, appended into `combined.sql`.
+- Tables: `ess_notifications`, `ess_change_requests`.
+- RLS helper `public.current_employee_ids()`.
+- Permissions: `self.view`, `self.profile.update`, `self.change_request.review`, `self.notifications.manage`.
+
+### API
+
+- Server actions in `actions/ess.ts` with `writeAudit`: submit/decide/cancel change request, mark notifications read, self document and tax-proof signed URLs.
+
+### UI
+
+- `/my` routes listed above plus `/my/team`.
+- Nav item "My Space" and notification bell link in the app shell.
+
+---
+
 ## Phase 12 — Employee exit, full & final settlement, contractor payroll
 
 - **Date:** 2026-10-10

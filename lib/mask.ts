@@ -10,6 +10,20 @@ export function maskAadhaarLast4(value: string | null | undefined) {
   return `XXXX XXXX ${value}`;
 }
 
+export function maskPan(value: string | null | undefined) {
+  if (!value) return "—";
+  const trimmed = value.trim();
+  if (trimmed.length <= 4) return "****";
+  return `${"X".repeat(trimmed.length - 4)}${trimmed.slice(-4)}`;
+}
+
+export function maskIdentifier(value: string | null | undefined) {
+  if (!value) return "—";
+  const trimmed = value.trim();
+  if (trimmed.length <= 4) return "****";
+  return `****${trimmed.slice(-4)}`;
+}
+
 export function employeeFullName(input: {
   first_name: string;
   middle_name?: string | null;

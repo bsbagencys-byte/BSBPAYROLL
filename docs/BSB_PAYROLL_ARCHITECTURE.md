@@ -13,6 +13,7 @@ Legend: **IMPLEMENTED** | **PLANNED** | **FUTURE**
 - Auth routes in `app/(auth)`. Authenticated shell in `app/(app)` with `AppShell` + RBAC-aware nav.
 - Next.js 16 `proxy.ts` (not `middleware.ts`) gates non-public routes.
 - Server Components for pages; client forms use `useActionState` against server actions.
+- Employee self-service lives under `app/(app)/my` with `lib/ess/*` and `actions/ess.ts`.
 - Demo vs production is transparent to pages: repositories switch on `hasSupabaseConfig()` / `isDemoMode()`.
 - `allowedDevOrigins`: `*.monkeycode-ai.live`.
 
@@ -26,7 +27,7 @@ Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
 - **Public HTTP:** biometric ingest only (`/api/biometric/push`, `/api/biometric/webhook`).
-- **Authenticated HTTP:** CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*` and `/api/contractors/reports/*`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
+- **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*` and `/api/contractors/reports/*`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
 - **Rate limit:** in-memory for login and biometric ingest.
@@ -37,7 +38,7 @@ No standalone API gateway or worker queue.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
@@ -228,6 +229,20 @@ Exits never write attendance or leave tables.
 
 ---
 
+## Employee self-service (ESS) — IMPLEMENTED
+
+- Additive overlay at `/my`. Reuses existing services: `loadEmployeeLeave`, `loadClaimListItems`, `loadLoanListItems` / `loadAccountListItems`, `loadPayslipViews`, `loadEmployeeCompensation`, `getEmployeeRecord`, `loadLeaveOverview`, statutory declaration queries.
+- Identity is resolved server-side in `lib/ess/identity.ts` (`resolveSelfEmployee`) from the authenticated `SessionUser` → `employees.user_id`. A browser-supplied employee id is never used for authorisation. RLS adds `public.current_employee_ids()` and restricts `ess_change_requests` reads to the current employee or an authorized reviewer.
+- Unlinked users see an explicit setup state; no employee or organisation data is rendered.
+- Routes: `/my`, `/my/profile`, `/my/attendance`, `/my/leave`, `/my/payslips`, `/my/salary`, `/my/claims`, `/my/loans`, `/my/documents`, `/my/tax-documents`, `/my/requests`, `/my/notifications`, `/my/team`.
+- Profile change requests (`ess_change_requests`) are the only write path for personal data. Bank and statutory categories are sensitive and are never auto-applied: approval records the decision and notifies the employee; HR applies the value through the employee master.
+- Downloads: payslips use `/api/payroll/payslips/[id]/pdf`; employee documents use short-lived signed URLs through `getSelfDocumentUrlAction`, which re-checks ownership. No public document URLs.
+- Sensitive values are masked in ESS (`maskAccountNumber`, `maskPan`, `maskAadhaarLast4`, `maskIdentifier`).
+- Notifications (`ess_notifications`) are in-app only. No email or WhatsApp delivery is claimed. Managers see only direct reports (`reporting_manager_id`) in `/my/team`; decisions link to existing leave/claims/loans approval screens, so no second approval engine is introduced.
+- No QR, GPS, face recognition, smart auto attendance, raw punch editing or leave-balance bypass.
+
+---
+
 ## Future integration boundaries
 
 Do not implement these until the named phase:
@@ -239,6 +254,8 @@ Do not implement these until the named phase:
 - **Phase 10:** review, approval, finalization, lock and payslip foundation (implemented).
 - **Phase 11:** versioned statutory/tax engine (implemented). Do not hard-code rates in payroll.
 - **Phase 12:** employee exit, F&F settlement and contractor payroll (implemented). Do not mix contractor invoices into employee payroll runs.
-- **Later:** employee self-service beyond `/profile` (Phase 13), Face/QR/GPS, smart auto attendance.
+- **Phase 13:** employee self-service at `/my` (implemented). Additive only; reuse module services and approvals.
+- **Phase 14:** reports hub, accounting exports and bank payment infrastructure (next).
+- **Later:** Face/QR/GPS, smart auto attendance.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

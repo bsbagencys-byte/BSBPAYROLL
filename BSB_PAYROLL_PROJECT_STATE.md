@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261010-feat-exit-settlement-contractors` (Phase 12 overlay)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 13 overlay)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12 implemented. Phase 4 Attendance is not started.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13 implemented. Phase 4 Attendance is not started.
 
 ---
 
@@ -32,6 +32,7 @@ Status is from code, not README.
 | 10 Review / Finalize / Payslip | **COMPLETE** overlay on P9 | Review, exceptions, two-step approval, finalize+snapshot, lock after finalize, numbered PDF payslips, adjustments. |
 | 11 Statutory / tax engine | **COMPLETE** overlay on P9/P10 | Versioned PF/ESI/PT/LWF/TDS, org settings, tax declarations, payroll statutory snapshots, real payslip deductions. Seed versions DISABLED/unverified. |
 | 12 Exit, F&F, contractors | **COMPLETE** overlay on P9–P11 | Employee exits + clearance, full & final settlement, contractor register/engagements/invoices. Ordinary payroll excludes exited employees whose LWD is before the period. |
+| 13 Employee self-service | **COMPLETE** overlay on P2/P5/P7/P8/P9/P11 | `/my` portal: profile, attendance, leave, payslips, salary, claims, loans, documents, tax, requests, notifications, manager team view. Server-resolved identity; profile change requests; in-app notifications. |
 
 ---
 
@@ -64,13 +65,17 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Compliance, Settings.
+Enabled nav: Dashboard, My Space, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Compliance, Settings.
 
 Disabled nav (no pages): `/attendance` (P4). Global reports hub remains later; payroll has in-module CSV.
 
 ### Auth / foundation
 
 - `/login`, `/forgot-password`, `/reset-password`, `/unauthorized`, `/setup`, `/dashboard`, `/profile`
+
+### Employee self-service (P13)
+
+- `/my`, `/my/profile`, `/my/attendance`, `/my/leave`, `/my/payslips`, `/my/salary`, `/my/claims`, `/my/loans`, `/my/documents`, `/my/tax-documents`, `/my/requests`, `/my/notifications`, `/my/team`
 
 ### Settings
 
@@ -301,6 +306,26 @@ Demo seed: five clearance templates; no exits, settlements or contractors.
 
 ---
 
+## Employee self-service (ESS)
+
+Identity is resolved server-side (`lib/ess/identity.ts`) from the session user's `employees.user_id`. A browser-supplied employee id is never trusted for authorisation. Users without a linked employee see an explicit setup state and no other employee data. RLS adds `public.current_employee_ids()`; `ess_change_requests` is readable by the current employee or an authorized reviewer.
+
+Routes under `/my` reuse existing services: leave (`loadEmployeeLeave`), claims, loans, payslips, salary snapshot, attendance days, documents, holidays and Phase 11 tax declarations. No second attendance or approval engine.
+
+Profile change requests (`ess_change_requests`): DRAFT-free PENDING → APPROVED / REJECTED / CANCELLED. Categories CONTACT, ADDRESS, EMERGENCY, BANK, STATUTORY, EDUCATION, OTHER. BANK and STATUTORY are sensitive and are never auto-applied: approval records the decision and notifies the employee; HR applies the value through the employee master.
+
+Sensitive display is masked: account number, PAN, Aadhaar last 4, UAN and ESIC. Employee documents and tax proofs use short-lived signed URLs re-checked against the signed-in employee's own record. Payslips use `/api/payroll/payslips/[id]/pdf`. No public document URLs.
+
+Notifications (`ess_notifications`) are in-app only with read/unread. No email or WhatsApp delivery is claimed. Manager `/my/team` is limited to direct reports via `reporting_manager_id` and links to the existing leave/claims/loans approval screens.
+
+Permissions: `self.view`, `self.profile.update`, `self.change_request.review`, `self.notifications.manage`. HR gets all four; PAYROLL gets view/update/notifications; ACCOUNTANT and MANAGER get view/update; EMPLOYEE gets view/update.
+
+Demo seed: one pending bank change request for Rahul, plus notifications for Rahul and HR.
+
+Explicitly not implemented: QR, GPS, face recognition, smart auto attendance, raw punch editing, leave-balance bypass.
+
+---
+
 ## Known Issues
 
 - `app/(app)/coming-soon.tsx` is unused; disabled nav items are non-links with a Soon badge.
@@ -317,13 +342,21 @@ Demo seed: five clearance templates; no exits, settlements or contractors.
 
 ## Current Phase
 
-**Next: Phase 4 Attendance, or Phase 13 ESS if requested.**
+**Next: Phase 14 — Reports, Accounting Exports and Bank Payment Infrastructure.**
 
-Phase 12 exit / F&F / contractor overlay is complete. Day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Prefer Phase 4 before relying on LOP/present accuracy. Do not start Phase 4 unless requested.
+Phase 13 ESS overlay is complete. Phase 4 attendance remains the main accuracy gap: day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Do not start Phase 4 unless requested.
 
 ---
 
 ## Next Dependencies
+
+Phase 14 should consume, not rebuild:
+
+- Payroll runs, payslips, statutory results and compliance filings (P9–P11)
+- Exits, settlements and contractor invoices/payments (P12)
+- Loans, claims and salary snapshots as report inputs
+- Existing CSV report routes under `/api/*/reports/*`
+- Organizations, branches, departments and cost centres for grouping
 
 Phase 4 should consume, not rebuild:
 
@@ -342,7 +375,7 @@ Phase 4 must fill PRESENT/ABSENT/WEEKLY_OFF/HOLIDAY (and later late/OT) without 
 
 ## Demo
 
-Logins: `bsbadmin`/`Admin@123`, `bsbhr`/`Hruser@123`, `bsbpayroll`/`Payroll@123`, `bsbemployee`/`Employee@123`.
+Logins: `bsbadmin`/`Admin@123`, `bsbhr`/`Hruser@123`, `bsbpayroll`/`Payroll@123`, `bsbemployee`/`Employee@123`. ESS demo: `bsbemployee` (Rahul, linked) sees own data; `bsbpayroll` has no linked employee and shows the ESS setup state.
 
 Org `11111111-1111-1111-1111-111111111111`. Employees BSB-1001 Asha Rao, BSB-1002 Meera Iyer, BSB-1003 Rahul Sharma. eSSL token `demo-essl-ho-token`.
 

@@ -125,6 +125,10 @@ export const PERMISSIONS = [
   { code: "contractors.pay", group: "Contractors", label: "Record contractor payments" },
   { code: "contractors.withholding.manage", group: "Contractors", label: "Manage contractor withholding" },
   { code: "contractors.export", group: "Contractors", label: "Export contractor data" },
+  { code: "self.view", group: "Self Service", label: "Access self-service portal" },
+  { code: "self.profile.update", group: "Self Service", label: "Request profile changes" },
+  { code: "self.change_request.review", group: "Self Service", label: "Review profile change requests" },
+  { code: "self.notifications.manage", group: "Self Service", label: "Send self-service notifications" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -221,6 +225,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "contractors.pay",
     "contractors.withholding.manage",
     "contractors.export",
+    "self.view",
+    "self.profile.update",
+    "self.change_request.review",
+    "self.notifications.manage",
   ],
   PAYROLL: [
     "organization.view",
@@ -264,6 +272,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "settlements.export",
     "contractors.view",
     "contractors.export",
+    "self.view",
+    "self.profile.update",
+    "self.notifications.manage",
   ],
   ACCOUNTANT: [
     "organization.view",
@@ -305,6 +316,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "contractors.pay",
     "contractors.withholding.manage",
     "contractors.export",
+    "self.view",
+    "self.profile.update",
   ],
   MANAGER: [
     "organization.view",
@@ -327,6 +340,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "clearance.view",
     "clearance.manage",
     "contractors.view",
+    "self.view",
+    "self.profile.update",
   ],
   EMPLOYEE: [
     "organization.view",
@@ -339,11 +354,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "loans.view",
     "loans.create",
     "payroll.payslip.view",
+    "self.view",
+    "self.profile.update",
   ],
 };
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard", enabled: true },
+  { href: "/my", label: "My Space", icon: "UserCircle", enabled: true, phase: 13 },
   { href: "/employees", label: "Employees", icon: "Users", enabled: true, phase: 2 },
   { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: false, phase: 4 },
   { href: "/leave", label: "Leave", icon: "Palmtree", enabled: true, phase: 5 },
@@ -1609,4 +1627,62 @@ export const CONTRACTORS_NAV = [
   { href: "/contractor-payments", label: "Invoices" },
   { href: "/contractor-payments/approvals", label: "Approvals" },
   { href: "/contractors/reports", label: "Reports" },
+] as const;
+
+export const ESS_CHANGE_REQUEST_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
+export type EssChangeRequestStatus = (typeof ESS_CHANGE_REQUEST_STATUSES)[number];
+
+export const ESS_CHANGE_REQUEST_STATUS_LABELS: Record<EssChangeRequestStatus, string> = {
+  PENDING: "Pending review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+};
+
+export const ESS_CHANGE_CATEGORIES = [
+  "CONTACT",
+  "ADDRESS",
+  "EMERGENCY",
+  "BANK",
+  "STATUTORY",
+  "EDUCATION",
+  "OTHER",
+] as const;
+export type EssChangeCategory = (typeof ESS_CHANGE_CATEGORIES)[number];
+
+export const ESS_CHANGE_CATEGORY_LABELS: Record<EssChangeCategory, string> = {
+  CONTACT: "Contact details",
+  ADDRESS: "Address",
+  EMERGENCY: "Emergency contact",
+  BANK: "Bank account",
+  STATUTORY: "Statutory identifiers",
+  EDUCATION: "Education / qualification",
+  OTHER: "Other",
+};
+
+export const ESS_SENSITIVE_CATEGORIES: EssChangeCategory[] = ["BANK", "STATUTORY"];
+
+export const ESS_NOTIFICATION_TYPES = ["INFO", "ACTION", "APPROVAL", "ALERT"] as const;
+export type EssNotificationType = (typeof ESS_NOTIFICATION_TYPES)[number];
+
+export const ESS_NOTIFICATION_TYPE_LABELS: Record<EssNotificationType, string> = {
+  INFO: "Information",
+  ACTION: "Action needed",
+  APPROVAL: "Approval",
+  ALERT: "Alert",
+};
+
+export const ESS_NAV = [
+  { href: "/my", label: "Home", icon: "LayoutDashboard" },
+  { href: "/my/profile", label: "Profile", icon: "UserCircle" },
+  { href: "/my/attendance", label: "Attendance", icon: "CalendarCheck" },
+  { href: "/my/leave", label: "Leave", icon: "Palmtree" },
+  { href: "/my/payslips", label: "Payslips", icon: "Receipt" },
+  { href: "/my/salary", label: "Salary", icon: "Banknote" },
+  { href: "/my/claims", label: "Claims", icon: "Wallet" },
+  { href: "/my/loans", label: "Loans", icon: "HandCoins" },
+  { href: "/my/documents", label: "Documents", icon: "FileText" },
+  { href: "/my/tax-documents", label: "Tax", icon: "ShieldCheck" },
+  { href: "/my/requests", label: "Requests", icon: "Inbox" },
+  { href: "/my/notifications", label: "Alerts", icon: "Bell" },
 ] as const;
