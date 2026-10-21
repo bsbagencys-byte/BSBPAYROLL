@@ -9,6 +9,8 @@ const PUBLIC_PREFIXES = [
   "/unauthorized",
   "/api/biometric/push",
   "/api/biometric/webhook",
+  "/api/v1",
+  "/api/internal/jobs",
 ];
 
 function isPublicPath(pathname: string) {

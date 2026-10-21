@@ -1,3 +1,4 @@
+import { emitSafe } from "@/lib/events/emit";
 import { addDays } from "@/lib/leave/dates";
 import { listEmployment } from "@/lib/leave/repository";
 import {
@@ -353,20 +354,60 @@ export async function decideClaim(input: {
   });
 
   if (input.decision === "REJECTED") {
-    return updateClaim(claim.id, { status: "REJECTED", current_step: null, updated_by: input.actorId });
+    const updated = await updateClaim(claim.id, { status: "REJECTED", current_step: null, updated_by: input.actorId });
+    await emitSafe({
+      organizationId: input.organizationId,
+      eventType: "claim.status_changed",
+      entityType: "claim",
+      entityId: claim.id,
+      actorId: input.actorId,
+      payload: { employeeId: claim.employee_id, status: "REJECTED", href: "/my/claims" },
+      idempotencyKey: `claim.status_changed:${claim.id}:REJECTED`,
+    });
+    return updated;
   }
   if (input.decision === "REQUEST_CORRECTION") {
-    return updateClaim(claim.id, { status: "DRAFT", current_step: null, submitted_at: null, updated_by: input.actorId });
+    const updated = await updateClaim(claim.id, { status: "DRAFT", current_step: null, submitted_at: null, updated_by: input.actorId });
+    await emitSafe({
+      organizationId: input.organizationId,
+      eventType: "claim.status_changed",
+      entityType: "claim",
+      entityId: claim.id,
+      actorId: input.actorId,
+      payload: { employeeId: claim.employee_id, status: "DRAFT", href: "/my/claims" },
+      idempotencyKey: `claim.status_changed:${claim.id}:DRAFT:${Date.now()}`,
+    });
+    return updated;
   }
   if (step === "MANAGER") {
-    return updateClaim(claim.id, { status: "PENDING_APPROVAL", current_step: "FINANCE", updated_by: input.actorId });
+    const updated = await updateClaim(claim.id, { status: "PENDING_APPROVAL", current_step: "FINANCE", updated_by: input.actorId });
+    await emitSafe({
+      organizationId: input.organizationId,
+      eventType: "claim.status_changed",
+      entityType: "claim",
+      entityId: claim.id,
+      actorId: input.actorId,
+      payload: { employeeId: claim.employee_id, status: "PENDING_APPROVAL", href: "/my/claims" },
+      idempotencyKey: `claim.status_changed:${claim.id}:FINANCE`,
+    });
+    return updated;
   }
-  return updateClaim(claim.id, {
+  const approved = await updateClaim(claim.id, {
     status: "APPROVED",
     current_step: null,
     approved_amount: roundMoney(input.amount ?? claim.submitted_amount),
     updated_by: input.actorId,
   });
+  await emitSafe({
+    organizationId: input.organizationId,
+    eventType: "claim.status_changed",
+    entityType: "claim",
+    entityId: claim.id,
+    actorId: input.actorId,
+    payload: { employeeId: claim.employee_id, status: "APPROVED", href: "/my/claims" },
+    idempotencyKey: `claim.status_changed:${claim.id}:APPROVED`,
+  });
+  return approved;
 }
 
 export async function cancelClaim(organizationId: string, claimId: string, actorId: string | null) {

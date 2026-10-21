@@ -1,3 +1,4 @@
+import { emitSafe } from "@/lib/events/emit";
 import { sha256 } from "@/lib/biometric/hash";
 import { parseWithVendor } from "@/lib/biometric/adapters";
 import type { AdapterContext } from "@/lib/biometric/adapters/types";
@@ -194,6 +195,14 @@ export async function ingestBiometricRequest(
     await updateNormalizedEvent(saved.id, "MAPPED");
     punches += 1;
     lastStatus = "MAPPED";
+    await emitSafe({
+      organizationId: device.organization_id,
+      eventType: "attendance.punch.received",
+      entityType: "attendance_punch",
+      entityId: punch.id,
+      payload: { status: "RECEIVED", href: "/biometric/punches" },
+      idempotencyKey: `attendance.punch.received:${punch.id}`,
+    });
   }
 
   if (!parsed.events.length) rejected += 1;

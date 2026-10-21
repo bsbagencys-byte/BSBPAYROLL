@@ -12,6 +12,7 @@ import type {
   Organization,
 } from "@/types";
 import type { CompOffStatus, LeaveDaySession, LeaveLedgerSource } from "@/lib/constants";
+import { emitSafe } from "@/lib/events/emit";
 import { applyLeaveToAttendance, revertLeaveAttendance } from "@/lib/leave/attendance";
 import { currentYear } from "@/lib/leave/dates";
 import {
@@ -405,6 +406,20 @@ export async function decideLeaveRequest(input: {
     });
     await applyLeaveToAttendance({ ...request, status: "APPROVED" }, days, type);
     if (type.is_comp_off) await consumeCompOff(input.organization.id, request.employee_id, request.days, request.id, input.actorId);
+    await emitSafe({
+      organizationId: input.organization.id,
+      eventType: "leave.request.updated",
+      entityType: "leave_request",
+      entityId: request.id,
+      actorId: input.actorId,
+      payload: {
+        employeeId: request.employee_id,
+        employeeName: employee.display_name,
+        status: "APPROVED",
+        href: "/my/leave",
+      },
+      idempotencyKey: `leave.request.updated:${request.id}:APPROVED`,
+    });
     return { error: null };
   }
 
@@ -457,11 +472,25 @@ export async function decideLeaveRequest(input: {
     request_id: request.id,
     actor_user_id: input.actorId,
     action: input.action,
-    reason: input.reason || null,
-    created_at: now,
-  });
-  return { error: null };
-}
+      reason: input.reason || null,
+      created_at: now,
+    });
+    await emitSafe({
+      organizationId: input.organization.id,
+      eventType: "leave.request.updated",
+      entityType: "leave_request",
+      entityId: request.id,
+      actorId: input.actorId,
+      payload: {
+        employeeId: request.employee_id,
+        employeeName: employee.display_name,
+        status: input.action,
+        href: "/my/leave",
+      },
+      idempotencyKey: `leave.request.updated:${request.id}:${input.action}`,
+    });
+    return { error: null };
+  }
 
 export async function adjustBalance(input: {
   organization: Organization;

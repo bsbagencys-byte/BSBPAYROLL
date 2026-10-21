@@ -1,3 +1,4 @@
+import { emitSafe } from "@/lib/events/emit";
 import { getApprovedPayrollClaimLines } from "@/lib/claims/service";
 import { employeeExcludedFromOrdinaryPayroll } from "@/lib/exits/service";
 import { listAttendanceDays } from "@/lib/leave/attendance";
@@ -569,7 +570,7 @@ export async function calculatePayrollRun(organizationId: string, runId: string,
   await replacePayrollExceptions(organizationId, run.id, exceptions);
   const counts = exceptionCounts(exceptions);
   const totals = totalsFromItems(items);
-  return updatePayrollRun(run.id, {
+  const calculated = await updatePayrollRun(run.id, {
     ...totals,
     error_count: Math.max(totals.error_count, counts.errorCount),
     warning_count: counts.warningCount,
@@ -577,6 +578,16 @@ export async function calculatePayrollRun(organizationId: string, runId: string,
     calculated_at: stamp(),
     updated_by: actorId,
   });
+  await emitSafe({
+    organizationId,
+    eventType: "payroll.run.calculated",
+    entityType: "payroll_run",
+    entityId: run.id,
+    actorId,
+    payload: { period: run.period, status: "CALCULATED", href: "/payroll/runs" },
+    idempotencyKey: `payroll.run.calculated:${run.id}:${run.period}`,
+  });
+  return calculated;
 }
 
 export async function holdPayrollItem(organizationId: string, itemId: string, reason: string | null, actorId: string | null) {
@@ -904,14 +915,25 @@ export async function approvePayrollRun(
     action: "APPROVE",
     previous: run.status,
     next,
-    actorId,
-    actorRole,
-    reason,
-  });
-  return updated;
-}
+      actorId,
+      actorRole,
+      reason,
+    });
+    if (next === "APPROVED") {
+      await emitSafe({
+        organizationId,
+        eventType: "payroll.run.approved",
+        entityType: "payroll_run",
+        entityId: run.id,
+        actorId,
+        payload: { period: run.period, status: next, href: "/payroll/runs" },
+        idempotencyKey: `payroll.run.approved:${run.id}`,
+      });
+    }
+    return updated;
+  }
 
-export async function rejectPayrollRun(
+  export async function rejectPayrollRun(
   organizationId: string,
   runId: string,
   actorId: string | null,
@@ -1103,6 +1125,15 @@ export async function finalizePayrollRun(
     next: "FINALIZED",
     actorId,
     actorRole,
+  });
+  await emitSafe({
+    organizationId,
+    eventType: "payroll.run.finalized",
+    entityType: "payroll_run",
+    entityId: runId,
+    actorId,
+    payload: { period: run.period, status: "FINALIZED", href: "/payroll/runs" },
+    idempotencyKey: `payroll.run.finalized:${runId}`,
   });
   return updated;
 }
@@ -1379,6 +1410,22 @@ export async function generatePayslipsForRun(
   }
 
   await replacePayslips(organizationId, runId, nextSlips);
+  for (const slip of nextSlips) {
+    await emitSafe({
+      organizationId,
+      eventType: "payslip.generated",
+      entityType: "payslip",
+      entityId: slip.id,
+      actorId,
+      payload: {
+        employeeId: slip.employee_id,
+        period: run.period,
+        status: slip.status,
+        href: "/my/payslips",
+      },
+      idempotencyKey: `payslip.generated:${slip.id}`,
+    });
+  }
   return nextSlips;
 }
 

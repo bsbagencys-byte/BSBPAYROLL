@@ -1,3 +1,4 @@
+import { emitSafe } from "@/lib/events/emit";
 import { addMonths, installmentStatusForDate, matchLoanPolicy, periodKey, quoteLoan, roundMoney, validateLoanApplication } from "@/lib/loans/engine";
 import { listEmployment } from "@/lib/leave/repository";
 import {
@@ -284,12 +285,22 @@ export async function decideLoanApplication(input: {
       decided_at: stamp(),
       created_at: stamp(),
     });
-    return updateLoanApplication(application.id, {
+    const rejected = await updateLoanApplication(application.id, {
       status: "REJECTED",
       current_step: null,
       notes: input.reason,
       updated_by: input.actorId,
     });
+    await emitSafe({
+      organizationId: input.organizationId,
+      eventType: "loan.application.updated",
+      entityType: "loan_application",
+      entityId: application.id,
+      actorId: input.actorId,
+      payload: { employeeId: application.employee_id, status: "REJECTED", href: "/my/loans" },
+      idempotencyKey: `loan.application.updated:${application.id}:REJECTED`,
+    });
+    return rejected;
   }
 
   const approvedAmount = roundMoney(input.amount && input.amount > 0 ? input.amount : application.requested_amount);
@@ -318,7 +329,7 @@ export async function decideLoanApplication(input: {
   const types = await listLoanTypes(input.organizationId);
   const loanType = types.find((item) => item.id === application.loan_type_id);
   if (application.current_step === "MANAGER" && loanType?.workflow_mode === "TWO_STEP") {
-    return updateLoanApplication(application.id, {
+    const pending = await updateLoanApplication(application.id, {
       status: "PENDING_APPROVAL",
       current_step: "FINANCE",
       approved_amount: approvedAmount,
@@ -331,8 +342,18 @@ export async function decideLoanApplication(input: {
       last_due_date: quote.lastDueDate,
       updated_by: input.actorId,
     });
+    await emitSafe({
+      organizationId: input.organizationId,
+      eventType: "loan.application.updated",
+      entityType: "loan_application",
+      entityId: application.id,
+      actorId: input.actorId,
+      payload: { employeeId: application.employee_id, status: "PENDING_APPROVAL", href: "/my/loans" },
+      idempotencyKey: `loan.application.updated:${application.id}:FINANCE`,
+    });
+    return pending;
   }
-  return updateLoanApplication(application.id, {
+  const approved = await updateLoanApplication(application.id, {
     status: "APPROVED",
     current_step: null,
     approved_amount: approvedAmount,
@@ -345,6 +366,16 @@ export async function decideLoanApplication(input: {
     last_due_date: quote.lastDueDate,
     updated_by: input.actorId,
   });
+  await emitSafe({
+    organizationId: input.organizationId,
+    eventType: "loan.application.updated",
+    entityType: "loan_application",
+    entityId: application.id,
+    actorId: input.actorId,
+    payload: { employeeId: application.employee_id, status: "APPROVED", href: "/my/loans" },
+    idempotencyKey: `loan.application.updated:${application.id}:APPROVED`,
+  });
+  return approved;
 }
 
 export async function cancelLoanApplication(organizationId: string, applicationId: string, actorId: string | null) {

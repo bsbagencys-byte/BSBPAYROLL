@@ -7,12 +7,14 @@ import {
   Banknote,
   BarChart3,
   Bell,
+  BookOpen,
   Briefcase,
   CalendarCheck,
   FileSignature,
   Fingerprint,
   Gift,
   HandCoins,
+  Landmark,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -24,6 +26,7 @@ import {
   UserMinus,
   Users,
   Wallet,
+  Workflow,
   X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
@@ -52,6 +55,10 @@ const ICONS = {
   FileSignature,
   Briefcase,
   UserCircle,
+  BookOpen,
+  Landmark,
+  Bell,
+  Workflow,
 } as const;
 
 const NAV = NAV_ITEMS;
@@ -142,7 +149,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
           </div>
           <div className="flex items-center gap-3">
             <Badge>{user.roleName}</Badge>
-            <Link href="/my/notifications" className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100" aria-label="Notifications">
+            <Link href="/notifications" className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100" aria-label="Notifications">
               <Bell className="h-4 w-4" />
             </Link>
             <Link href="/profile" className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-50">

@@ -1,3 +1,4 @@
+import { emitSafe } from "@/lib/events/emit";
 import { todayInZone } from "@/lib/leave/dates";
 import { listStatutoryRuleVersions } from "@/lib/statutory/repository";
 import { calculateContractorWithholding, nextReference, roundMoney } from "@/lib/exits/engine";
@@ -345,18 +346,38 @@ export async function decideInvoice(input: {
     throw new Error("Invoice is not awaiting approval.");
   }
   if (input.decision === "REJECTED") {
-    return updateInvoice(input.invoiceId, {
+    const rejected = await updateInvoice(input.invoiceId, {
       status: "REJECTED",
       reject_reason: input.reason || "Rejected",
       updated_by: input.actorId,
     });
+    await emitSafe({
+      organizationId: input.organizationId,
+      eventType: "contractor.payment.status_changed",
+      entityType: "contractor_invoice",
+      entityId: input.invoiceId,
+      actorId: input.actorId,
+      payload: { status: "REJECTED", href: "/contractor-payments" },
+      idempotencyKey: `contractor.payment.status_changed:${input.invoiceId}:REJECTED`,
+    });
+    return rejected;
   }
-  return updateInvoice(input.invoiceId, {
+  const approved = await updateInvoice(input.invoiceId, {
     status: "APPROVED",
     approved_at: stamp(),
     reject_reason: null,
     updated_by: input.actorId,
   });
+  await emitSafe({
+    organizationId: input.organizationId,
+    eventType: "contractor.payment.status_changed",
+    entityType: "contractor_invoice",
+    entityId: input.invoiceId,
+    actorId: input.actorId,
+    payload: { status: "APPROVED", href: "/contractor-payments" },
+    idempotencyKey: `contractor.payment.status_changed:${input.invoiceId}:APPROVED`,
+  });
+  return approved;
 }
 
 export async function recordInvoicePayment(input: {
@@ -391,7 +412,17 @@ export async function recordInvoicePayment(input: {
   });
   const paid = roundMoney(invoice.paid_amount + input.amount);
   const status: ContractorInvoiceStatus = paid + 0.01 >= invoice.net_payable ? "PAID" : "PARTIALLY_PAID";
-  return updateInvoice(invoice.id, { paid_amount: paid, status, updated_by: input.actorId });
+  const updated = await updateInvoice(invoice.id, { paid_amount: paid, status, updated_by: input.actorId });
+  await emitSafe({
+    organizationId: input.organizationId,
+    eventType: "contractor.payment.status_changed",
+    entityType: "contractor_invoice",
+    entityId: invoice.id,
+    actorId: input.actorId,
+    payload: { status, href: "/contractor-payments" },
+    idempotencyKey: `contractor.payment.status_changed:${invoice.id}:${status}:${paid}`,
+  });
+  return updated;
 }
 
 export async function cancelInvoice(organizationId: string, invoiceId: string, actorId: string) {

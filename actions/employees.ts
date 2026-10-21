@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionUser, hasPermission } from "@/lib/auth/session";
 import { writeAudit } from "@/lib/audit";
+import { emitSafe } from "@/lib/events/emit";
 import { getDemoStore } from "@/lib/demo-store";
 import { flattenErrors, optional } from "@/lib/form-errors";
 import { employeeFullName } from "@/lib/mask";
@@ -360,6 +361,15 @@ export async function saveEmployeeAction(
       });
       revalidatePath("/employees");
       revalidatePath(`/employees/${id}`);
+      await emitSafe({
+        organizationId: orgId,
+        eventType: "employee.updated",
+        entityType: "employee",
+        entityId: id,
+        actorId: user.id,
+        payload: { employeeId: id, employeeName: name, status: values.status, href: `/employees/${id}` },
+        idempotencyKey: `employee.updated:${id}:${now}`,
+      });
       return { success: true, message: "Employee updated.", data: { id } };
     }
 
@@ -466,8 +476,17 @@ export async function saveEmployeeAction(
       entityId: employeeId,
       metadata: { employeeCode: values.employeeCode },
     });
-    revalidatePath("/employees");
-    return { success: true, message: "Employee created.", data: { id: employeeId } };
+      revalidatePath("/employees");
+      await emitSafe({
+        organizationId: orgId,
+        eventType: "employee.created",
+        entityType: "employee",
+        entityId: employeeId,
+        actorId: user.id,
+        payload: { employeeId, employeeName: name, status: values.status, href: `/employees/${employeeId}` },
+        idempotencyKey: `employee.created:${employeeId}`,
+      });
+      return { success: true, message: "Employee created.", data: { id: employeeId } };
   }
 
   const admin = createAdminClient();
@@ -554,6 +573,15 @@ export async function saveEmployeeAction(
 
   revalidatePath("/employees");
   revalidatePath(`/employees/${employeeId}`);
+  await emitSafe({
+    organizationId: orgId,
+    eventType: id ? "employee.updated" : "employee.created",
+    entityType: "employee",
+    entityId: employeeId,
+    actorId: user.id,
+    payload: { employeeId, employeeName: name, status: values.status, href: `/employees/${employeeId}` },
+    idempotencyKey: id ? `employee.updated:${employeeId}:${now}` : `employee.created:${employeeId}`,
+  });
   return { success: true, message: id ? "Employee updated." : "Employee created.", data: { id: employeeId } };
 }
 
@@ -797,6 +825,15 @@ export async function changeEmployeeStatusAction(
   });
   revalidatePath("/employees");
   revalidatePath(`/employees/${employeeId}`);
+  await emitSafe({
+    organizationId: orgId,
+    eventType: "employee.updated",
+    entityType: "employee",
+    entityId: employeeId,
+    actorId: user.id,
+    payload: { employeeId, status: parsed.data.status, href: `/employees/${employeeId}` },
+    idempotencyKey: `employee.updated:${employeeId}:status:${parsed.data.status}`,
+  });
   return { success: true, message: "Employee status updated." };
 }
 

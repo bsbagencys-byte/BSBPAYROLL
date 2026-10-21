@@ -129,6 +129,27 @@ export const PERMISSIONS = [
   { code: "self.profile.update", group: "Self Service", label: "Request profile changes" },
   { code: "self.change_request.review", group: "Self Service", label: "Review profile change requests" },
   { code: "self.notifications.manage", group: "Self Service", label: "Send self-service notifications" },
+  { code: "reports.view", group: "Reports", label: "View reports" },
+  { code: "reports.export", group: "Reports", label: "Export reports" },
+  { code: "accounting.manage", group: "Accounting", label: "Manage ledger accounts and mappings" },
+  { code: "accounting.journal.view", group: "Accounting", label: "View payroll journals" },
+  { code: "accounting.journal.export", group: "Accounting", label: "Export payroll journals" },
+  { code: "payments.view", group: "Payments", label: "View salary payment batches" },
+  { code: "payments.create", group: "Payments", label: "Create and validate payment batches" },
+  { code: "payments.approve", group: "Payments", label: "Approve payment batches" },
+  { code: "payments.export", group: "Payments", label: "Export bank payment files" },
+  { code: "payments.reconcile", group: "Payments", label: "Record and reconcile payments" },
+  { code: "notifications.view", group: "Notifications", label: "View own notifications" },
+  { code: "notifications.manage", group: "Notifications", label: "Manage notification templates and preferences" },
+  { code: "automation.view", group: "Automation", label: "View automation rules and jobs" },
+  { code: "automation.manage", group: "Automation", label: "Manage automation rules" },
+  { code: "automation.jobs.view", group: "Automation", label: "View scheduled job executions" },
+  { code: "automation.jobs.retry", group: "Automation", label: "Retry or cancel scheduled jobs" },
+  { code: "developers.view", group: "Developers", label: "View developer settings" },
+  { code: "developers.webhooks.manage", group: "Developers", label: "Manage webhook endpoints" },
+  { code: "developers.webhooks.replay", group: "Developers", label: "Replay webhook deliveries" },
+  { code: "developers.api_keys.manage", group: "Developers", label: "Manage API keys" },
+  { code: "developers.logs.view", group: "Developers", label: "View API and webhook logs" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -229,6 +250,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "self.profile.update",
     "self.change_request.review",
     "self.notifications.manage",
+    "reports.view",
+    "reports.export",
+    "notifications.view",
+    "notifications.manage",
+    "automation.view",
+    "automation.manage",
+    "automation.jobs.view",
+    "automation.jobs.retry",
   ],
   PAYROLL: [
     "organization.view",
@@ -275,6 +304,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "self.view",
     "self.profile.update",
     "self.notifications.manage",
+    "reports.view",
+    "reports.export",
+    "accounting.journal.view",
+    "payments.view",
+    "payments.create",
+    "payments.export",
+    "notifications.view",
+    "automation.view",
+    "automation.jobs.view",
   ],
   ACCOUNTANT: [
     "organization.view",
@@ -318,6 +356,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "contractors.export",
     "self.view",
     "self.profile.update",
+    "reports.view",
+    "reports.export",
+    "accounting.manage",
+    "accounting.journal.view",
+    "accounting.journal.export",
+    "payments.view",
+    "payments.create",
+    "payments.approve",
+    "payments.export",
+    "payments.reconcile",
+    "notifications.view",
   ],
   MANAGER: [
     "organization.view",
@@ -342,6 +391,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "contractors.view",
     "self.view",
     "self.profile.update",
+    "reports.view",
+    "notifications.view",
   ],
   EMPLOYEE: [
     "organization.view",
@@ -356,6 +407,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "payroll.payslip.view",
     "self.view",
     "self.profile.update",
+    "notifications.view",
   ],
 };
 
@@ -374,7 +426,11 @@ export const NAV_ITEMS = [
   { href: "/employees/exits", label: "Exits", icon: "UserMinus", enabled: true, phase: 12 },
   { href: "/settlements", label: "Settlements", icon: "FileSignature", enabled: true, phase: 12 },
   { href: "/contractors", label: "Contractors", icon: "Briefcase", enabled: true, phase: 12 },
-  { href: "/reports", label: "Reports", icon: "BarChart3", enabled: false, phase: 11 },
+  { href: "/reports", label: "Reports", icon: "BarChart3", enabled: true, phase: 14 },
+  { href: "/accounting", label: "Accounting", icon: "BookOpen", enabled: true, phase: 14 },
+  { href: "/payments", label: "Payments", icon: "Landmark", enabled: true, phase: 14 },
+  { href: "/notifications", label: "Notifications", icon: "Bell", enabled: true, phase: 15 },
+  { href: "/automation", label: "Automation", icon: "Workflow", enabled: true, phase: 15 },
   { href: "/compliance", label: "Compliance", icon: "ShieldCheck", enabled: true, phase: 9 },
   { href: "/settings/company", label: "Settings", icon: "Settings", enabled: true },
 ] as const;
@@ -389,6 +445,8 @@ export const SETTINGS_NAV = [
   { href: "/settings/users", label: "Users" },
   { href: "/settings/roles", label: "Roles" },
   { href: "/settings/security", label: "Security" },
+  { href: "/settings/notifications", label: "Notifications" },
+  { href: "/settings/developers", label: "Developers" },
 ] as const;
 
 export const EMPLOYEE_STATUSES = ["ACTIVE", "INACTIVE", "ON_NOTICE", "TERMINATED", "RESIGNED"] as const;
@@ -497,6 +555,8 @@ export const PUBLIC_ROUTES = [
   "/unauthorized",
   "/api/biometric/push",
   "/api/biometric/webhook",
+  "/api/v1",
+  "/api/internal/jobs",
 ];
 
 export const PASSWORD_POLICY = {
@@ -514,6 +574,11 @@ export const LOGIN_RATE_LIMIT = {
 export const BIOMETRIC_RATE_LIMIT = {
   windowMs: 60 * 1000,
   maxAttempts: 120,
+};
+
+export const API_RATE_LIMIT = {
+  windowMs: 60 * 1000,
+  maxAttempts: 60,
 };
 
 export const BIOMETRIC_VENDORS = ["ESSL", "GENERIC"] as const;
@@ -1685,4 +1750,344 @@ export const ESS_NAV = [
   { href: "/my/tax-documents", label: "Tax", icon: "ShieldCheck" },
   { href: "/my/requests", label: "Requests", icon: "Inbox" },
   { href: "/my/notifications", label: "Alerts", icon: "Bell" },
+] as const;
+
+export const ACCOUNTING_ACCOUNT_TYPES = ["ASSET", "LIABILITY", "EQUITY", "INCOME", "EXPENSE"] as const;
+export type AccountingAccountType = (typeof ACCOUNTING_ACCOUNT_TYPES)[number];
+
+export const ACCOUNTING_ACCOUNT_TYPE_LABELS: Record<AccountingAccountType, string> = {
+  ASSET: "Asset",
+  LIABILITY: "Liability",
+  EQUITY: "Equity",
+  INCOME: "Income",
+  EXPENSE: "Expense",
+};
+
+export const PAYROLL_MAPPING_CATEGORIES = [
+  "EARNING",
+  "EMPLOYER_CONTRIBUTION",
+  "DEDUCTION",
+  "REIMBURSEMENT",
+  "LOAN_RECOVERY",
+  "NET_PAY",
+] as const;
+export type PayrollMappingCategory = (typeof PAYROLL_MAPPING_CATEGORIES)[number];
+
+export const PAYROLL_MAPPING_CATEGORY_LABELS: Record<PayrollMappingCategory, string> = {
+  EARNING: "Salary expense (earnings)",
+  EMPLOYER_CONTRIBUTION: "Employer contribution expense",
+  DEDUCTION: "Employee deduction payable",
+  REIMBURSEMENT: "Reimbursement expense",
+  LOAN_RECOVERY: "Loan / advance recovery",
+  NET_PAY: "Salary payable (net)",
+};
+
+export const PAYROLL_JOURNAL_STATUSES = ["DRAFT", "VALIDATED", "EXPORTED", "VOID"] as const;
+export type PayrollJournalStatus = (typeof PAYROLL_JOURNAL_STATUSES)[number];
+
+export const PAYROLL_JOURNAL_STATUS_LABELS: Record<PayrollJournalStatus, string> = {
+  DRAFT: "Draft",
+  VALIDATED: "Validated",
+  EXPORTED: "Exported",
+  VOID: "Void",
+};
+
+export const PAYMENT_METHODS = ["BANK_TRANSFER", "NEFT", "RTGS", "IMPS", "CHEQUE", "CASH", "UPI"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  BANK_TRANSFER: "Bank transfer",
+  NEFT: "NEFT",
+  RTGS: "RTGS",
+  IMPS: "IMPS",
+  CHEQUE: "Cheque",
+  CASH: "Cash",
+  UPI: "UPI",
+};
+
+export const PAYMENT_BATCH_STATUSES = [
+  "DRAFT",
+  "VALIDATING",
+  "READY",
+  "APPROVED",
+  "EXPORTED",
+  "PARTIALLY_PAID",
+  "PAID",
+  "FAILED",
+  "CANCELLED",
+] as const;
+export type PaymentBatchStatus = (typeof PAYMENT_BATCH_STATUSES)[number];
+
+export const PAYMENT_BATCH_STATUS_LABELS: Record<PaymentBatchStatus, string> = {
+  DRAFT: "Draft",
+  VALIDATING: "Validating",
+  READY: "Ready",
+  APPROVED: "Approved",
+  EXPORTED: "Exported (not paid)",
+  PARTIALLY_PAID: "Partially paid",
+  PAID: "Paid",
+  FAILED: "Failed",
+  CANCELLED: "Cancelled",
+};
+
+export const PAYMENT_ITEM_STATUSES = [
+  "PENDING",
+  "SUCCESS",
+  "FAILED",
+  "REVERSED",
+  "RECONCILED",
+  "EXCLUDED",
+] as const;
+export type PaymentItemStatus = (typeof PAYMENT_ITEM_STATUSES)[number];
+
+export const PAYMENT_ITEM_STATUS_LABELS: Record<PaymentItemStatus, string> = {
+  PENDING: "Pending",
+  SUCCESS: "Success",
+  FAILED: "Failed",
+  REVERSED: "Reversed",
+  RECONCILED: "Reconciled",
+  EXCLUDED: "Excluded",
+};
+
+export const PAYMENT_TRANSACTION_STATUSES = ["SUCCESS", "FAILED", "REVERSED", "RECONCILED"] as const;
+export type PaymentTransactionStatus = (typeof PAYMENT_TRANSACTION_STATUSES)[number];
+
+export const PAYMENT_TRANSACTION_SOURCES = ["MANUAL", "IMPORT"] as const;
+export type PaymentTransactionSource = (typeof PAYMENT_TRANSACTION_SOURCES)[number];
+
+export const RECONCILIATION_STATUSES = ["PREVIEW", "CONFIRMED", "DISCARDED"] as const;
+export type ReconciliationStatus = (typeof RECONCILIATION_STATUSES)[number];
+
+export const ACCOUNTING_EXPORT_KINDS = ["JOURNAL", "PAYMENT_BANK_FILE"] as const;
+export type AccountingExportKind = (typeof ACCOUNTING_EXPORT_KINDS)[number];
+
+export const REPORTS_NAV = [
+  { href: "/reports", label: "Overview" },
+  { href: "/reports?group=hr", label: "HR" },
+  { href: "/reports?group=attendance", label: "Attendance" },
+  { href: "/reports?group=leave", label: "Leave" },
+  { href: "/reports?group=payroll", label: "Payroll" },
+  { href: "/reports?group=compliance", label: "Compliance" },
+  { href: "/reports?group=claims", label: "Claims & Loans" },
+  { href: "/reports?group=exits", label: "Exit & Contractors" },
+  { href: "/reports?group=biometric", label: "Biometric" },
+] as const;
+
+export const ACCOUNTING_NAV = [
+  { href: "/accounting", label: "Overview" },
+  { href: "/accounting/mappings", label: "Mappings" },
+  { href: "/accounting/journals", label: "Journals" },
+  { href: "/accounting/exports", label: "Exports" },
+] as const;
+
+export const PAYMENTS_NAV = [
+  { href: "/payments", label: "Overview" },
+  { href: "/payments/new", label: "New batch" },
+  { href: "/payments/history", label: "History" },
+  { href: "/payments/settings", label: "Settings" },
+] as const;
+
+export const AUTOMATION_EVENT_TYPES = [
+  "leave.request.updated",
+  "payroll.run.calculated",
+  "payroll.run.approved",
+  "payroll.run.finalized",
+  "payslip.generated",
+  "claim.status_changed",
+  "loan.application.updated",
+  "loan.installment.due",
+  "loan.installment.overdue",
+  "employee.created",
+  "employee.updated",
+  "employee.exit.updated",
+  "contractor.engagement.expiring",
+  "contractor.payment.status_changed",
+  "biometric.device.error",
+  "attendance.punch.received",
+  "attendance.day.calculated",
+  "payment.failed",
+  "approval.overdue",
+  "compliance.deadline",
+] as const;
+export type AutomationEventType = (typeof AUTOMATION_EVENT_TYPES)[number];
+
+export const AUTOMATION_EVENT_TYPE_LABELS: Record<AutomationEventType, string> = {
+  "leave.request.updated": "Leave request updated",
+  "payroll.run.calculated": "Payroll calculated",
+  "payroll.run.approved": "Payroll approved",
+  "payroll.run.finalized": "Payroll finalized",
+  "payslip.generated": "Payslip generated",
+  "claim.status_changed": "Claim status changed",
+  "loan.application.updated": "Loan application updated",
+  "loan.installment.due": "Loan installment due",
+  "loan.installment.overdue": "Loan installment overdue",
+  "employee.created": "Employee created",
+  "employee.updated": "Employee updated",
+  "employee.exit.updated": "Employee exit updated",
+  "contractor.engagement.expiring": "Contractor engagement expiring",
+  "contractor.payment.status_changed": "Contractor payment status changed",
+  "biometric.device.error": "Biometric device error",
+  "attendance.punch.received": "Attendance punch received",
+  "attendance.day.calculated": "Attendance day calculated",
+  "payment.failed": "Payment failed",
+  "approval.overdue": "Approval overdue",
+  "compliance.deadline": "Compliance deadline",
+};
+
+export const WEBHOOK_EVENT_TYPES = [
+  "employee.created",
+  "employee.updated",
+  "attendance.punch.received",
+  "attendance.day.calculated",
+  "leave.request.updated",
+  "payroll.run.calculated",
+  "payroll.run.finalized",
+  "payslip.generated",
+  "claim.status_changed",
+  "contractor.payment.status_changed",
+] as const;
+export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
+
+export const AUTOMATION_TRIGGER_TYPES = [
+  "leave.request.updated",
+  "payroll.run.status_changed",
+  "payslip.generated",
+  "claim.status_changed",
+  "loan.installment.due",
+  "loan.installment.overdue",
+  "employee.created",
+  "employee.exit.updated",
+  "contractor.engagement.expiring",
+  "biometric.device.error",
+  "payment.failed",
+  "approval.overdue",
+] as const;
+export type AutomationTriggerType = (typeof AUTOMATION_TRIGGER_TYPES)[number];
+
+export const AUTOMATION_TRIGGER_LABELS: Record<AutomationTriggerType, string> = {
+  "leave.request.updated": "Leave or regularization status changed",
+  "payroll.run.status_changed": "Payroll status changed",
+  "payslip.generated": "Payslip generated",
+  "claim.status_changed": "Claim status changed",
+  "loan.installment.due": "Loan installment due",
+  "loan.installment.overdue": "Loan installment overdue",
+  "employee.created": "Employee joining",
+  "employee.exit.updated": "Employee exit",
+  "contractor.engagement.expiring": "Contractor engagement nearing expiry",
+  "biometric.device.error": "Biometric device offline or error",
+  "payment.failed": "Payment failed",
+  "approval.overdue": "Approval overdue",
+};
+
+export const AUTOMATION_ACTION_TYPES = ["NOTIFY_IN_APP", "SEND_EMAIL", "CREATE_TASK", "INVOKE_WEBHOOK"] as const;
+export type AutomationActionType = (typeof AUTOMATION_ACTION_TYPES)[number];
+
+export const AUTOMATION_ACTION_LABELS: Record<AutomationActionType, string> = {
+  NOTIFY_IN_APP: "Create in-app notification",
+  SEND_EMAIL: "Send configured email",
+  CREATE_TASK: "Create reminder / task",
+  INVOKE_WEBHOOK: "Invoke configured webhook",
+};
+
+export const DOMAIN_EVENT_STATUSES = ["PENDING", "PROCESSING", "PROCESSED", "FAILED", "DEAD"] as const;
+export type DomainEventStatus = (typeof DOMAIN_EVENT_STATUSES)[number];
+
+export const JOB_TYPES = [
+  "PENDING_APPROVAL_REMINDER",
+  "UPCOMING_LEAVE_REMINDER",
+  "LOAN_REPAYMENT_REMINDER",
+  "CONTRACT_EXPIRY_ALERT",
+  "BIOMETRIC_DEVICE_HEALTH",
+  "PAYROLL_PERIOD_REMINDER",
+  "FAILED_JOB_RETRY",
+  "OUTBOX_PROCESS",
+] as const;
+export type JobType = (typeof JOB_TYPES)[number];
+
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
+  PENDING_APPROVAL_REMINDER: "Pending approval reminders",
+  UPCOMING_LEAVE_REMINDER: "Upcoming leave reminders",
+  LOAN_REPAYMENT_REMINDER: "Loan repayment reminders",
+  CONTRACT_EXPIRY_ALERT: "Employee and contract expiry alerts",
+  BIOMETRIC_DEVICE_HEALTH: "Biometric device health checks",
+  PAYROLL_PERIOD_REMINDER: "Payroll period reminders",
+  FAILED_JOB_RETRY: "Eligible failed-job retries",
+  OUTBOX_PROCESS: "Process event outbox",
+};
+
+export const JOB_EXECUTION_STATUSES = ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
+export type JobExecutionStatus = (typeof JOB_EXECUTION_STATUSES)[number];
+
+export const JOB_EXECUTION_STATUS_LABELS: Record<JobExecutionStatus, string> = {
+  QUEUED: "Queued",
+  RUNNING: "Running",
+  COMPLETED: "Completed",
+  FAILED: "Failed",
+  CANCELLED: "Cancelled",
+};
+
+export const DELIVERY_STATUSES = ["QUEUED", "SENT", "FAILED", "SKIPPED", "UNCONFIGURED"] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+
+export const WEBHOOK_DELIVERY_STATUSES = ["QUEUED", "DELIVERED", "FAILED", "DEAD", "BLOCKED"] as const;
+export type WebhookDeliveryStatus = (typeof WEBHOOK_DELIVERY_STATUSES)[number];
+
+export const API_KEY_STATUSES = ["ACTIVE", "REVOKED", "EXPIRED"] as const;
+export type ApiKeyStatus = (typeof API_KEY_STATUSES)[number];
+
+export const API_SCOPES = [
+  "employees.read",
+  "organization.read",
+  "attendance.read",
+  "leave.read",
+  "payroll.read",
+  "payslips.read",
+] as const;
+export type ApiScope = (typeof API_SCOPES)[number];
+
+export const API_SCOPE_LABELS: Record<ApiScope, string> = {
+  "employees.read": "Read employees",
+  "organization.read": "Read organization structure",
+  "attendance.read": "Read attendance summaries",
+  "leave.read": "Read leave balances and requests",
+  "payroll.read": "Read payroll run summaries",
+  "payslips.read": "Read authorized payslip metadata",
+};
+
+export const TEMPLATE_VARIABLES = [
+  "employee_name",
+  "employee_code",
+  "organization_name",
+  "status",
+  "period",
+  "amount",
+  "due_date",
+  "title",
+  "body",
+  "href",
+] as const;
+export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
+
+export const NOTIFICATION_NAV = [
+  { href: "/notifications", label: "Inbox" },
+] as const;
+
+export const AUTOMATION_NAV = [
+  { href: "/automation", label: "Overview" },
+  { href: "/automation/rules", label: "Rules" },
+  { href: "/automation/jobs", label: "Jobs" },
+] as const;
+
+export const DEVELOPER_NAV = [
+  { href: "/settings/developers", label: "Overview" },
+  { href: "/settings/developers/webhooks", label: "Webhooks" },
+  { href: "/settings/developers/webhook-logs", label: "Webhook logs" },
+  { href: "/settings/developers/api-keys", label: "API keys" },
+  { href: "/settings/developers/api-logs", label: "API logs" },
+  { href: "/settings/developers/docs", label: "API docs" },
+] as const;
+
+export const NOTIFICATION_SETTINGS_NAV = [
+  { href: "/settings/notifications", label: "Preferences" },
+  { href: "/settings/notifications/templates", label: "Templates" },
 ] as const;

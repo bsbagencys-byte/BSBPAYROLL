@@ -14,6 +14,8 @@ Legend: **IMPLEMENTED** | **PLANNED** | **FUTURE**
 - Next.js 16 `proxy.ts` (not `middleware.ts`) gates non-public routes.
 - Server Components for pages; client forms use `useActionState` against server actions.
 - Employee self-service lives under `app/(app)/my` with `lib/ess/*` and `actions/ess.ts`.
+- Reports, accounting and payments live under `app/(app)/{reports,accounting,payments}` with `lib/{reports,accounting,payments}/*`.
+- Notifications, automation and developer settings live under `app/(app)/{notifications,automation,settings/notifications,settings/developers}`.
 - Demo vs production is transparent to pages: repositories switch on `hasSupabaseConfig()` / `isDemoMode()`.
 - `allowedDevOrigins`: `*.monkeycode-ai.live`.
 
@@ -26,25 +28,24 @@ Not a separate SPA. No client-side service-role keys.
 Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
-- **Public HTTP:** biometric ingest only (`/api/biometric/push`, `/api/biometric/webhook`).
-- **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*` and `/api/contractors/reports/*`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
+- **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret).
+- **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*`, `/api/contractors/reports/*`, `/api/reports/[key]`, `/api/accounting/journals/[id]/csv` and `/api/payments/[id]/csv`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
-- **Rate limit:** in-memory for login and biometric ingest.
-
-No standalone API gateway or worker queue.
+- **Rate limit:** in-memory for login, biometric ingest and `/api/v1`.
+- **Jobs:** durable outbox + claimed `job_executions`. Worker is `POST /api/internal/jobs`, not an in-process timer.
 
 ---
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
 See `BSB_PAYROLL_PROJECT_STATE.md` for the table list. There is no Phase 4 schema file.
 
-Storage: private buckets `employee-documents`, `claim-receipts`, `payslips`, `tax-proofs` and `settlement-statements`.
+Storage: private buckets `employee-documents`, `claim-receipts`, `payslips`, `tax-proofs`, `settlement-statements` and `payment-exports`.
 
 ---
 
@@ -238,8 +239,29 @@ Exits never write attendance or leave tables.
 - Profile change requests (`ess_change_requests`) are the only write path for personal data. Bank and statutory categories are sensitive and are never auto-applied: approval records the decision and notifies the employee; HR applies the value through the employee master.
 - Downloads: payslips use `/api/payroll/payslips/[id]/pdf`; employee documents use short-lived signed URLs through `getSelfDocumentUrlAction`, which re-checks ownership. No public document URLs.
 - Sensitive values are masked in ESS (`maskAccountNumber`, `maskPan`, `maskAadhaarLast4`, `maskIdentifier`).
-- Notifications (`ess_notifications`) are in-app only. No email or WhatsApp delivery is claimed. Managers see only direct reports (`reporting_manager_id`) in `/my/team`; decisions link to existing leave/claims/loans approval screens, so no second approval engine is introduced.
+- Notifications (`ess_notifications`) remain the ESS inbox. Phase 15 extends those rows with `event_type` and `delivery_status`. Email is optional SMTP only; WhatsApp/SMS are not implemented. Managers see only direct reports (`reporting_manager_id`) in `/my/team`; decisions link to existing leave/claims/loans approval screens, so no second approval engine is introduced.
 - No QR, GPS, face recognition, smart auto attendance, raw punch editing or leave-balance bypass.
+
+---
+
+## Reports, accounting and payments — IMPLEMENTED
+
+- Reports hub at `/reports` (`lib/reports/{catalog,query,csv}.ts`). Payroll register/gross-net/cost use stored run and item totals. Phase 4 late/early/OT/present-absent return an explicit not-calculated table.
+- Journals (`lib/accounting/service.ts`) consume finalized snapshot payload. Unmapped components block export. Debit must equal credit. One non-VOID journal per run. Duplicate export requires confirmation. Generic CSV (`lib/accounting/csv.ts`) — no Tally/Zoho.
+- Payment batches (`lib/payments/service.ts`) from finalized runs. Bank-file export is an instruction (`EXPORTED` ≠ paid). Exclusion requires a reason and does not change finalized net. Bank details masked. Configurable generic CSV columns (`lib/payments/columns.ts`). Outcomes append history. Reconciliation confirms MATCHED rows only.
+- No XLSX library. No direct bank API.
+
+---
+
+## Automation, notifications, APIs and webhooks — IMPLEMENTED
+
+- Domain events via `emitSafe` → `emitDomainEvent` write `domain_events` and a durable `event_outbox`. `processOutbox` fans out notifications, rules and webhooks. No in-request timers.
+- In-app notifications default from `defaultNotificationPlan`. Email only if preference `email=true` and SMTP is configured. Recipient is `employee_employment.official_email`. Unconfigured SMTP is UNCONFIGURED, never success.
+- Automation rules: predefined triggers/conditions/actions only. No user SQL/code. Payroll create/finalize never auto-runs without an authorized policy.
+- Jobs claimed uniquely on `(job_id, scheduled_for)`. Worker `POST /api/internal/jobs` requires `JOBS_WORKER_SECRET`.
+- Webhooks: HMAC + timestamp + event id, secret rotation, retry/backoff, SSRF block of localhost/private/metadata. No passwords, tokens, full bank or Aadhaar in payloads.
+- API keys: `bsb_live_` prefix, sha256 hash, org-scoped, granular read scopes, expiry/revoke/rotate, rate limit, request IDs. Plaintext shown only at create. Cannot bypass RLS/approvals/finalized payroll.
+- `/api/v1` attendance summaries do not claim Phase 4 punch calculation.
 
 ---
 
@@ -255,7 +277,9 @@ Do not implement these until the named phase:
 - **Phase 11:** versioned statutory/tax engine (implemented). Do not hard-code rates in payroll.
 - **Phase 12:** employee exit, F&F settlement and contractor payroll (implemented). Do not mix contractor invoices into employee payroll runs.
 - **Phase 13:** employee self-service at `/my` (implemented). Additive only; reuse module services and approvals.
-- **Phase 14:** reports hub, accounting exports and bank payment infrastructure (next).
+- **Phase 14:** reports hub, accounting exports and bank payment infrastructure (implemented).
+- **Phase 15:** automation, notifications, scheduled jobs, APIs and webhooks (implemented).
+- **Phase 16:** AI and advanced analytics (next).
 - **Later:** Face/QR/GPS, smart auto attendance.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

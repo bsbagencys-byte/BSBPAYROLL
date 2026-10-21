@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 13 overlay)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 15 overlay)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13 implemented. Phase 4 Attendance is not started.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 implemented. Phase 4 Attendance is not started.
 
 ---
 
@@ -33,6 +33,8 @@ Status is from code, not README.
 | 11 Statutory / tax engine | **COMPLETE** overlay on P9/P10 | Versioned PF/ESI/PT/LWF/TDS, org settings, tax declarations, payroll statutory snapshots, real payslip deductions. Seed versions DISABLED/unverified. |
 | 12 Exit, F&F, contractors | **COMPLETE** overlay on P9–P11 | Employee exits + clearance, full & final settlement, contractor register/engagements/invoices. Ordinary payroll excludes exited employees whose LWD is before the period. |
 | 13 Employee self-service | **COMPLETE** overlay on P2/P5/P7/P8/P9/P11 | `/my` portal: profile, attendance, leave, payslips, salary, claims, loans, documents, tax, requests, notifications, manager team view. Server-resolved identity; profile change requests; in-app notifications. |
+| 14 Reports, accounting, payments | **COMPLETE** overlay on P9–P13 | Reports hub from stored data; payroll journals from finalized snapshots; payment batches and generic bank CSV. Late/OT/punch LOP not calculated. |
+| 15 Automation, notifications, APIs | **COMPLETE** overlay on P1–P14 | Durable outbox, in-app + optional SMTP email, predefined automation rules, scheduled jobs, HMAC webhooks, scoped `/api/v1`. Never fakes external delivery. |
 
 ---
 
@@ -56,7 +58,7 @@ Status is from code, not README.
 - Demo mode without live Supabase.
 - Never prefix service-role keys with `NEXT_PUBLIC_`.
 - Next.js 16 uses `proxy.ts` (no `middleware.ts`).
-- Mutations are server actions; public HTTP APIs are biometric ingest plus CSV downloads.
+- Mutations are server actions; public HTTP APIs are biometric ingest, scoped `/api/v1` (API key), CSV downloads, and `/api/internal/jobs` (worker secret).
 - Salary is effective-date based and auditable; previous CTC is never overwritten.
 - Formula engine is a controlled parser, not `eval`.
 - Attendance and leave are read-only inputs to salary; salary never writes those tables.
@@ -65,9 +67,9 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, My Space, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Compliance, Settings.
+Enabled nav: Dashboard, My Space, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Reports, Accounting, Payments, Notifications, Automation, Compliance, Settings.
 
-Disabled nav (no pages): `/attendance` (P4). Global reports hub remains later; payroll has in-module CSV.
+Disabled nav (no pages): `/attendance` (P4).
 
 ### Auth / foundation
 
@@ -79,7 +81,7 @@ Disabled nav (no pages): `/attendance` (P4). Global reports hub remains later; p
 
 ### Settings
 
-- `/settings/company`, `/branches`, `/departments`, `/designations`, `/locations`, `/employment-types`, `/users`, `/roles`, `/security`
+- `/settings/company`, `/branches`, `/departments`, `/designations`, `/locations`, `/employment-types`, `/users`, `/roles`, `/security`, `/notifications`, `/developers`
 
 ### Employees (P2)
 
@@ -143,6 +145,30 @@ Disabled nav (no pages): `/attendance` (P4). Global reports hub remains later; p
 - `/contractor-payments`, `/contractor-payments/new`, `/contractor-payments/[id]`, `/contractor-payments/approvals`
 - CSV: `/api/contractors/reports/{register,engagements,invoices,withholding}`
 
+### Reports (P14)
+
+- `/reports`, `/reports/[key]`
+- CSV: `/api/reports/[key]`
+
+### Accounting (P14)
+
+- `/accounting`, `/accounting/mappings`, `/accounting/journals`, `/accounting/[id]`, `/accounting/exports`
+- CSV: `/api/accounting/journals/[id]/csv`
+
+### Payments (P14)
+
+- `/payments`, `/payments/new`, `/payments/[id]`, `/payments/history`, `/payments/settings`
+- CSV: `/api/payments/[id]/csv`
+
+### Notifications and automation (P15)
+
+- `/notifications`
+- `/settings/notifications`, `/settings/notifications/templates`
+- `/automation`, `/automation/rules`, `/automation/jobs`
+- `/settings/developers`, `/settings/developers/webhooks`, `/settings/developers/webhook-logs`, `/settings/developers/api-keys`, `/settings/developers/api-logs`, `/settings/developers/docs`
+- `GET /api/v1/{employees,organization,attendance/summaries,leave,payroll/runs,payslips}`
+- `POST|GET /api/internal/jobs`
+
 ### Employee profile tabs
 
 Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, loans, payroll.
@@ -151,7 +177,7 @@ Overview, employment, statutory, bank, documents, history, attendance (later P4 
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -177,6 +203,12 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 **P12:** `exit_clearance_items`, `employee_exits`, `exit_clearance_tasks`, `final_settlements`, `settlement_line_items`, `settlement_approvals`, `settlement_payments`, `contractors`, `contractor_engagements`, `contractor_invoices`, `contractor_payment_items`, `contractor_payment_records` + storage bucket `settlement-statements`
 
+**P13:** `ess_notifications`, `ess_change_requests`
+
+**P14:** `accounting_accounts`, `payroll_account_mappings`, `payroll_journals`, `payroll_journal_lines`, `accounting_exports`, `payment_settings`, `payment_batches`, `payment_batch_items`, `payment_transactions`, `payment_reconciliations`, `report_export_jobs` + storage bucket `payment-exports`
+
+**P15:** `ess_notifications` extended (`event_type`, `delivery_status`); `notification_preferences`, `notification_templates`, `notification_deliveries`, `domain_events`, `event_outbox`, `automation_rules`, `automation_rule_runs`, `scheduled_jobs`, `job_executions`, `webhook_endpoints`, `webhook_deliveries`, `api_keys`, `api_request_logs`
+
 **Not present:** shifts, attendance rules, overtime, LOP calc from punches.
 
 `login_attempts` and `username_lookup` are service-role only. Biometric raw insert from the client is denied; ingest uses admin/demo store.
@@ -185,13 +217,13 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 ## APIs / Services
 
-Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans,exits}.ts`.
+Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans,exits,ess,accounting,payments,reports,notifications,automation,developers}.ts`.
 
 | Area | Code |
 |---|---|
 | Session / RBAC | `lib/auth/session.ts`, `lib/auth/guards.ts` |
 | Audit | `lib/audit.ts` (free-form action strings) |
-| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, `loanTypes`, `statutoryRules`, `payrollExceptions`, `statutoryRuleVersions`, or `employeeExits` missing |
+| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, `loanTypes`, `statutoryRules`, `payrollExceptions`, `statutoryRuleVersions`, `employeeExits`, `accountingAccounts` or `domainEvents` missing |
 | Biometric | `lib/biometric/{gateway,repository,query,hash,time}.ts`, `lib/biometric/adapters/{essl,generic,index,types}.ts` |
 | Leave | `lib/leave/{engine,service,repository,query,csv,dates,attendance}.ts` |
 | Salary | `lib/salary/{formula,engine,service,repository,query,csv}.ts` |
@@ -199,7 +231,9 @@ Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salar
 | Loans | `lib/loans/{engine,service,repository,query,csv}.ts`, `lib/validations/loans.ts` |
 | Payroll | `lib/payroll/{engine,service,repository,query,csv,workflow,exceptions,numbering,pdf}.ts`, `lib/validations/payroll.ts` |
 | Exits / F&F / contractors | `lib/exits/{engine,service,settlement,contractors,repository,query,csv,pdf}.ts`, `lib/validations/exits.ts` |
-| Proxy | `proxy.ts` — public prefixes for login/reset and biometric ingest |
+| Reports / accounting / payments | `lib/reports/{catalog,query,csv}.ts`, `lib/accounting/{repository,service,query,csv}.ts`, `lib/payments/{repository,service,query,columns}.ts` |
+| Events / notifications / automation | `lib/events/{bus,catalog,emit,repository}.ts`, `lib/notifications/{service,email,recipients}.ts`, `lib/automation/{rules}.ts`, `lib/jobs/{service}.ts`, `lib/webhooks/{*}`, `lib/api/{http,query}.ts` |
+| Proxy | `proxy.ts` — public prefixes for login/reset, biometric ingest, `/api/v1` and `/api/internal/jobs` |
 
 Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getApprovedPayrollClaimLines` (`lib/claims/service.ts`); `getEmployeeLoanDeductions` / `recordLoanRepayment` (`lib/loans/service.ts`); leave-written `attendance_days`; `employeeExcludedFromOrdinaryPayroll` (`lib/exits/service.ts`).
 
@@ -316,13 +350,47 @@ Profile change requests (`ess_change_requests`): DRAFT-free PENDING → APPROVED
 
 Sensitive display is masked: account number, PAN, Aadhaar last 4, UAN and ESIC. Employee documents and tax proofs use short-lived signed URLs re-checked against the signed-in employee's own record. Payslips use `/api/payroll/payslips/[id]/pdf`. No public document URLs.
 
-Notifications (`ess_notifications`) are in-app only with read/unread. No email or WhatsApp delivery is claimed. Manager `/my/team` is limited to direct reports via `reporting_manager_id` and links to the existing leave/claims/loans approval screens.
+ESS inbox still uses `ess_notifications`. Phase 15 extends those rows with `event_type` and `delivery_status`. Email is optional SMTP only; WhatsApp/SMS are not implemented. Manager `/my/team` is limited to direct reports via `reporting_manager_id` and links to the existing leave/claims/loans approval screens.
 
 Permissions: `self.view`, `self.profile.update`, `self.change_request.review`, `self.notifications.manage`. HR gets all four; PAYROLL gets view/update/notifications; ACCOUNTANT and MANAGER get view/update; EMPLOYEE gets view/update.
 
 Demo seed: one pending bank change request for Rahul, plus notifications for Rahul and HR.
 
 Explicitly not implemented: QR, GPS, face recognition, smart auto attendance, raw punch editing, leave-balance bypass.
+
+---
+
+## Reports, accounting and payments (P14)
+
+Reports hub at `/reports` runs stored-data queries (`lib/reports/query.ts`). Payroll totals come from payroll runs/items/lines, not a second engine. Phase 4 late/early/OT/present-absent reports return an explicit “not calculated” table.
+
+Accounting journals consume the finalized payroll snapshot (`payload_json` = `{ run, items, lines, exceptions, totals }`). Live rows are fallback only if snapshot JSON cannot be parsed. Unmapped components block export. Debit must equal credit. One non-VOID journal per run. Duplicate export requires explicit confirmation. Generic journal CSV only — no Tally/Zoho API.
+
+Payment batches from finalized/approved runs only. Bank-file export is an instruction, not proof of payment (`EXPORTED` ≠ paid). Invalid bank details surface as employee-level errors. Authorized exclusion requires a reason and never changes finalized net salary. Bank details are masked in UI; files are generated server-side. Configurable generic CSV column mapping (`lib/payments/columns.ts`). Outcomes append `payment_transactions`; item status is latest, history is not overwritten. Reconciliation previews MATCHED/UNMATCHED/DUPLICATE/AMOUNT_MISMATCH then confirms MATCHED rows only.
+
+Permissions: `reports.view|export`, `accounting.manage`, `accounting.journal.view|export`, `payments.view|create|approve|export|reconcile`. HR reports; PAYROLL reports + journal.view + payments view/create/export; ACCOUNTANT full accounting+payments; MANAGER `reports.view`.
+
+Demo seed: ledger accounts and mappings (including employer PF/ESI/LWF debit+credit), payment settings, finalized run `run-demo-finalized` / snapshot `snapshot-demo-finalized` (Asha+Meera included).
+
+---
+
+## Automation, notifications, APIs and webhooks (P15)
+
+Durable domain events (`domain_events` + `event_outbox`) are emitted via `emitSafe` from leave, payroll, claims, loans, employees, exits, contractors, payments and biometric ingest. `processOutbox` fans out notifications, rules and webhooks. No in-request timers.
+
+In-app notifications default from `defaultNotificationPlan`. Email is queued only when the user preference has `email=true` and SMTP is configured (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`/`MAIL_FROM`). Recipient address is `employee_employment.official_email` (`UserProfile` has no email). Unconfigured or failed SMTP is recorded as UNCONFIGURED/FAILED — never as success. WhatsApp and SMS are not implemented.
+
+Automation rules use predefined triggers/conditions/actions only. No arbitrary SQL or user code. Rules cannot auto-create or finalize payroll without an authorized policy. Sensitive mutations go through existing business services.
+
+Scheduled jobs are claimed uniquely on `(job_id, scheduled_for)` with locking. Loan reminders filter `DUE`/`OVERDUE` only. Worker: `POST /api/internal/jobs` with `JOBS_WORKER_SECRET`.
+
+Webhooks: HMAC + timestamp + event id, secret rotation, retry/backoff, HTTPS in production, SSRF block of localhost/private/metadata. Payloads never include passwords, tokens, full bank numbers or Aadhaar.
+
+API keys: prefix `bsb_live_`, sha256 hashed, org-scoped, granular scopes `employees|organization|attendance|leave|payroll|payslips.read`, expiry/revoke/rotate, rate limited, request IDs. Plaintext shown only at create. Keys cannot bypass RLS, approvals or finalized payroll. Attendance summaries do not claim Phase 4 punch calculation.
+
+Permissions: `notifications.view|manage`, `automation.view|manage`, `automation.jobs.view|retry`, `developers.view`, `developers.webhooks.manage|replay`, `developers.api_keys.manage`, `developers.logs.view`. HR gets notification/automation manage + job retry. PAYROLL view jobs. ACCOUNTANT/MANAGER/EMPLOYEE get `notifications.view` only. Developer screens are ADMIN/SUPER_ADMIN.
+
+Demo seed: `createAutomationSeed()` — templates, one leave-approval rule, daily loan-reminder job.
 
 ---
 
@@ -342,21 +410,19 @@ Explicitly not implemented: QR, GPS, face recognition, smart auto attendance, ra
 
 ## Current Phase
 
-**Next: Phase 14 — Reports, Accounting Exports and Bank Payment Infrastructure.**
+**Next: Phase 16 — AI & Advanced Analytics (not started).**
 
-Phase 13 ESS overlay is complete. Phase 4 attendance remains the main accuracy gap: day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Do not start Phase 4 unless requested.
+Phase 15 automation/notifications/APIs overlay is complete. Phase 4 attendance remains the main accuracy gap: day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Do not start Phase 4 unless requested.
 
 ---
 
 ## Next Dependencies
 
-Phase 14 should consume, not rebuild:
+Phase 16 should consume, not rebuild:
 
-- Payroll runs, payslips, statutory results and compliance filings (P9–P11)
-- Exits, settlements and contractor invoices/payments (P12)
-- Loans, claims and salary snapshots as report inputs
-- Existing CSV report routes under `/api/*/reports/*`
-- Organizations, branches, departments and cost centres for grouping
+- Stored payroll, leave, claims, loans and report queries
+- Domain events and notification deliveries
+- Existing RBAC and audit
 
 Phase 4 should consume, not rebuild:
 

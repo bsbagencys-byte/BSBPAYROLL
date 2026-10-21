@@ -1,3 +1,4 @@
+import { emitSafe } from "@/lib/events/emit";
 import { addDays, todayInZone } from "@/lib/leave/dates";
 import { loadOrgCatalog } from "@/lib/org-data";
 import { getDemoStore } from "@/lib/demo-store";
@@ -280,6 +281,15 @@ export async function decideEmployeeExit(input: {
     inNotice ? "ON_NOTICE" : updated.exit_type === "TERMINATION" ? "TERMINATED" : "RESIGNED",
     input.actorId
   );
+  await emitSafe({
+    organizationId: input.organizationId,
+    eventType: "employee.exit.updated",
+    entityType: "employee_exit",
+    entityId: updated.id,
+    actorId: input.actorId,
+    payload: { employeeId: updated.employee_id, status: updated.status, href: "/employees/exits" },
+    idempotencyKey: `employee.exit.updated:${updated.id}:${updated.status}`,
+  });
   return updated;
 }
 

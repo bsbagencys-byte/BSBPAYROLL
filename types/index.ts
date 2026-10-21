@@ -90,6 +90,27 @@ import type {
   EssChangeCategory,
   EssChangeRequestStatus,
   EssNotificationType,
+  AccountingAccountType,
+  PayrollMappingCategory,
+  PayrollJournalStatus,
+  PaymentMethod,
+  PaymentBatchStatus,
+  PaymentItemStatus,
+  PaymentTransactionStatus,
+  PaymentTransactionSource,
+  ReconciliationStatus,
+  AccountingExportKind,
+  AutomationEventType,
+  AutomationTriggerType,
+  AutomationActionType,
+  DomainEventStatus,
+  JobType,
+  JobExecutionStatus,
+  DeliveryStatus,
+  WebhookDeliveryStatus,
+  ApiKeyStatus,
+  ApiScope,
+  WebhookEventType,
 } from "@/lib/constants";
 
 export type {
@@ -172,6 +193,27 @@ export type {
   EssChangeCategory,
   EssChangeRequestStatus,
   EssNotificationType,
+  AccountingAccountType,
+  PayrollMappingCategory,
+  PayrollJournalStatus,
+  PaymentMethod,
+  PaymentBatchStatus,
+  PaymentItemStatus,
+  PaymentTransactionStatus,
+  PaymentTransactionSource,
+  ReconciliationStatus,
+  AccountingExportKind,
+  AutomationEventType,
+  AutomationTriggerType,
+  AutomationActionType,
+  DomainEventStatus,
+  JobType,
+  JobExecutionStatus,
+  DeliveryStatus,
+  WebhookDeliveryStatus,
+  ApiKeyStatus,
+  ApiScope,
+  WebhookEventType,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -2257,6 +2299,8 @@ export interface EssNotification {
   href: string | null;
   entity_type: string | null;
   entity_id: string | null;
+  event_type?: string | null;
+  delivery_status?: string | null;
   read_at: string | null;
   created_at: string;
 }
@@ -2285,4 +2329,405 @@ export interface EssChangeRequestListItem {
   employeeCode: string;
   requestedByName: string;
   reviewerName: string | null;
+}
+
+export interface AccountingAccount {
+  id: string;
+  organization_id: string;
+  code: string;
+  name: string;
+  account_type: AccountingAccountType;
+  description: string | null;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollAccountMapping {
+  id: string;
+  organization_id: string;
+  category: PayrollMappingCategory;
+  component_code: string | null;
+  ledger_account_id: string;
+  treatment: "DEBIT" | "CREDIT";
+  branch_id: string | null;
+  department_id: string | null;
+  effective_from: string;
+  effective_to: string | null;
+  active: boolean;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollJournal {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  period: string;
+  journal_date: string;
+  reference_number: string;
+  status: PayrollJournalStatus;
+  total_debit: number;
+  total_credit: number;
+  balanced: boolean;
+  validation_json: string | null;
+  export_count: number;
+  created_by: string | null;
+  validated_at: string | null;
+  exported_at: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollJournalLine {
+  id: string;
+  organization_id: string;
+  journal_id: string;
+  employee_id: string | null;
+  account_id: string | null;
+  account_code: string;
+  account_name: string;
+  branch_id: string | null;
+  department_id: string | null;
+  description: string;
+  debit: number;
+  credit: number;
+  source_kind: string;
+  source_code: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface AccountingExport {
+  id: string;
+  organization_id: string;
+  kind: AccountingExportKind;
+  journal_id: string | null;
+  format: "CSV";
+  reference: string | null;
+  row_count: number;
+  duplicate_of: string | null;
+  storage_path: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface PaymentSettings {
+  organization_id: string;
+  default_method: PaymentMethod;
+  bank_account_reference: string | null;
+  file_prefix: string;
+  delimiter: string;
+  include_header: boolean;
+  columns_json: string;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentBatch {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  period: string;
+  payment_date: string;
+  payment_method: PaymentMethod;
+  bank_account_reference: string | null;
+  total_employees: number;
+  total_amount: number;
+  status: PaymentBatchStatus;
+  validation_json: string | null;
+  notes: string | null;
+  created_by: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  exported_at: string | null;
+  export_count: number;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentBatchItem {
+  id: string;
+  organization_id: string;
+  batch_id: string;
+  employee_id: string;
+  employee_code: string;
+  employee_name: string;
+  bank_account_id: string | null;
+  account_number_last4: string | null;
+  ifsc: string | null;
+  amount: number;
+  status: PaymentItemStatus;
+  exclusion_reason: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  organization_id: string;
+  batch_id: string;
+  item_id: string;
+  employee_id: string;
+  amount: number;
+  payment_date: string;
+  reference: string | null;
+  bank_reference: string | null;
+  status: PaymentTransactionStatus;
+  failure_reason: string | null;
+  notes: string | null;
+  source: PaymentTransactionSource;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface PaymentReconciliation {
+  id: string;
+  organization_id: string;
+  batch_id: string;
+  file_name: string | null;
+  status: ReconciliationStatus;
+  matched_count: number;
+  unmatched_count: number;
+  duplicate_count: number;
+  mismatch_count: number;
+  summary_json: string | null;
+  created_by: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+}
+
+export interface ReportExportJob {
+  id: string;
+  organization_id: string;
+  report_key: string;
+  format: "CSV";
+  filters_json: string | null;
+  row_count: number;
+  status: "COMPLETED" | "FAILED";
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  event_type: string;
+  in_app: boolean;
+  email: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationTemplate {
+  id: string;
+  organization_id: string;
+  key: string;
+  name: string;
+  event_type: string;
+  channel: "EMAIL" | "IN_APP";
+  language: string;
+  subject: string;
+  body_text: string;
+  body_html: string | null;
+  variables_json: string;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationDelivery {
+  id: string;
+  organization_id: string;
+  notification_id: string | null;
+  template_id: string | null;
+  user_id: string;
+  channel: "IN_APP" | "EMAIL";
+  event_type: string;
+  to_address: string | null;
+  subject: string | null;
+  status: DeliveryStatus;
+  attempt_count: number;
+  last_attempt_at: string | null;
+  next_attempt_at: string | null;
+  provider: string | null;
+  error_message: string | null;
+  event_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DomainEvent {
+  id: string;
+  organization_id: string;
+  event_type: AutomationEventType | string;
+  version: number;
+  entity_type: string | null;
+  entity_id: string | null;
+  actor_id: string | null;
+  idempotency_key: string | null;
+  payload_json: string;
+  status: DomainEventStatus;
+  attempt_count: number;
+  available_at: string;
+  processed_at: string | null;
+  locked_at: string | null;
+  locked_by: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface AutomationRule {
+  id: string;
+  organization_id: string;
+  name: string;
+  trigger_type: AutomationTriggerType | string;
+  conditions_json: string;
+  actions_json: string;
+  enabled: boolean;
+  stop_on_match: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutomationRuleRun {
+  id: string;
+  organization_id: string;
+  rule_id: string;
+  event_id: string;
+  status: "APPLIED" | "SKIPPED" | "FAILED";
+  result_json: string | null;
+  created_at: string;
+}
+
+export interface AutomationTask {
+  id: string;
+  organization_id: string;
+  title: string;
+  body: string | null;
+  href: string | null;
+  assignee_user_id: string | null;
+  event_type: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  status: "OPEN" | "DONE" | "CANCELLED";
+  due_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduledJob {
+  id: string;
+  organization_id: string;
+  job_type: JobType | string;
+  name: string;
+  cron_expr: string | null;
+  timezone: string;
+  payload_json: string;
+  enabled: boolean;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  last_status: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobExecution {
+  id: string;
+  organization_id: string;
+  job_id: string;
+  status: JobExecutionStatus;
+  attempt_count: number;
+  scheduled_for: string;
+  started_at: string | null;
+  completed_at: string | null;
+  locked_at: string | null;
+  locked_by: string | null;
+  result_json: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface WebhookEndpoint {
+  id: string;
+  organization_id: string;
+  name: string;
+  url: string;
+  secret_hash: string;
+  secret_hint: string;
+  status: "ACTIVE" | "DISABLED";
+  event_types_json: string;
+  created_by: string | null;
+  rotated_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WebhookDeliveryAttempt {
+  id: string;
+  organization_id: string;
+  endpoint_id: string;
+  event_id: string;
+  status: WebhookDeliveryStatus;
+  attempt_count: number;
+  http_status: number | null;
+  response_excerpt: string | null;
+  error_message: string | null;
+  signature_timestamp: string | null;
+  next_attempt_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiKey {
+  id: string;
+  organization_id: string;
+  name: string;
+  key_prefix: string;
+  key_hash: string;
+  scopes_json: string;
+  status: ApiKeyStatus;
+  expires_at: string | null;
+  last_used_at: string | null;
+  rate_limit_per_minute: number;
+  created_by: string | null;
+  revoked_by: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiRequestLog {
+  id: string;
+  organization_id: string | null;
+  api_key_id: string | null;
+  request_id: string;
+  method: string;
+  path: string;
+  status_code: number;
+  ip_address: string | null;
+  user_agent: string | null;
+  error_code: string | null;
+  created_at: string;
 }

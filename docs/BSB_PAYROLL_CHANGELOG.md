@@ -4,6 +4,74 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 15 — Automation, notifications, scheduled jobs, APIs and webhooks
+
+- **Date:** 2026-10-21
+- **Status:** implemented on `261015-feat-ess-portal`
+
+### Implemented
+
+- Additive overlay. Phases 1–14 unchanged. Phase 4 attendance still not started.
+- Durable domain events and outbox. `emitSafe` from leave, payroll, claims, loans, employees, exits, contractors, payments and biometric ingest.
+- In-app inbox at `/notifications`. Email only when SMTP is configured and delivery succeeds; otherwise UNCONFIGURED/FAILED. WhatsApp/SMS not implemented.
+- Notification preferences and templates. Recipient email from employment `official_email`.
+- Predefined automation rules and scheduled jobs with claim/lock/idempotency. Loan reminders use DUE/OVERDUE only. No arbitrary SQL or auto payroll create/finalize.
+- HMAC-signed webhooks with timestamp, event id, secret rotation, retry/backoff and SSRF blocking.
+- Org-scoped hashed API keys (`bsb_live_`) with granular read scopes, expiry, revoke, rotate, rate limit and request IDs. Secret shown only at create.
+- Scoped `GET /api/v1/{employees,organization,attendance/summaries,leave,payroll/runs,payslips}`. Worker `POST|GET /api/internal/jobs`.
+
+### Database
+
+- Additive `supabase/phase15.sql`, appended into `combined.sql`.
+- Extends `ess_notifications` with `event_type` and `delivery_status`.
+- Tables: `notification_preferences`, `notification_templates`, `notification_deliveries`, `domain_events`, `event_outbox`, `automation_rules`, `automation_rule_runs`, `scheduled_jobs`, `job_executions`, `webhook_endpoints`, `webhook_deliveries`, `api_keys`, `api_request_logs`.
+- Permissions: `notifications.view|manage`, `automation.view|manage`, `automation.jobs.view|retry`, `developers.view`, `developers.webhooks.manage|replay`, `developers.api_keys.manage`, `developers.logs.view`.
+
+### API
+
+- Server actions in `actions/{notifications,automation,developers}.ts` with `writeAudit`.
+- Public API key routes under `/api/v1`. Internal worker `/api/internal/jobs`.
+
+### UI
+
+- `/notifications`, `/automation`, `/settings/notifications`, `/settings/developers` plus templates, rules, jobs, webhooks, API keys and docs.
+- Nav items: Notifications, Automation. Settings: Notifications, Developers.
+
+---
+
+## Phase 14 — Reports, accounting exports, salary payments
+
+- **Date:** 2026-10-20
+- **Status:** implemented on `261015-feat-ess-portal`
+
+### Implemented
+
+- Additive overlay. Phases 1–13 unchanged. Phase 4 attendance still not started.
+- Reports hub `/reports` with HR, attendance, leave, payroll, compliance, claims/loans, exits/contractors and biometric keys. Uses stored payroll/leave/claim data. Late, early exit, OT and punch-based present/absent return “Not calculated until Phase 4”.
+- Accounting: ledger accounts, payroll component mappings, journals generated from finalized payroll snapshots. Unmapped components block export. Debit must equal credit. One active journal per run. Duplicate export requires confirmation. Generic journal CSV only — no Tally/Zoho.
+- Payments: batches from finalized runs, bank-detail validation, authorized exclusion with reason (does not change finalized net), approve, generic bank CSV export (instruction, not proof of payment), outcome history, CSV reconciliation preview then confirm MATCHED rows.
+- Bank details masked in UI. No XLSX library; CSV only. No direct bank API.
+
+### Database
+
+- Additive `supabase/phase14.sql`, appended into `combined.sql`.
+- Tables: `accounting_accounts`, `payroll_account_mappings`, `payroll_journals`, `payroll_journal_lines`, `accounting_exports`, `payment_settings`, `payment_batches`, `payment_batch_items`, `payment_transactions`, `payment_reconciliations`, `report_export_jobs`.
+- Unique active journal-per-run and active batch-per-run.
+- Permissions: `reports.view|export`, `accounting.manage`, `accounting.journal.view|export`, `payments.view|create|approve|export|reconcile`.
+- Private storage bucket `payment-exports`.
+
+### API
+
+- Server actions in `actions/{accounting,payments,reports}.ts` with `writeAudit`.
+- CSV: `/api/reports/[key]`, `/api/accounting/journals/[id]/csv`, `/api/payments/[id]/csv`.
+
+### UI
+
+- `/reports`, `/accounting`, `/payments` plus mappings, journals, exports, new batch, history, settings.
+- Nav items: Reports, Accounting, Payments.
+
+---
+
 ## Phase 13 — Employee self-service portal
 
 - **Date:** 2026-10-17

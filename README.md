@@ -1,6 +1,6 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, Phase 12 employee exit, full & final settlement and contractor payroll, and Phase 13 employee self-service. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, Phase 12 employee exit, full & final settlement and contractor payroll, Phase 13 employee self-service, Phase 14 reports, accounting exports and salary payments, and Phase 15 automation, notifications, scheduled jobs, signed webhooks and scoped APIs. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
 This app does **not** implement full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest. Payroll treats unmarked working days as paid until Phase 4.
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10 + Phase 11 + Phase 12 + Phase 13). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql`, `supabase/phase10.sql`, `supabase/phase11.sql`, `supabase/phase12.sql` and `supabase/phase13.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10 + Phase 11 + Phase 12 + Phase 13 + Phase 14 + Phase 15). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql`, `supabase/phase10.sql`, `supabase/phase11.sql`, `supabase/phase12.sql`, `supabase/phase13.sql`, `supabase/phase14.sql` and `supabase/phase15.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -54,6 +54,12 @@ NEXT_PUBLIC_APP_URL
 SESSION_SECRET
 NEXT_PUBLIC_DEMO_MODE=false
 AUTH_EMAIL_DOMAIN=auth.bsbpayroll.internal
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+JOBS_WORKER_SECRET=
 ```
 
 `NEXT_PUBLIC_APP_URL` must be the live Vercel URL (for example `https://your-app.vercel.app`). After the first deploy, add that domain in Supabase Auth redirect URLs.
@@ -78,6 +84,8 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `/settings/users`
 - `/settings/roles`
 - `/settings/security`
+- `/settings/notifications`
+- `/settings/developers`
 - `/employees`
 - `/employees/new`
 - `/employees/[id]`
@@ -227,6 +235,33 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `GET /api/contractors/reports/engagements`
 - `GET /api/contractors/reports/invoices`
 - `GET /api/contractors/reports/withholding`
+- `/reports`
+- `/reports/[key]`
+- `GET /api/reports/[key]`
+- `/accounting`
+- `/accounting/mappings`
+- `/accounting/journals`
+- `/accounting/[id]`
+- `/accounting/exports`
+- `GET /api/accounting/journals/[id]/csv`
+- `/payments`
+- `/payments/new`
+- `/payments/[id]`
+- `/payments/history`
+- `/payments/settings`
+- `GET /api/payments/[id]/csv`
+- `/notifications`
+- `/automation`
+- `/automation/rules`
+- `/automation/jobs`
+- `GET /api/v1/employees`
+- `GET /api/v1/organization`
+- `GET /api/v1/attendance/summaries`
+- `GET /api/v1/leave`
+- `GET /api/v1/payroll/runs`
+- `GET /api/v1/payslips`
+- `POST /api/internal/jobs`
+- `GET /api/internal/jobs`
 
 Attendance calculation (Phase 4) remains Coming Soon.
 
@@ -272,7 +307,7 @@ Attendance calculation (Phase 4) remains Coming Soon.
 - RLS isolates every business table by `organization_id`
 - Passwords are never stored in plaintext
 - Login is rate-limited
-- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes, loan type/policy/application/disburse/repayment/adjustment changes, payroll run create/calculate/lock/process/paid, statutory rule changes, employee exit/clearance/settlement changes, contractor invoice and payment changes
+- Audit events: login, logout, failed login, user create/edit/disable, role change, company settings, biometric device and mapping changes, leave type/policy/request/holiday/balance changes, salary component/structure/assignment/revision changes, benefit type/policy/assignment changes, claim type/policy/submit/approve/reject changes, loan type/policy/application/disburse/repayment/adjustment changes, payroll run create/calculate/lock/process/paid, statutory rule changes, employee exit/clearance/settlement changes, contractor invoice and payment changes, webhook and API key create/rotate/revoke
 - Public biometric ingest is token-authenticated and rate-limited; device tokens are stored as hashes only
 - Service role keys must not be prefixed with `NEXT_PUBLIC_`
 
@@ -304,10 +339,19 @@ Attendance calculation (Phase 4) remains Coming Soon.
 - Own attendance, leave, payslips, salary, claims, loans, documents and tax declarations reuse existing services. No second attendance or approval engine.
 - Profile changes go through requests. Bank and statutory changes are sensitive and are never auto-applied by approval; HR applies them in the employee master.
 - Sensitive values are masked (bank account, PAN, Aadhaar last 4, UAN, ESIC). Documents use short-lived signed URLs; there are no public document URLs.
-- Notifications are in-app only. No email or WhatsApp delivery is claimed.
+- In-app notifications are always available. Email is sent only when SMTP is configured and delivery succeeds; otherwise the delivery is recorded as unconfigured or failed. WhatsApp and SMS are not implemented.
 - Managers only see direct reports (`reporting_manager_id`) and act through the existing leave/claims/loans screens.
 - Not implemented: QR, GPS, face recognition, smart auto attendance, raw punch editing.
 
+## Automation, APIs and webhooks
+
+- Domain events write a durable outbox. Notifications, rules and webhooks consume the outbox. No in-request timers.
+- Automation rules use predefined triggers, conditions and actions. There is no arbitrary SQL or user code. Sensitive payroll create/finalize never runs automatically without an authorized policy.
+- Scheduled jobs are claimed with locking and idempotency. `POST /api/internal/jobs` requires `JOBS_WORKER_SECRET`.
+- Webhooks are HMAC-signed with timestamp and event id. Secrets rotate. Localhost, private and metadata URLs are blocked.
+- API keys are org-scoped, hashed, scoped (`employees|organization|attendance|leave|payroll|payslips.read`), expirable and revocable. The plaintext secret is shown only at create. Keys cannot bypass RLS, approvals or finalized payroll.
+- Email env: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` or `MAIL_FROM`, `SMTP_PORT`. Missing provider is never reported as success.
+
 ## Later phases
 
-Attendance calculation, global reports hub. New biometric vendors add an adapter, not a rewrite.
+Attendance calculation (Phase 4). AI and advanced analytics (Phase 16). New biometric vendors add an adapter, not a rewrite.

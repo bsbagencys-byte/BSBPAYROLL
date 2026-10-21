@@ -89,6 +89,30 @@ import type {
   EmployeeExit,
   EssChangeRequest,
   EssNotification,
+  AccountingAccount,
+  PayrollAccountMapping,
+  PayrollJournal,
+  PayrollJournalLine,
+  AccountingExport,
+  PaymentSettings,
+  PaymentBatch,
+  PaymentBatchItem,
+  PaymentTransaction,
+  PaymentReconciliation,
+  ReportExportJob,
+  NotificationPreference,
+  NotificationTemplate,
+  NotificationDelivery,
+  DomainEvent,
+  AutomationRule,
+  AutomationRuleRun,
+  AutomationTask,
+  ScheduledJob,
+  JobExecution,
+  WebhookEndpoint,
+  WebhookDeliveryAttempt,
+  ApiKey,
+  ApiRequestLog,
   ExitClearanceItem,
   ExitClearanceTask,
   FinalSettlement,
@@ -369,6 +393,30 @@ export type DemoStore = {
   contractorPaymentRecords: ContractorPaymentRecord[];
   essNotifications: EssNotification[];
   essChangeRequests: EssChangeRequest[];
+  accountingAccounts: AccountingAccount[];
+  payrollAccountMappings: PayrollAccountMapping[];
+  payrollJournals: PayrollJournal[];
+  payrollJournalLines: PayrollJournalLine[];
+  accountingExports: AccountingExport[];
+  paymentSettings: PaymentSettings[];
+  paymentBatches: PaymentBatch[];
+  paymentBatchItems: PaymentBatchItem[];
+  paymentTransactions: PaymentTransaction[];
+  paymentReconciliations: PaymentReconciliation[];
+  reportExportJobs: ReportExportJob[];
+  notificationPreferences: NotificationPreference[];
+  notificationTemplates: NotificationTemplate[];
+  notificationDeliveries: NotificationDelivery[];
+  domainEvents: DomainEvent[];
+  automationRules: AutomationRule[];
+  automationRuleRuns: AutomationRuleRun[];
+  automationTasks: AutomationTask[];
+  scheduledJobs: ScheduledJob[];
+  jobExecutions: JobExecution[];
+  webhookEndpoints: WebhookEndpoint[];
+  webhookDeliveryAttempts: WebhookDeliveryAttempt[];
+  apiKeys: ApiKey[];
+  apiRequestLogs: ApiRequestLog[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -819,6 +867,8 @@ function createStore(): DemoStore {
     ...createPayrollSeed(),
     ...createExitsSeed(),
     ...createEssSeed(),
+    ...createAccountingSeed(),
+    ...createAutomationSeed(),
   };
 }
 
@@ -2534,6 +2584,476 @@ function createEssSeed(): Pick<DemoStore, "essNotifications" | "essChangeRequest
   };
 }
 
+
+function createAccountingSeed(): Pick<
+  DemoStore,
+  | "accountingAccounts"
+  | "payrollAccountMappings"
+  | "payrollJournals"
+  | "payrollJournalLines"
+  | "accountingExports"
+  | "paymentSettings"
+  | "paymentBatches"
+  | "paymentBatchItems"
+  | "paymentTransactions"
+  | "paymentReconciliations"
+  | "reportExportJobs"
+  | "payrollRuns"
+  | "payrollItems"
+  | "payrollLines"
+  | "payrollSnapshots"
+  | "complianceFilings"
+> {
+  const created = nowIso();
+  const today = new Date();
+  const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const period = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+  const periodFrom = `${period}-01`;
+  const periodTo = new Date(prev.getFullYear(), prev.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const payDate = periodTo;
+  const effectiveFrom = `${today.getFullYear()}-04-01`;
+  const runId = "run-demo-finalized";
+  const snapshotId = "snapshot-demo-finalized";
+
+  const account = (
+    id: string,
+    code: string,
+    name: string,
+    account_type: AccountingAccount["account_type"]
+  ): AccountingAccount => ({
+    id,
+    organization_id: ORG_ID,
+    code,
+    name,
+    account_type,
+    description: null,
+    status: "ACTIVE",
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+  });
+
+  const accounts: AccountingAccount[] = [
+    account("acc-5000", "5000", "Salaries and Wages", "EXPENSE"),
+    account("acc-5010", "5010", "Employer PF Contribution", "EXPENSE"),
+    account("acc-5020", "5020", "Employer ESI Contribution", "EXPENSE"),
+    account("acc-5030", "5030", "Reimbursements", "EXPENSE"),
+    account("acc-2100", "2100", "Salary Payable", "LIABILITY"),
+    account("acc-2110", "2110", "PF Payable", "LIABILITY"),
+    account("acc-2120", "2120", "ESI Payable", "LIABILITY"),
+    account("acc-2130", "2130", "Professional Tax Payable", "LIABILITY"),
+    account("acc-2140", "2140", "TDS Payable", "LIABILITY"),
+    account("acc-2150", "2150", "LWF Payable", "LIABILITY"),
+    account("acc-1200", "1200", "Employee Advances", "ASSET"),
+  ];
+
+  const mapping = (
+    id: string,
+    category: PayrollAccountMapping["category"],
+    component: string | null,
+    accountId: string,
+    treatment: "DEBIT" | "CREDIT"
+  ): PayrollAccountMapping => ({
+    id,
+    organization_id: ORG_ID,
+    category,
+    component_code: component,
+    ledger_account_id: accountId,
+    treatment,
+    branch_id: null,
+    department_id: null,
+    effective_from: effectiveFrom,
+    effective_to: null,
+    active: true,
+    notes: null,
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+  });
+
+  const mappings: PayrollAccountMapping[] = [
+    mapping("map-earning", "EARNING", null, "acc-5000", "DEBIT"),
+    mapping("map-er-pf", "EMPLOYER_CONTRIBUTION", "PF", "acc-5010", "DEBIT"),
+    mapping("map-er-pf-cr", "EMPLOYER_CONTRIBUTION", "PF", "acc-2110", "CREDIT"),
+    mapping("map-er-esi", "EMPLOYER_CONTRIBUTION", "ESI", "acc-5020", "DEBIT"),
+    mapping("map-er-esi-cr", "EMPLOYER_CONTRIBUTION", "ESI", "acc-2120", "CREDIT"),
+    mapping("map-er-lwf", "EMPLOYER_CONTRIBUTION", "LWF", "acc-2150", "DEBIT"),
+    mapping("map-er-lwf-cr", "EMPLOYER_CONTRIBUTION", "LWF", "acc-2150", "CREDIT"),
+    mapping("map-ded-pf", "DEDUCTION", "PF", "acc-2110", "CREDIT"),
+    mapping("map-ded-esi", "DEDUCTION", "ESI", "acc-2120", "CREDIT"),
+    mapping("map-ded-pt", "DEDUCTION", "PT", "acc-2130", "CREDIT"),
+    mapping("map-ded-tds", "DEDUCTION", "TDS", "acc-2140", "CREDIT"),
+    mapping("map-ded-lwf", "DEDUCTION", "LWF", "acc-2150", "CREDIT"),
+    mapping("map-reimb", "REIMBURSEMENT", null, "acc-5030", "DEBIT"),
+    mapping("map-loan", "LOAN_RECOVERY", null, "acc-1200", "CREDIT"),
+    mapping("map-net", "NET_PAY", null, "acc-2100", "CREDIT"),
+  ];
+
+  type SeedItem = {
+    id: string;
+    employeeId: string;
+    code: string;
+    name: string;
+    basic: number;
+    hra: number;
+    da: number;
+    ta: number;
+    special: number;
+    pfEmployee: number;
+    pfEmployer: number;
+    pt: number;
+    net: number;
+  };
+
+  const seedItems: SeedItem[] = [
+    {
+      id: "item-demo-1",
+      employeeId: EMPLOYEE_ADMIN_ID,
+      code: "BSB-1001",
+      name: "Asha Rao",
+      basic: 40000,
+      hra: 16000,
+      da: 4000,
+      ta: 1600,
+      special: 38400,
+      pfEmployee: 1800,
+      pfEmployer: 1800,
+      pt: 200,
+      net: 98000,
+    },
+    {
+      id: "item-demo-2",
+      employeeId: EMPLOYEE_HR_ID,
+      code: "BSB-1002",
+      name: "Meera Iyer",
+      basic: 24000,
+      hra: 9600,
+      da: 2400,
+      ta: 1600,
+      special: 22400,
+      pfEmployee: 1800,
+      pfEmployer: 1800,
+      pt: 200,
+      net: 58000,
+    },
+  ];
+
+  const grossTotal = seedItems.reduce((sum, row) => sum + row.basic + row.hra + row.da + row.ta + row.special, 0);
+  const pfEmployeeTotal = seedItems.reduce((sum, row) => sum + row.pfEmployee, 0);
+  const pfEmployerTotal = seedItems.reduce((sum, row) => sum + row.pfEmployer, 0);
+  const ptTotal = seedItems.reduce((sum, row) => sum + row.pt, 0);
+  const netTotal = seedItems.reduce((sum, row) => sum + row.net, 0);
+
+  const run: PayrollRun = {
+    id: runId,
+    organization_id: ORG_ID,
+    period,
+    period_from: periodFrom,
+    period_to: periodTo,
+    pay_date: payDate,
+    status: "FINALIZED",
+    run_type: "MONTHLY",
+    employee_count: seedItems.length,
+    included_count: seedItems.length,
+    hold_count: 0,
+    error_count: 0,
+    warning_count: 0,
+    total_gross: grossTotal,
+    total_earnings: grossTotal,
+    total_deductions: pfEmployeeTotal + ptTotal,
+    total_statutory: pfEmployeeTotal + ptTotal,
+    total_reimbursements: 0,
+    total_claims: 0,
+    total_loans: 0,
+    total_net: netTotal,
+    employer_contributions: pfEmployerTotal,
+    notes: "Demo finalized run seeded for Phase 14 reports.",
+    snapshot_id: snapshotId,
+    calculated_at: created,
+    submitted_at: created,
+    reviewed_at: created,
+    approved_at: created,
+    finalized_at: created,
+    locked_at: null,
+    processed_at: null,
+    paid_at: null,
+    cancelled_at: null,
+    cancel_reason: null,
+    created_by: null,
+    updated_by: null,
+    created_at: created,
+    updated_at: created,
+  };
+
+  const items: PayrollItem[] = seedItems.map((row) => ({
+    id: row.id,
+    organization_id: ORG_ID,
+    run_id: runId,
+    employee_id: row.employeeId,
+    assignment_id: null,
+    structure_id: null,
+    status: "INCLUDED",
+    hold_reason: null,
+    error_message: null,
+    working_days: 22,
+    present_days: 22,
+    paid_days: 22,
+    lop_days: 0,
+    paid_leave_days: 0,
+    ctc: row.basic + row.hra + row.da + row.ta + row.special,
+    monthly_gross: row.basic + row.hra + row.da + row.ta + row.special,
+    earnings: row.basic + row.hra + row.da + row.ta + row.special,
+    variable_earnings: 0,
+    reimbursements: 0,
+    claims: 0,
+    deductions: row.pfEmployee + row.pt,
+    loan_deductions: 0,
+    pf_employee: row.pfEmployee,
+    pf_employer: row.pfEmployer,
+    esi_employee: 0,
+    esi_employer: 0,
+    pt_amount: row.pt,
+    tds_amount: 0,
+    lwf_employee: 0,
+    lwf_employer: 0,
+    statutory_total: row.pfEmployee + row.pt,
+    net_pay: row.net,
+    employer_cost: row.net + row.pfEmployer,
+    created_at: created,
+    updated_at: created,
+  }));
+
+  const lines: PayrollLine[] = [];
+  let sort = 0;
+  for (const row of seedItems) {
+    const push = (code: string, name: string, amount: number, kind: PayrollLine["kind"] = "EARNING") => {
+      sort += 1;
+      lines.push({
+        id: `line-${row.id}-${code}`,
+        organization_id: ORG_ID,
+        run_id: runId,
+        item_id: row.id,
+        employee_id: row.employeeId,
+        kind,
+        code,
+        name,
+        amount,
+        taxable: true,
+        reference_id: null,
+        notes: null,
+        sort_order: sort,
+        created_at: created,
+      });
+    };
+    push("BASIC", "Basic", row.basic);
+    push("HRA", "House rent allowance", row.hra);
+    push("DA", "Dearness allowance", row.da);
+    push("TA", "Travel allowance", row.ta);
+    push("SPECIAL", "Special allowance", row.special);
+    if (row.pfEmployee) push("PF", "Provident fund (employee)", row.pfEmployee, "DEDUCTION");
+    if (row.pt) push("PT", "Professional tax", row.pt, "DEDUCTION");
+  }
+
+  const snapshot: PayrollSnapshot = {
+    id: snapshotId,
+    organization_id: ORG_ID,
+    run_id: runId,
+    period,
+    payload_json: JSON.stringify({
+      run,
+      items,
+      lines,
+      exceptions: [],
+      totals: {
+        gross: grossTotal,
+        deductions: pfEmployeeTotal + ptTotal,
+        net: netTotal,
+        employer: pfEmployerTotal,
+      },
+    }),
+    created_by: null,
+    created_at: created,
+  };
+
+  return {
+    payrollRuns: [run],
+    payrollItems: items,
+    payrollLines: lines,
+    payrollSnapshots: [snapshot],
+    complianceFilings: [
+      {
+        id: "cf-demo-pf",
+        organization_id: ORG_ID,
+        run_id: runId,
+        head: "PF",
+        period,
+        employee_count: seedItems.length,
+        employee_amount: pfEmployeeTotal,
+        employer_amount: pfEmployerTotal,
+        total_amount: pfEmployeeTotal + pfEmployerTotal,
+        status: "READY",
+        notes: "Demo filing from seeded finalized run.",
+        created_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "cf-demo-pt",
+        organization_id: ORG_ID,
+        run_id: runId,
+        head: "PT",
+        period,
+        employee_count: seedItems.length,
+        employee_amount: ptTotal,
+        employer_amount: 0,
+        total_amount: ptTotal,
+        status: "READY",
+        notes: null,
+        created_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    accountingAccounts: accounts,
+    payrollAccountMappings: mappings,
+    payrollJournals: [],
+    payrollJournalLines: [],
+    accountingExports: [],
+    paymentSettings: [
+      {
+        organization_id: ORG_ID,
+        default_method: "NEFT",
+        bank_account_reference: "Salary account ****6789",
+        file_prefix: "salary-payment",
+        delimiter: ",",
+        include_header: true,
+        columns_json: JSON.stringify([
+          { key: "employee_code", header: "Employee Code" },
+          { key: "account_holder_name", header: "Beneficiary Name" },
+          { key: "account_number", header: "Account Number" },
+          { key: "ifsc", header: "IFSC" },
+          { key: "amount", header: "Amount" },
+          { key: "reference", header: "Payment Reference" },
+          { key: "remarks", header: "Remarks" },
+        ]),
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    paymentBatches: [],
+    paymentBatchItems: [],
+    paymentTransactions: [],
+    paymentReconciliations: [],
+    reportExportJobs: [],
+  };
+}
+
+function createAutomationSeed(): Pick<
+  DemoStore,
+  | "notificationPreferences"
+  | "notificationTemplates"
+  | "notificationDeliveries"
+  | "domainEvents"
+  | "automationRules"
+  | "automationRuleRuns"
+  | "automationTasks"
+  | "scheduledJobs"
+  | "jobExecutions"
+  | "webhookEndpoints"
+  | "webhookDeliveryAttempts"
+  | "apiKeys"
+  | "apiRequestLogs"
+> {
+  const created = nowIso();
+  return {
+    notificationPreferences: [],
+    notificationTemplates: [
+      {
+        id: "nt-leave-decision",
+        organization_id: ORG_ID,
+        key: "leave.decision",
+        name: "Leave decision",
+        event_type: "leave.request.updated",
+        channel: "EMAIL",
+        language: "en",
+        subject: "Leave request {{status}}",
+        body_text: "Hello {{employee_name}}, your leave request was {{status}}.",
+        body_html: "<p>Hello {{employee_name}}, your leave request was {{status}}.</p>",
+        variables_json: JSON.stringify(["employee_name", "status"]),
+        status: "ACTIVE",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    notificationDeliveries: [],
+    domainEvents: [],
+    automationRules: [
+      {
+        id: "ar-leave-notify",
+        organization_id: ORG_ID,
+        name: "Notify HR on leave decision",
+        trigger_type: "leave.request.updated",
+        conditions_json: "[]",
+        actions_json: JSON.stringify([{ type: "NOTIFY_IN_APP", roles: ["HR", "ADMIN"], title: "Leave updated", href: "/leave/approvals" }]),
+        enabled: true,
+        stop_on_match: false,
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    automationRuleRuns: [],
+    automationTasks: [],
+    scheduledJobs: [
+      {
+        id: "sj-outbox",
+        organization_id: ORG_ID,
+        job_type: "OUTBOX_PROCESS",
+        name: "Process event outbox",
+        cron_expr: "hourly",
+        timezone: "Asia/Kolkata",
+        payload_json: "{}",
+        enabled: true,
+        next_run_at: created,
+        last_run_at: null,
+        last_status: null,
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "sj-approvals",
+        organization_id: ORG_ID,
+        job_type: "PENDING_APPROVAL_REMINDER",
+        name: "Pending approval reminders",
+        cron_expr: "hourly",
+        timezone: "Asia/Kolkata",
+        payload_json: "{}",
+        enabled: true,
+        next_run_at: created,
+        last_run_at: null,
+        last_status: null,
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    jobExecutions: [],
+    webhookEndpoints: [],
+    webhookDeliveryAttempts: [],
+    apiKeys: [],
+    apiRequestLogs: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -2547,7 +3067,9 @@ export function getDemoStore(): DemoStore {
     !("payrollExceptions" in globalStore.__bsbDemo) ||
     !("statutoryRuleVersions" in globalStore.__bsbDemo) ||
     !("employeeExits" in globalStore.__bsbDemo) ||
-    !("essNotifications" in globalStore.__bsbDemo)
+    !("essNotifications" in globalStore.__bsbDemo) ||
+    !("accountingAccounts" in globalStore.__bsbDemo) ||
+    !("domainEvents" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }
