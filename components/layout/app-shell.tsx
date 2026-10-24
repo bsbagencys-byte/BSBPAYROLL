@@ -16,6 +16,7 @@ import {
   HandCoins,
   Landmark,
   LayoutDashboard,
+  LineChart,
   LogOut,
   Menu,
   Palmtree,
@@ -59,6 +60,7 @@ const ICONS = {
   Landmark,
   Bell,
   Workflow,
+  LineChart,
 } as const;
 
 const NAV = NAV_ITEMS;

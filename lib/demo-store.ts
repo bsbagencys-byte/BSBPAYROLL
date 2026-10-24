@@ -113,6 +113,13 @@ import type {
   WebhookDeliveryAttempt,
   ApiKey,
   ApiRequestLog,
+  AnalyticsSavedView,
+  AnalyticsThreshold,
+  AnalyticsAlert,
+  AnalyticsAlertHistory,
+  AnalyticsRefreshJob,
+  BiometricCompatibilityEntry,
+  AiUsageLog,
   ExitClearanceItem,
   ExitClearanceTask,
   FinalSettlement,
@@ -417,6 +424,13 @@ export type DemoStore = {
   webhookDeliveryAttempts: WebhookDeliveryAttempt[];
   apiKeys: ApiKey[];
   apiRequestLogs: ApiRequestLog[];
+  analyticsSavedViews: AnalyticsSavedView[];
+  analyticsThresholds: AnalyticsThreshold[];
+  analyticsAlerts: AnalyticsAlert[];
+  analyticsAlertHistory: AnalyticsAlertHistory[];
+  analyticsRefreshJobs: AnalyticsRefreshJob[];
+  biometricCompatibilityRegistry: BiometricCompatibilityEntry[];
+  aiUsageLogs: AiUsageLog[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -869,6 +883,7 @@ function createStore(): DemoStore {
     ...createEssSeed(),
     ...createAccountingSeed(),
     ...createAutomationSeed(),
+    ...createAnalyticsSeed(),
   };
 }
 
@@ -3054,6 +3069,85 @@ function createAutomationSeed(): Pick<
   };
 }
 
+function createAnalyticsSeed(): Pick<
+  DemoStore,
+  | "analyticsSavedViews"
+  | "analyticsThresholds"
+  | "analyticsAlerts"
+  | "analyticsAlertHistory"
+  | "analyticsRefreshJobs"
+  | "biometricCompatibilityRegistry"
+  | "aiUsageLogs"
+> {
+  const created = nowIso();
+  return {
+    analyticsSavedViews: [],
+    analyticsThresholds: [],
+    analyticsAlerts: [],
+    analyticsAlertHistory: [],
+    analyticsRefreshJobs: [],
+    biometricCompatibilityRegistry: [
+      {
+        id: "bcr-essl",
+        organization_id: null,
+        vendor: "ESSL",
+        model: "eSSL / ZKTeco ATTLOG",
+        integration_method: "PUSH",
+        capabilities_json: JSON.stringify(["ATTLOG", "PIN", "SN", "JSON"]),
+        documentation_url: null,
+        verification_status: "VERIFIED_IN_DEMO",
+        known_limitations: "Demo ingest only. Physical device certification is not claimed.",
+        adapter_key: "ESSL",
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "bcr-zkteco",
+        organization_id: null,
+        vendor: "ZKTECO",
+        model: "ZKTeco PUSH / JSON",
+        integration_method: "PUSH",
+        capabilities_json: JSON.stringify(["PUSH", "JSON", "ATTLOG"]),
+        documentation_url: null,
+        verification_status: "PROTOCOL_FOUNDATION",
+        known_limitations: "Adapter parses documented PUSH/JSON fields. Physical hardware is unverified.",
+        adapter_key: "ZKTECO",
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "bcr-matrix",
+        organization_id: null,
+        vendor: "MATRIX",
+        model: "Matrix COSEC JSON",
+        integration_method: "WEBHOOK",
+        capabilities_json: JSON.stringify(["JSON", "WEBHOOK"]),
+        documentation_url: null,
+        verification_status: "PROTOCOL_FOUNDATION",
+        known_limitations: "Adapter parses documented JSON attendance events. Physical hardware is unverified.",
+        adapter_key: "MATRIX",
+        created_at: created,
+        updated_at: created,
+      },
+      {
+        id: "bcr-generic",
+        organization_id: null,
+        vendor: "GENERIC",
+        model: "Generic JSON",
+        integration_method: "WEBHOOK",
+        capabilities_json: JSON.stringify(["JSON"]),
+        documentation_url: null,
+        verification_status: "VERIFIED_IN_DEMO",
+        known_limitations: "Accepts a documented JSON punch envelope. Vendor-specific fields may be ignored.",
+        adapter_key: "GENERIC",
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    aiUsageLogs: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -3069,7 +3163,8 @@ export function getDemoStore(): DemoStore {
     !("employeeExits" in globalStore.__bsbDemo) ||
     !("essNotifications" in globalStore.__bsbDemo) ||
     !("accountingAccounts" in globalStore.__bsbDemo) ||
-    !("domainEvents" in globalStore.__bsbDemo)
+    !("domainEvents" in globalStore.__bsbDemo) ||
+    !("analyticsAlerts" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

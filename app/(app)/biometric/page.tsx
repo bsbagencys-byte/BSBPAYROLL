@@ -83,7 +83,7 @@ export default async function BiometricPage() {
           </CardHeader>
           <CardContent>
             {overview.devices.length === 0 ? (
-              <p className="text-sm text-slate-500">No devices yet. Register an eSSL or generic JSON device.</p>
+              <p className="text-sm text-slate-500">No devices yet. Register an eSSL, ZKTeco, Matrix or generic JSON device.</p>
             ) : (
               <div className="space-y-3">
                 {overview.devices.map((device) => (
@@ -136,7 +136,7 @@ export default async function BiometricPage() {
 
       <p className="mt-6 flex items-center gap-2 text-xs text-slate-500">
         <Fingerprint className="h-3.5 w-3.5" />
-        New vendors plug in as adapters. Face, QR, GPS and mobile attendance are not part of this phase.
+        New vendors plug in as adapters. ZKTeco and Matrix are protocol foundations, not certified hardware. Face, QR, GPS and mobile attendance are not part of this phase.
       </p>
       {overview.unmappedCount > 0 ? (
         <div className="mt-3">

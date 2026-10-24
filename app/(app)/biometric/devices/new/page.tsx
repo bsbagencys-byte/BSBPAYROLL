@@ -13,7 +13,7 @@ export default async function NewDevicePage() {
     <div>
       <PageHeader
         title="Register device"
-        description="A new vendor is a new adapter. eSSL is included first; generic JSON is also available."
+        description="A new vendor is a new adapter. eSSL, ZKTeco PUSH/JSON, Matrix COSEC JSON and generic JSON are available. Physical hardware is not marked complete unless verified."
       />
       <BiometricSubnav />
       <DeviceForm

@@ -9,7 +9,7 @@ export interface AdapterContext {
 }
 
 export interface BiometricAdapter {
-  vendor: "ESSL" | "GENERIC";
+  vendor: "ESSL" | "ZKTECO" | "MATRIX" | "GENERIC";
   canParse(payload: unknown, context: AdapterContext): boolean;
   parse(payload: unknown, context: AdapterContext): AdapterResult;
 }

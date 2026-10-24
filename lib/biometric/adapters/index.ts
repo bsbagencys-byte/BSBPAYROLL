@@ -1,10 +1,12 @@
 import { esslAdapter } from "@/lib/biometric/adapters/essl";
 import { genericAdapter } from "@/lib/biometric/adapters/generic";
+import { matrixAdapter } from "@/lib/biometric/adapters/matrix";
+import { zktecoAdapter } from "@/lib/biometric/adapters/zkteco";
 import type { AdapterContext, BiometricAdapter } from "@/lib/biometric/adapters/types";
 import type { AdapterResult } from "@/types";
 import type { BiometricVendor } from "@/lib/constants";
 
-const ADAPTERS: BiometricAdapter[] = [esslAdapter, genericAdapter];
+const ADAPTERS: BiometricAdapter[] = [esslAdapter, zktecoAdapter, matrixAdapter, genericAdapter];
 
 export function adapterFor(vendor: BiometricVendor | string | null | undefined): BiometricAdapter {
   return ADAPTERS.find((item) => item.vendor === vendor) ?? genericAdapter;
@@ -28,4 +30,4 @@ export function parseWithVendor(
   return preferred.parse(payload, context);
 }
 
-export { esslAdapter, genericAdapter };
+export { esslAdapter, genericAdapter, matrixAdapter, zktecoAdapter };

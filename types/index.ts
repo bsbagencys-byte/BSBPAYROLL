@@ -111,6 +111,11 @@ import type {
   ApiKeyStatus,
   ApiScope,
   WebhookEventType,
+  AnalyticsAlertSeverity,
+  AnalyticsAlertStatus,
+  AnalyticsRuleCode,
+  BiometricVerificationStatus,
+  AiUsageStatus,
 } from "@/lib/constants";
 
 export type {
@@ -214,6 +219,11 @@ export type {
   ApiKeyStatus,
   ApiScope,
   WebhookEventType,
+  AnalyticsAlertSeverity,
+  AnalyticsAlertStatus,
+  AnalyticsRuleCode,
+  BiometricVerificationStatus,
+  AiUsageStatus,
 };
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
@@ -2730,4 +2740,146 @@ export interface ApiRequestLog {
   user_agent: string | null;
   error_code: string | null;
   created_at: string;
+}
+
+export interface AnalyticsSavedView {
+  id: string;
+  organization_id: string;
+  name: string;
+  page: string;
+  filters_json: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsThreshold {
+  id: string;
+  organization_id: string;
+  rule_code: AnalyticsRuleCode | string;
+  threshold_value: number;
+  enabled: boolean;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsAlert {
+  id: string;
+  organization_id: string;
+  rule_code: AnalyticsRuleCode | string;
+  period: string | null;
+  employee_id: string | null;
+  run_id: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  title: string;
+  condition_text: string;
+  actual_value: string;
+  baseline_value: string | null;
+  threshold_value: string | null;
+  severity: AnalyticsAlertSeverity;
+  explanation: string;
+  recommended_action: string;
+  status: AnalyticsAlertStatus;
+  assigned_to: string | null;
+  notes: string | null;
+  idempotency_key: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnalyticsAlertHistory {
+  id: string;
+  organization_id: string;
+  alert_id: string;
+  previous_status: string | null;
+  new_status: string;
+  note: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
+
+export interface AnalyticsRefreshJob {
+  id: string;
+  organization_id: string;
+  job_type: string;
+  period: string | null;
+  status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
+  result_json: string | null;
+  error_message: string | null;
+  created_by: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface BiometricCompatibilityEntry {
+  id: string;
+  organization_id: string | null;
+  vendor: string;
+  model: string | null;
+  integration_method: string;
+  capabilities_json: string;
+  documentation_url: string | null;
+  verification_status: BiometricVerificationStatus;
+  known_limitations: string | null;
+  adapter_key: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AiUsageLog {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  question_excerpt: string;
+  tools_used_json: string;
+  status: AiUsageStatus;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface AnalyticsKpi {
+  key: string;
+  label: string;
+  value: number;
+  display: string;
+  unit: "currency" | "count" | "percent" | "days";
+  source: string;
+  draft: boolean;
+  note?: string;
+}
+
+export interface AnalyticsSeriesPoint {
+  period: string;
+  label: string;
+  value: number;
+  draft: boolean;
+}
+
+export interface PayrollVarianceRow {
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  departmentName: string | null;
+  currentNet: number;
+  previousNet: number | null;
+  delta: number | null;
+  deltaPercent: number | null;
+  currentGross: number;
+  previousGross: number | null;
+  currentLop: number;
+  previousLop: number | null;
+  currentStatus: string;
+  previousStatus: string | null;
+  draft: boolean;
+}
+
+export interface AnalyticsAssistantAnswer {
+  status: AiUsageStatus;
+  answer: string;
+  sources: string[];
+  toolsUsed: string[];
 }

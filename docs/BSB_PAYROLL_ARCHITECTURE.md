@@ -16,6 +16,7 @@ Legend: **IMPLEMENTED** | **PLANNED** | **FUTURE**
 - Employee self-service lives under `app/(app)/my` with `lib/ess/*` and `actions/ess.ts`.
 - Reports, accounting and payments live under `app/(app)/{reports,accounting,payments}` with `lib/{reports,accounting,payments}/*`.
 - Notifications, automation and developer settings live under `app/(app)/{notifications,automation,settings/notifications,settings/developers}`.
+- Analytics live under `app/(app)/analytics` with `lib/analytics/*` and optional `lib/ai/*`.
 - Demo vs production is transparent to pages: repositories switch on `hasSupabaseConfig()` / `isDemoMode()`.
 - `allowedDevOrigins`: `*.monkeycode-ai.live`.
 
@@ -29,7 +30,7 @@ Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
 - **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret).
-- **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*`, `/api/contractors/reports/*`, `/api/reports/[key]`, `/api/accounting/journals/[id]/csv` and `/api/payments/[id]/csv`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
+- **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*`, `/api/contractors/reports/*`, `/api/reports/[key]`, `/api/accounting/journals/[id]/csv`, `/api/payments/[id]/csv` and `/api/analytics/[kind]`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
 - **Rate limit:** in-memory for login, biometric ingest and `/api/v1`.
@@ -39,7 +40,7 @@ Single Next.js process.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
@@ -279,7 +280,7 @@ Do not implement these until the named phase:
 - **Phase 13:** employee self-service at `/my` (implemented). Additive only; reuse module services and approvals.
 - **Phase 14:** reports hub, accounting exports and bank payment infrastructure (implemented).
 - **Phase 15:** automation, notifications, scheduled jobs, APIs and webhooks (implemented).
-- **Phase 16:** AI and advanced analytics (next).
+- **Phase 16:** AI and advanced analytics (implemented). Additive overlay. Core analytics work without an AI API. Alerts never mutate payroll.
 - **Later:** Face/QR/GPS, smart auto attendance.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

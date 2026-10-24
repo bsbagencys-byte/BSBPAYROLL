@@ -150,6 +150,11 @@ export const PERMISSIONS = [
   { code: "developers.webhooks.replay", group: "Developers", label: "Replay webhook deliveries" },
   { code: "developers.api_keys.manage", group: "Developers", label: "Manage API keys" },
   { code: "developers.logs.view", group: "Developers", label: "View API and webhook logs" },
+  { code: "analytics.view", group: "Analytics", label: "View analytics dashboards" },
+  { code: "analytics.export", group: "Analytics", label: "Export analytics reports" },
+  { code: "analytics.alerts.manage", group: "Analytics", label: "Acknowledge and resolve analytics alerts" },
+  { code: "analytics.thresholds.manage", group: "Analytics", label: "Manage analytics anomaly thresholds" },
+  { code: "analytics.assistant.use", group: "Analytics", label: "Use the optional analytics assistant" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -258,6 +263,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "automation.manage",
     "automation.jobs.view",
     "automation.jobs.retry",
+    "analytics.view",
+    "analytics.export",
+    "analytics.alerts.manage",
+    "analytics.thresholds.manage",
+    "analytics.assistant.use",
   ],
   PAYROLL: [
     "organization.view",
@@ -313,6 +323,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "notifications.view",
     "automation.view",
     "automation.jobs.view",
+    "analytics.view",
+    "analytics.export",
+    "analytics.alerts.manage",
+    "analytics.assistant.use",
   ],
   ACCOUNTANT: [
     "organization.view",
@@ -367,6 +381,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "payments.export",
     "payments.reconcile",
     "notifications.view",
+    "analytics.view",
+    "analytics.export",
+    "analytics.alerts.manage",
   ],
   MANAGER: [
     "organization.view",
@@ -393,6 +410,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "self.profile.update",
     "reports.view",
     "notifications.view",
+    "analytics.view",
   ],
   EMPLOYEE: [
     "organization.view",
@@ -427,6 +445,7 @@ export const NAV_ITEMS = [
   { href: "/settlements", label: "Settlements", icon: "FileSignature", enabled: true, phase: 12 },
   { href: "/contractors", label: "Contractors", icon: "Briefcase", enabled: true, phase: 12 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: true, phase: 14 },
+  { href: "/analytics", label: "Analytics", icon: "LineChart", enabled: true, phase: 16 },
   { href: "/accounting", label: "Accounting", icon: "BookOpen", enabled: true, phase: 14 },
   { href: "/payments", label: "Payments", icon: "Landmark", enabled: true, phase: 14 },
   { href: "/notifications", label: "Notifications", icon: "Bell", enabled: true, phase: 15 },
@@ -581,11 +600,13 @@ export const API_RATE_LIMIT = {
   maxAttempts: 60,
 };
 
-export const BIOMETRIC_VENDORS = ["ESSL", "GENERIC"] as const;
+export const BIOMETRIC_VENDORS = ["ESSL", "ZKTECO", "MATRIX", "GENERIC"] as const;
 export type BiometricVendor = (typeof BIOMETRIC_VENDORS)[number];
 
 export const BIOMETRIC_VENDOR_LABELS: Record<BiometricVendor, string> = {
-  ESSL: "eSSL / ZKTeco",
+  ESSL: "eSSL",
+  ZKTECO: "ZKTeco",
+  MATRIX: "Matrix COSEC",
   GENERIC: "Generic JSON",
 };
 
@@ -650,6 +671,7 @@ export const BIOMETRIC_NAV = [
   { href: "/biometric/live", label: "Live" },
   { href: "/biometric/logs", label: "Logs" },
   { href: "/biometric/simulator", label: "Simulator" },
+  { href: "/biometric/compatibility", label: "Compatibility" },
 ] as const;
 
 export const DEMO_ESSL_DEVICE_ID = "b1111111-1111-1111-1111-111111111111";
@@ -2091,3 +2113,89 @@ export const NOTIFICATION_SETTINGS_NAV = [
   { href: "/settings/notifications", label: "Preferences" },
   { href: "/settings/notifications/templates", label: "Templates" },
 ] as const;
+
+export const ANALYTICS_NAV = [
+  { href: "/analytics", label: "Overview" },
+  { href: "/analytics/variance", label: "Variance" },
+  { href: "/analytics/anomalies", label: "Anomalies" },
+  { href: "/analytics/assistant", label: "Assistant" },
+] as const;
+
+export const ANALYTICS_ALERT_SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
+export type AnalyticsAlertSeverity = (typeof ANALYTICS_ALERT_SEVERITIES)[number];
+
+export const ANALYTICS_ALERT_SEVERITY_LABELS: Record<AnalyticsAlertSeverity, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
+};
+
+export const ANALYTICS_ALERT_STATUSES = ["OPEN", "ACKNOWLEDGED", "INVESTIGATING", "RESOLVED", "DISMISSED"] as const;
+export type AnalyticsAlertStatus = (typeof ANALYTICS_ALERT_STATUSES)[number];
+
+export const ANALYTICS_ALERT_STATUS_LABELS: Record<AnalyticsAlertStatus, string> = {
+  OPEN: "Open",
+  ACKNOWLEDGED: "Acknowledged",
+  INVESTIGATING: "Investigating",
+  RESOLVED: "Resolved",
+  DISMISSED: "Dismissed",
+};
+
+export const ANALYTICS_RULE_CODES = [
+  "PAYROLL_COST_SPIKE",
+  "NET_PAY_VARIANCE",
+  "LOP_SPIKE",
+  "HOLD_RATE_HIGH",
+  "LEAVE_PENDING_BACKLOG",
+  "CLAIM_PENDING_BACKLOG",
+  "LOAN_OVERDUE",
+  "BIOMETRIC_UNMAPPED",
+  "BIOMETRIC_FAILED_INGEST",
+  "HEADCOUNT_CHANGE",
+] as const;
+export type AnalyticsRuleCode = (typeof ANALYTICS_RULE_CODES)[number];
+
+export const ANALYTICS_RULE_LABELS: Record<AnalyticsRuleCode, string> = {
+  PAYROLL_COST_SPIKE: "Payroll cost spike",
+  NET_PAY_VARIANCE: "Net pay variance",
+  LOP_SPIKE: "LOP days spike",
+  HOLD_RATE_HIGH: "Hold rate high",
+  LEAVE_PENDING_BACKLOG: "Leave pending backlog",
+  CLAIM_PENDING_BACKLOG: "Claim pending backlog",
+  LOAN_OVERDUE: "Overdue loan installments",
+  BIOMETRIC_UNMAPPED: "Unmapped biometric punches",
+  BIOMETRIC_FAILED_INGEST: "Failed biometric ingest",
+  HEADCOUNT_CHANGE: "Headcount change",
+};
+
+export const DEFAULT_ANALYTICS_THRESHOLDS: Record<AnalyticsRuleCode, number> = {
+  PAYROLL_COST_SPIKE: 10,
+  NET_PAY_VARIANCE: 15,
+  LOP_SPIKE: 20,
+  HOLD_RATE_HIGH: 10,
+  LEAVE_PENDING_BACKLOG: 5,
+  CLAIM_PENDING_BACKLOG: 5,
+  LOAN_OVERDUE: 1,
+  BIOMETRIC_UNMAPPED: 3,
+  BIOMETRIC_FAILED_INGEST: 3,
+  HEADCOUNT_CHANGE: 10,
+};
+
+export const BIOMETRIC_VERIFICATION_STATUSES = [
+  "VERIFIED_IN_DEMO",
+  "PROTOCOL_FOUNDATION",
+  "UNVERIFIED_HARDWARE",
+  "UNSUPPORTED",
+] as const;
+export type BiometricVerificationStatus = (typeof BIOMETRIC_VERIFICATION_STATUSES)[number];
+
+export const BIOMETRIC_VERIFICATION_STATUS_LABELS: Record<BiometricVerificationStatus, string> = {
+  VERIFIED_IN_DEMO: "Verified in demo",
+  PROTOCOL_FOUNDATION: "Protocol foundation",
+  UNVERIFIED_HARDWARE: "Unverified hardware",
+  UNSUPPORTED: "Unsupported",
+};
+
+export const AI_USAGE_STATUSES = ["UNCONFIGURED", "ANSWERED", "UNAVAILABLE", "FAILED"] as const;
+export type AiUsageStatus = (typeof AI_USAGE_STATUSES)[number];

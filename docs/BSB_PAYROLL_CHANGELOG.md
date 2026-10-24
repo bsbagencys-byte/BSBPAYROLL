@@ -4,6 +4,37 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 16 — Analytics, anomaly detection, optional AI and biometric expansion
+
+- **Date:** 2026-10-24
+- **Status:** implemented on `261015-feat-ess-portal`
+
+### Implemented
+
+- Additive overlay. Phases 1–15 unchanged. Phase 4 attendance still not started.
+- Explainable analytics dashboards from stored payroll, leave, claims, loans and biometric data. Draft/in-progress runs are labelled. Historical cost uses finalized/locked/processed/paid run totals only.
+- Deterministic anomaly rules with thresholds, idempotent alerts, status history and CSV export. Alerts never mutate attendance, salaries, deductions, payroll or payments.
+- Optional permission-aware assistant. Unconfigured AI still returns stored-data answers. Assistant cannot approve, calculate, finalize or edit payroll.
+- Biometric vendor expansion: ZKTeco PUSH/JSON and Matrix COSEC JSON adapters plus compatibility registry. Physical hardware is not marked complete.
+
+### Database
+
+- Additive `supabase/phase16.sql`, appended into `combined.sql`.
+- Tables: `analytics_saved_views`, `analytics_thresholds`, `analytics_alerts`, `analytics_alert_history`, `analytics_refresh_jobs`, `biometric_compatibility_registry`, `ai_usage_logs`.
+- Permissions: `analytics.view|export`, `analytics.alerts.manage`, `analytics.thresholds.manage`, `analytics.assistant.use`.
+
+### API
+
+- Server actions in `actions/analytics.ts` with `writeAudit`.
+- CSV: `/api/analytics/{kpis,variance,alerts}`.
+
+### UI
+
+- `/analytics`, `/analytics/variance`, `/analytics/anomalies`, `/analytics/assistant`, `/biometric/compatibility`.
+- Nav item: Analytics.
+
+---
+
 ## Phase 15 — Automation, notifications, scheduled jobs, APIs and webhooks
 
 - **Date:** 2026-10-21
