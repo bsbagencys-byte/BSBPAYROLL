@@ -11,6 +11,7 @@ const PUBLIC_PREFIXES = [
   "/api/biometric/webhook",
   "/api/v1",
   "/api/internal/jobs",
+  "/api/health",
 ];
 
 function isPublicPath(pathname: string) {

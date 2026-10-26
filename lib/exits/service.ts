@@ -5,6 +5,7 @@ import { getDemoStore } from "@/lib/demo-store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
 import { asBool, asNumber, DEFAULT_CLEARANCE_TEMPLATES, nextReference } from "@/lib/exits/engine";
+import { exitBlocksOrdinaryPayroll } from "@/lib/exits/eligibility";
 import {
   insertClearanceItem,
   insertClearanceTask,
@@ -367,14 +368,7 @@ export async function markExitSettled(organizationId: string, exitId: string, ac
 
 export async function employeeExcludedFromOrdinaryPayroll(organizationId: string, employeeId: string, periodFrom: string) {
   const exits = await listEmployeeExits(organizationId);
-  return exits.some(
-    (item) =>
-      item.employee_id === employeeId &&
-      item.status !== "DRAFT" &&
-      item.status !== "SUBMITTED" &&
-      item.status !== "CANCELLED" &&
-      item.last_working_date < periodFrom
-  );
+  return exits.some((item) => exitBlocksOrdinaryPayroll(item, employeeId, periodFrom));
 }
 
 export { asBool, asNumber };

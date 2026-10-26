@@ -2685,6 +2685,7 @@ export interface WebhookEndpoint {
   url: string;
   secret_hash: string;
   secret_hint: string;
+  secret_encrypted?: string | null;
   status: "ACTIVE" | "DISABLED";
   event_types_json: string;
   created_by: string | null;

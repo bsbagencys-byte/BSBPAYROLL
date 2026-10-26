@@ -1,6 +1,7 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { WEBHOOK_EVENT_TYPES } from "@/lib/constants";
 import { sha256, tokenHint } from "@/lib/biometric/hash";
+import { decryptSecret, encryptSecret } from "@/lib/crypto/secret";
+import { generateWebhookSecret, signWebhookPayload } from "@/lib/webhooks/signature";
 import {
   getWebhookAttempt,
   getWebhookEndpoint,
@@ -30,21 +31,8 @@ function parseTypes(raw: string): string[] {
   }
 }
 
-export function generateWebhookSecret() {
-  return `whsec_${randomBytes(24).toString("hex")}`;
-}
-
-export function signWebhookPayload(secret: string, timestamp: string, body: string) {
-  return createHmac("sha256", secret).update(`${timestamp}.${body}`).digest("hex");
-}
-
-export function verifyWebhookSignature(secret: string, timestamp: string, body: string, signature: string) {
-  const expected = signWebhookPayload(secret, timestamp, body);
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
+export { generateWebhookSecret, signWebhookPayload };
+export { verifyWebhookSignature } from "@/lib/webhooks/signature";
 
 function publicPayload(event: DomainEvent) {
   let payload: Record<string, unknown> = {};
@@ -111,6 +99,7 @@ export async function createWebhookEndpoint(input: {
     url,
     secret_hash: sha256(secret),
     secret_hint: tokenHint(secret),
+    secret_encrypted: encryptSecret(secret),
     status: "ACTIVE",
     event_types_json: JSON.stringify(types),
     created_by: input.actorId,
@@ -131,6 +120,7 @@ export async function rotateWebhookSecret(organizationId: string, id: string) {
     ...existing,
     secret_hash: sha256(secret),
     secret_hint: tokenHint(secret),
+    secret_encrypted: encryptSecret(secret),
     rotated_at: stamp(),
     updated_at: stamp(),
   });
@@ -150,7 +140,7 @@ export async function updateWebhookEndpoint(
 }
 
 function secretFor(endpoint: WebhookEndpoint) {
-  return secrets.get(endpoint.id) ?? null;
+  return secrets.get(endpoint.id) ?? decryptSecret(endpoint.secret_encrypted) ?? null;
 }
 
 export async function deliverWebhooksForEvent(event: DomainEvent) {
@@ -206,7 +196,7 @@ export async function attemptWebhookDelivery(
   if (!secret) {
     await updateWebhookAttempt(attempt.id, {
       status: "FAILED",
-      error_message: "Webhook secret is not available after restart. Rotate the secret to deliver.",
+      error_message: "Webhook signing secret is unavailable. Set SESSION_SECRET and rotate the secret to deliver.",
       attempt_count: attempt.attempt_count + 1,
       next_attempt_at: null,
     });

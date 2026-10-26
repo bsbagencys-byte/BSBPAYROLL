@@ -3234,6 +3234,7 @@ export async function getDemoSessionUser(): Promise<SessionUser | null> {
   if (!userId) return null;
   const user = buildSessionUser(userId);
   if (!user || user.status === "DISABLED" || user.membershipStatus === "DISABLED") return null;
+  if (user.organization.status === "SUSPENDED") return null;
   return user;
 }
 

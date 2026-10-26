@@ -6,6 +6,7 @@ import type { SessionUser } from "@/types";
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (user.organization.status === "SUSPENDED") redirect("/login?reason=suspended");
   return user;
 }
 

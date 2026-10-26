@@ -73,7 +73,6 @@ import { exceptionCounts, scanPayrollExceptions } from "@/lib/payroll/exceptions
 import { formatPayslipNumber, orgPayslipPrefix, payslipPeriodMeta } from "@/lib/payroll/numbering";
 import { buildPayslipPdf } from "@/lib/payroll/pdf";
 import {
-  assertMutable,
   canApprove,
   canCancelRun,
   canFinalize,
@@ -660,6 +659,9 @@ export async function processPayrollRun(organizationId: string, runId: string, a
   const run = await getPayrollRun(organizationId, runId);
   if (!run) throw new Error("Payroll run not found.");
   if (run.status !== "LOCKED") throw new Error("Lock the run before processing.");
+  if (!run.finalized_at || !run.snapshot_id) {
+    throw new Error("Finalize payroll before processing. Calculated-only locks cannot be paid.");
+  }
   const [items, lines] = await Promise.all([listPayrollItems(organizationId, runId), listPayrollLines(organizationId, runId)]);
   const included = items.filter((item) => item.status === "INCLUDED");
   const now = stamp();
@@ -994,7 +996,7 @@ export async function cancelPayrollRun(
   const run = await getPayrollRun(organizationId, runId);
   if (!run) throw new Error("Payroll run not found.");
   if (!canCancelRun(run.status)) throw new Error("This run cannot be cancelled.");
-  if (run.status === "PROCESSED" || run.status === "PAID") throw new Error("Processed payroll cannot be cancelled.");
+  if (isPayrollImmutable(run.status)) throw new Error("Finalized payroll cannot be cancelled. Create an adjustment or reversal run.");
   if (!reason.trim()) throw new Error("A reason is required.");
   const updated = await updatePayrollRun(runId, {
     status: "CANCELLED",
@@ -1154,11 +1156,8 @@ export async function createPayrollAdjustment(input: {
 }) {
   const run = await getPayrollRun(input.organizationId, input.runId);
   if (!run) throw new Error("Payroll run not found.");
-  if (isPayrollImmutable(run.status) && run.status !== "FINALIZED" && run.status !== "LOCKED") {
-    assertMutable(run.status);
-  }
-  if (run.status === "PROCESSED" || run.status === "PAID") {
-    throw new Error("Processed payroll cannot be adjusted in place. Create an adjustment run.");
+  if (isPayrollImmutable(run.status)) {
+    throw new Error("Finalized payroll cannot be adjusted in place. Create an adjustment or reversal run.");
   }
   if (!input.reason.trim()) throw new Error("A reason is required.");
   const item = await getPayrollItem(input.organizationId, input.itemId);

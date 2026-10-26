@@ -77,6 +77,15 @@ export async function loginAction(
     if (!membership || membership.status === "DISABLED") {
       return { success: false, message: "You do not have an active organization membership." };
     }
+    if (store.org.status === "SUSPENDED") {
+      await writeAudit({
+        organizationId: membership.organization_id,
+        actorUserId: profile.id,
+        action: "failed_login",
+        metadata: { username, reason: "org_suspended" },
+      });
+      return { success: false, message: "This organization is suspended. Contact support." };
+    }
     profile.last_login_at = new Date().toISOString();
     await setDemoSession(profile.id, Boolean(remember));
     clearLoginRateLimit(limitKey);
@@ -131,7 +140,7 @@ export async function loginAction(
 
   const { data: membership } = await admin
     .from("organization_users")
-    .select("organization_id, status, organizations(setup_completed)")
+    .select("organization_id, status, organizations(setup_completed, status)")
     .eq("user_id", lookup.user_id)
     .limit(1)
     .maybeSingle();
@@ -139,6 +148,19 @@ export async function loginAction(
   if (!membership || membership.status === "DISABLED") {
     await supabase.auth.signOut();
     return { success: false, message: "You do not have an active organization membership." };
+  }
+
+  const orgRow = membership.organizations as { setup_completed?: boolean; status?: string } | { setup_completed?: boolean; status?: string }[] | null;
+  const orgStatus = Array.isArray(orgRow) ? orgRow[0]?.status : orgRow?.status;
+  if (orgStatus === "SUSPENDED") {
+    await supabase.auth.signOut();
+    await writeAudit({
+      organizationId: membership.organization_id,
+      actorUserId: lookup.user_id,
+      action: "failed_login",
+      metadata: { username, reason: "org_suspended" },
+    });
+    return { success: false, message: "This organization is suspended. Contact support." };
   }
 
   clearLoginRateLimit(limitKey);

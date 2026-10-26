@@ -4,6 +4,34 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 17 — Production readiness
+
+- **Date:** 2026-10-26
+- **Status:** implemented on `261015-feat-ess-portal`
+- **Go-live:** READY WITH DOCUMENTED LIMITATIONS
+
+### Implemented
+
+- Additive overlay. Phases 1–16 unchanged. Phase 4 attendance still not started.
+- Suspended organizations cannot sign in. Session and login both check `organizations.status`.
+- Finalized payroll cannot be cancelled or adjusted in place. Process requires a finalized snapshot. Duplicate snapshots are rejected.
+- ESS identity matches `user_id` inside the session organization only.
+- Jobs worker secret compared in constant time. Webhook signing secrets encrypt at rest when `SESSION_SECRET` is set (`secret_encrypted`).
+- Health: `GET /api/health`, `GET /api/health/live`. Structured logs redact secrets.
+- Node test runner (`npm test`) covering payroll engine/workflow, formula, statutory, loans, biometric parse/dedupe, tenancy, SSRF/HMAC, auth policy, and journeys A–F (Phase 4 steps flagged, not claimed).
+- Ops docs: `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`, `docs/ops/{BACKUP,DEPLOY,SAAS,INCIDENT}.md`.
+
+### Database
+
+- Additive `supabase/phase17.sql`, appended into `combined.sql`.
+- Column: `webhook_endpoints.secret_encrypted`.
+
+### Not claimed
+
+- Punch-derived attendance, certified ZKTeco/Matrix hardware, independently verified statutory rates, live multi-tenant RLS proof, billing.
+
+---
+
 ## Phase 16 — Analytics, anomaly detection, optional AI and biometric expansion
 
 - **Date:** 2026-10-24

@@ -1,6 +1,6 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, Phase 12 employee exit, full & final settlement and contractor payroll, Phase 13 employee self-service, Phase 14 reports, accounting exports and salary payments, Phase 15 automation, notifications, scheduled jobs, signed webhooks and scoped APIs, and Phase 16 explainable analytics, anomaly detection, optional AI assistant and biometric vendor expansion. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, Phase 12 employee exit, full & final settlement and contractor payroll, Phase 13 employee self-service, Phase 14 reports, accounting exports and salary payments, Phase 15 automation, notifications, scheduled jobs, signed webhooks and scoped APIs, Phase 16 explainable analytics, anomaly detection, optional AI assistant and biometric vendor expansion, and Phase 17 production-readiness overlay. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
 This app does **not** implement full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest. Payroll treats unmarked working days as paid until Phase 4.
 
@@ -35,7 +35,7 @@ Demo logins (development only):
 
 1. Create a Supabase project.
 2. Put the URL and anon key in `.env.local`. Keep the **service role key server-only**.
-3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10 + Phase 11 + Phase 12 + Phase 13 + Phase 14 + Phase 15 + Phase 16). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql`, `supabase/phase5.sql`, `supabase/phase6.sql`, `supabase/phase7.sql`, `supabase/phase8.sql`, `supabase/phase9.sql`, `supabase/phase10.sql`, `supabase/phase11.sql`, `supabase/phase12.sql`, `supabase/phase13.sql`, `supabase/phase14.sql`, `supabase/phase15.sql` and `supabase/phase16.sql` after combined.sql.
+3. Run `supabase/combined.sql` in the SQL Editor (Phase 1 + Phase 2 + Phase 3 + Phase 5 + Phase 6 + Phase 7 + Phase 8 + Phase 9 + Phase 10 + Phase 11 + Phase 12 + Phase 13 + Phase 14 + Phase 15 + Phase 16 + Phase 17). Then run `supabase/seed.sql` only in non-production. Existing projects can run `supabase/phase3.sql` through `supabase/phase17.sql` after combined.sql.
 4. Set `NEXT_PUBLIC_DEMO_MODE=false`.
 5. Create Auth users that match `username@AUTH_EMAIL_DOMAIN`. Those emails are never shown in the UI.
 
@@ -361,6 +361,15 @@ Attendance calculation (Phase 4) remains Coming Soon.
 - Anomaly alerts are deterministic. They never mutate attendance, salaries, deductions, payroll or payments.
 - The assistant is optional. Set `USER_LLM_API_KEY`, `USER_LLM_BASE_URL` and `USER_LLM_MODEL` to enable a model. Unconfigured mode still answers from stored analytics tools. The assistant cannot approve, calculate, finalize or edit payroll.
 - ZKTeco and Matrix adapters parse documented PUSH/JSON payloads through the existing gateway. Physical hardware is not certified.
+
+## Tests and health
+
+```bash
+npm test
+```
+
+- `GET /api/health` and `GET /api/health/live` do not require a session.
+- Go-live: `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`. Verdict is READY WITH DOCUMENTED LIMITATIONS.
 
 ## Later phases
 

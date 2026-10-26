@@ -24,7 +24,9 @@ export async function resolveSelfEmployee(user: SessionUser): Promise<SelfIdenti
     listEmployment(organizationId),
   ]);
 
-  const employee = catalog.employees.find((item) => item.user_id === user.id);
+  const employee = catalog.employees.find(
+    (item) => item.user_id === user.id && item.organization_id === organizationId
+  );
   if (!employee) return null;
 
   const job = employment.find((item) => item.employee_id === employee.id) ?? null;
@@ -40,14 +42,16 @@ export async function resolveSelfEmployee(user: SessionUser): Promise<SelfIdenti
 
 export async function employeeIdForUser(organizationId: string, userId: string): Promise<string | null> {
   const catalog = await loadOrgCatalog(organizationId);
-  return catalog.employees.find((item) => item.user_id === userId)?.id ?? null;
+  return catalog.employees.find((item) => item.user_id === userId && item.organization_id === organizationId)?.id ?? null;
 }
 
 export async function employeeUserIds(organizationId: string, employeeIds: string[]): Promise<Map<string, string>> {
   const catalog = await loadOrgCatalog(organizationId);
   const map = new Map<string, string>();
   for (const employee of catalog.employees) {
-    if (employee.user_id && employeeIds.includes(employee.id)) map.set(employee.id, employee.user_id);
+    if (employee.user_id && employee.organization_id === organizationId && employeeIds.includes(employee.id)) {
+      map.set(employee.id, employee.user_id);
+    }
   }
   return map;
 }

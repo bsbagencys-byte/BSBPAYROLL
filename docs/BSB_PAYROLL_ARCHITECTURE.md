@@ -29,7 +29,7 @@ Not a separate SPA. No client-side service-role keys.
 Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
-- **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret).
+- **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret); `/api/health` and `/api/health/live`.
 - **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*`, `/api/contractors/reports/*`, `/api/reports/[key]`, `/api/accounting/journals/[id]/csv`, `/api/payments/[id]/csv` and `/api/analytics/[kind]`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
@@ -40,7 +40,7 @@ Single Next.js process.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
@@ -57,7 +57,7 @@ Username + password, not email-as-identity in the UI.
 1. Username maps to synthetic email `{username}@{AUTH_EMAIL_DOMAIN}` (`username_lookup`).
 2. Demo: cookie `bsb_demo_session` = profile id; passwords in demo store.
 3. Live: Supabase `signInWithPassword` after lookup. Failed/success rows in `login_attempts`.
-4. Session: `getSessionUser()` loads profile, `organization_users`, role, permission codes.
+4. Session: `getSessionUser()` loads profile, `organization_users`, role, permission codes. `organizations.status = SUSPENDED` yields no session.
 5. Forgot/reset exist; demo reset returns a token in the action result.
 
 Passwords are never stored in plaintext in app tables.
@@ -260,7 +260,7 @@ Exits never write attendance or leave tables.
 - In-app notifications default from `defaultNotificationPlan`. Email only if preference `email=true` and SMTP is configured. Recipient is `employee_employment.official_email`. Unconfigured SMTP is UNCONFIGURED, never success.
 - Automation rules: predefined triggers/conditions/actions only. No user SQL/code. Payroll create/finalize never auto-runs without an authorized policy.
 - Jobs claimed uniquely on `(job_id, scheduled_for)`. Worker `POST /api/internal/jobs` requires `JOBS_WORKER_SECRET`.
-- Webhooks: HMAC + timestamp + event id, secret rotation, retry/backoff, SSRF block of localhost/private/metadata. No passwords, tokens, full bank or Aadhaar in payloads.
+- Webhooks: HMAC + timestamp + event id, secret rotation, retry/backoff, SSRF block of localhost/private/metadata. Signing secret is encrypted at rest (`secret_encrypted`) when `SESSION_SECRET` is set. No passwords, tokens, full bank or Aadhaar in payloads.
 - API keys: `bsb_live_` prefix, sha256 hash, org-scoped, granular read scopes, expiry/revoke/rotate, rate limit, request IDs. Plaintext shown only at create. Cannot bypass RLS/approvals/finalized payroll.
 - `/api/v1` attendance summaries do not claim Phase 4 punch calculation.
 
@@ -281,6 +281,15 @@ Do not implement these until the named phase:
 - **Phase 14:** reports hub, accounting exports and bank payment infrastructure (implemented).
 - **Phase 15:** automation, notifications, scheduled jobs, APIs and webhooks (implemented).
 - **Phase 16:** AI and advanced analytics (implemented). Additive overlay. Core analytics work without an AI API. Alerts never mutate payroll.
+- **Phase 17:** production readiness (implemented). Tests, health, ops docs, security/integrity fixes. Go-live is READY WITH DOCUMENTED LIMITATIONS.
 - **Later:** Face/QR/GPS, smart auto attendance.
+
+## Production readiness — IMPLEMENTED (limited)
+
+- Tests: `npm test` (node test runner, no extra deps).
+- Health: `/api/health`, `/api/health/live`.
+- Go-live checklist: `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
+- Ops: `docs/ops/{BACKUP,DEPLOY,SAAS,INCIDENT}.md`.
+- Verdict: READY WITH DOCUMENTED LIMITATIONS. Phase 4, hardware certification and statutory source verification remain open.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

@@ -334,6 +334,13 @@ export async function getPayrollSnapshot(organizationId: string, runId: string) 
   return rows.find((item) => item.run_id === runId) ?? null;
 }
 export async function insertPayrollSnapshot(row: PayrollSnapshot) {
+  if (demoEnabled()) {
+    const store = getDemoStore();
+    const existing = store.payrollSnapshots.find((item) => item.run_id === row.run_id);
+    if (existing) throw new Error("A payroll snapshot already exists for this run.");
+    store.payrollSnapshots.unshift(row);
+    return row;
+  }
   return insertRow("payroll_snapshots", "payrollSnapshots", row);
 }
 

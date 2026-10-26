@@ -1,4 +1,4 @@
--- BSB Payroll combined schema (Phase 1 + 2 + 3 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15 + 16)
+-- BSB Payroll combined schema (Phase 1 + 2 + 3 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15 + 16 + 17)
 -- Paste this entire file into the Supabase SQL Editor and run once.
 -- Safe to re-run: uses IF NOT EXISTS / DROP POLICY IF EXISTS / ON CONFLICT.
 -- Do not run seed.sql in production. There is no Phase 4 schema.
@@ -6001,3 +6001,9 @@ grant select, insert, update on public.analytics_saved_views, public.analytics_t
   public.analytics_alerts, public.analytics_alert_history, public.analytics_refresh_jobs,
   public.biometric_compatibility_registry, public.ai_usage_logs
   to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Phase 17 overlay (production readiness)
+-- ---------------------------------------------------------------------------
+alter table public.webhook_endpoints
+  add column if not exists secret_encrypted text;

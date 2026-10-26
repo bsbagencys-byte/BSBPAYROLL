@@ -49,7 +49,7 @@ export function canUnlockRun(status: PayrollRunStatus) {
 }
 
 export function canCancelRun(status: PayrollRunStatus) {
-  return !isPayrollImmutable(status) || status === "FINALIZED";
+  return status === "DRAFT" || status === "CALCULATED" || status === "UNDER_REVIEW" || status === "APPROVAL_PENDING" || status === "APPROVED";
 }
 
 export function nextApproveStatus(status: PayrollRunStatus): PayrollRunStatus {

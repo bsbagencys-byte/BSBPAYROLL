@@ -7,7 +7,9 @@ import { DEFAULT_ROLE_PERMISSIONS, ROLE_LABELS, type PermissionCode, type RoleCo
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   if (!hasSupabaseConfig() || isDemoMode()) {
-    return getDemoSessionUser();
+    const demoUser = await getDemoSessionUser();
+    if (demoUser?.organization.status === "SUSPENDED") return null;
+    return demoUser;
   }
 
   const supabase = await createServerSupabase();
@@ -43,6 +45,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const organization = membership.organizations as SessionUser["organization"] | null;
   const branch = (membership.branches as SessionUser["branch"]) ?? null;
   if (!role || !organization) return null;
+  if (organization.status === "SUSPENDED") return null;
 
   const { data: rolePerms } = await client
     .from("role_permissions")

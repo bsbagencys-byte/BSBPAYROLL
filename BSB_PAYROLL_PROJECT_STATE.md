@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 16 overlay)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 17 overlay)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 implemented. Phase 4 Attendance is not started.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 implemented. Phase 4 Attendance is not started. Go-live: READY WITH DOCUMENTED LIMITATIONS.
 
 ---
 
@@ -36,6 +36,7 @@ Status is from code, not README.
 | 14 Reports, accounting, payments | **COMPLETE** overlay on P9–P13 | Reports hub from stored data; payroll journals from finalized snapshots; payment batches and generic bank CSV. Late/OT/punch LOP not calculated. |
 | 15 Automation, notifications, APIs | **COMPLETE** overlay on P1–P14 | Durable outbox, in-app + optional SMTP email, predefined automation rules, scheduled jobs, HMAC webhooks, scoped `/api/v1`. Never fakes external delivery. |
 | 16 Analytics, anomalies, optional AI | **COMPLETE** overlay on P1–P15 | Explainable dashboards from stored data, deterministic anomaly alerts, optional permission-aware assistant, biometric compatibility registry. No Phase 4 calc. AI never approves or mutates payroll. |
+| 17 Production readiness | **COMPLETE** overlay on P1–P16 | Audit, security/integrity fixes, node test runner, health checks, ops docs, go-live checklist. Phase 4 still blocked. Statutory rates and hardware remain UNVERIFIED. |
 
 ---
 
@@ -184,7 +185,7 @@ Overview, employment, statutory, bank, documents, history, attendance (later P4 
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15+16.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16+P17). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15+16+17.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -218,6 +219,8 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 **P16:** `analytics_saved_views`, `analytics_thresholds`, `analytics_alerts`, `analytics_alert_history`, `analytics_refresh_jobs`, `biometric_compatibility_registry`, `ai_usage_logs`
 
+**P17:** `webhook_endpoints.secret_encrypted` (nullable AES-256-GCM ciphertext when `SESSION_SECRET` is set)
+
 **Not present:** shifts, attendance rules, overtime, LOP calc from punches.
 
 `login_attempts` and `username_lookup` are service-role only. Biometric raw insert from the client is denied; ingest uses admin/demo store.
@@ -243,7 +246,7 @@ Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salar
 | Reports / accounting / payments | `lib/reports/{catalog,query,csv}.ts`, `lib/accounting/{repository,service,query,csv}.ts`, `lib/payments/{repository,service,query,columns}.ts` |
 | Events / notifications / automation | `lib/events/{bus,catalog,emit,repository}.ts`, `lib/notifications/{service,email,recipients}.ts`, `lib/automation/{rules}.ts`, `lib/jobs/{service}.ts`, `lib/webhooks/{*}`, `lib/api/{http,query}.ts` |
 | Analytics / AI | `lib/analytics/{metrics,anomalies,repository,csv}.ts`, `lib/ai/{assistant,tools}.ts` |
-| Proxy | `proxy.ts` — public prefixes for login/reset, biometric ingest, `/api/v1` and `/api/internal/jobs` |
+| Proxy | `proxy.ts` — public prefixes for login/reset, biometric ingest, `/api/v1`, `/api/internal/jobs` and `/api/health` |
 
 Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getApprovedPayrollClaimLines` (`lib/claims/service.ts`); `getEmployeeLoanDeductions` / `recordLoanRepayment` (`lib/loans/service.ts`); leave-written `attendance_days`; `employeeExcludedFromOrdinaryPayroll` (`lib/exits/service.ts`).
 
@@ -416,14 +419,19 @@ Demo seed: `createAutomationSeed()` — templates, one leave-approval rule, dail
 - Unmarked working days count as paid in payroll until Phase 4 produces PRESENT/ABSENT.
 - Seed statutory versions are DISABLED/unverified; official rates were not independently verified in this environment.
 - Contractor withholding is blocked until a verified TDS rule version exists for the invoice date.
+- In-memory rate limits are per process; use an edge/WAF limit for multi-instance production.
+- Live RLS against a second tenant is UNVERIFIED in this environment.
+- Webhook signing secrets persist across restarts only when `SESSION_SECRET` is set and the secret is created or rotated after Phase 17.
 
 ---
 
 ## Current Phase
 
-**Phase 16 analytics overlay is complete. Next: Phase 4 Attendance (not started), unless requested.**
+**Phase 17 production-readiness overlay is complete. Go-live: READY WITH DOCUMENTED LIMITATIONS. Next: Phase 4 Attendance (not started), unless requested.**
 
-Phase 16 consumes stored payroll/leave/claims/loans/biometric data. Core analytics work without an AI API. Alerts never mutate payroll. Phase 4 attendance remains the main accuracy gap: day totals still come from leave-written `attendance_days` plus unmarked working days treated as paid. Do not start Phase 4 unless requested.
+Phase 17 added automated unit tests, health checks, structured logs, webhook secret encryption, suspended-org login block, payroll cancel/adjust immutability after finalize, and ops docs. Do not claim launch-ready for punch-based attendance, certified biometric hardware, or independently verified statutory rates. Phase 4 remains the main accuracy gap. Do not start Phase 4 unless requested.
+
+See `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 
 ---
 
