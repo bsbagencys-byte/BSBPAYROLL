@@ -120,6 +120,19 @@ import type {
   AnalyticsRefreshJob,
   BiometricCompatibilityEntry,
   AiUsageLog,
+  SubscriptionPlan,
+  PlanEntitlementRow,
+  PlanPriceHistory,
+  OrganizationSubscription,
+  SubscriptionHistory,
+  SubscriptionUsage,
+  BillingProfile,
+  PlatformBillingSettings,
+  BillingInvoice,
+  BillingInvoiceLine,
+  BillingPayment,
+  PaymentWebhookEvent,
+  BillingAdjustment,
   ExitClearanceItem,
   ExitClearanceTask,
   FinalSettlement,
@@ -431,6 +444,20 @@ export type DemoStore = {
   analyticsRefreshJobs: AnalyticsRefreshJob[];
   biometricCompatibilityRegistry: BiometricCompatibilityEntry[];
   aiUsageLogs: AiUsageLog[];
+  subscriptionPlans: SubscriptionPlan[];
+  planEntitlements: PlanEntitlementRow[];
+  planPriceHistory: PlanPriceHistory[];
+  organizationSubscriptions: OrganizationSubscription[];
+  subscriptionHistory: SubscriptionHistory[];
+  subscriptionUsage: SubscriptionUsage[];
+  billingProfiles: BillingProfile[];
+  platformBillingSettings: PlatformBillingSettings;
+  billingInvoiceSequences: Record<string, number>;
+  billingInvoices: BillingInvoice[];
+  billingInvoiceLines: BillingInvoiceLine[];
+  billingPayments: BillingPayment[];
+  paymentWebhookEvents: PaymentWebhookEvent[];
+  billingAdjustments: BillingAdjustment[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -884,6 +911,7 @@ function createStore(): DemoStore {
     ...createAccountingSeed(),
     ...createAutomationSeed(),
     ...createAnalyticsSeed(),
+    ...createBillingSeed(),
   };
 }
 
@@ -3148,6 +3176,276 @@ function createAnalyticsSeed(): Pick<
   };
 }
 
+function createBillingSeed(): Pick<
+  DemoStore,
+  | "subscriptionPlans"
+  | "planEntitlements"
+  | "planPriceHistory"
+  | "organizationSubscriptions"
+  | "subscriptionHistory"
+  | "subscriptionUsage"
+  | "billingProfiles"
+  | "platformBillingSettings"
+  | "billingInvoiceSequences"
+  | "billingInvoices"
+  | "billingInvoiceLines"
+  | "billingPayments"
+  | "paymentWebhookEvents"
+  | "billingAdjustments"
+> {
+  const created = nowIso();
+  const trialId = "plan-trial";
+  const starterId = "plan-starter";
+  const professionalId = "plan-professional";
+  const enterpriseId = "plan-enterprise";
+  const subscriptionId = "sub-demo-trial";
+  const invoiceId = "inv-demo-draft";
+  const plans: SubscriptionPlan[] = [
+    {
+      id: trialId,
+      code: "TRIAL",
+      name: "Trial",
+      description: "Example trial plan. Codes and prices are configurable.",
+      billing_cycle_default: "MONTHLY",
+      monthly_price: 0,
+      annual_price: 0,
+      currency: "INR",
+      trial_days: 14,
+      employee_limit: 10,
+      branch_limit: 1,
+      biometric_device_limit: 1,
+      modules_json: JSON.stringify(["payroll", "leave"]),
+      entitlements_json: JSON.stringify({ apiAccess: false, advancedAnalytics: false, reportsExport: true }),
+      status: "ACTIVE",
+      effective_from: "2026-01-01",
+      effective_to: null,
+      created_by: null,
+      updated_by: null,
+      created_at: created,
+      updated_at: created,
+    },
+    {
+      id: starterId,
+      code: "STARTER",
+      name: "Starter",
+      description: "Example starter plan.",
+      billing_cycle_default: "MONTHLY",
+      monthly_price: 4999,
+      annual_price: 49990,
+      currency: "INR",
+      trial_days: 14,
+      employee_limit: 25,
+      branch_limit: 2,
+      biometric_device_limit: 2,
+      modules_json: JSON.stringify(["payroll", "leave", "claims"]),
+      entitlements_json: JSON.stringify({ apiAccess: false, advancedAnalytics: false, reportsExport: true }),
+      status: "ACTIVE",
+      effective_from: "2026-01-01",
+      effective_to: null,
+      created_by: null,
+      updated_by: null,
+      created_at: created,
+      updated_at: created,
+    },
+    {
+      id: professionalId,
+      code: "PROFESSIONAL",
+      name: "Professional",
+      description: "Example professional plan.",
+      billing_cycle_default: "MONTHLY",
+      monthly_price: 9999,
+      annual_price: 99990,
+      currency: "INR",
+      trial_days: 14,
+      employee_limit: 100,
+      branch_limit: 10,
+      biometric_device_limit: 10,
+      modules_json: JSON.stringify(["payroll", "leave", "claims", "loans", "analytics"]),
+      entitlements_json: JSON.stringify({ apiAccess: true, advancedAnalytics: true, reportsExport: true }),
+      status: "ACTIVE",
+      effective_from: "2026-01-01",
+      effective_to: null,
+      created_by: null,
+      updated_by: null,
+      created_at: created,
+      updated_at: created,
+    },
+    {
+      id: enterpriseId,
+      code: "ENTERPRISE",
+      name: "Enterprise",
+      description: "Example enterprise plan with unlimited seats until a limit is set.",
+      billing_cycle_default: "ANNUAL",
+      monthly_price: 24999,
+      annual_price: 249990,
+      currency: "INR",
+      trial_days: 30,
+      employee_limit: null,
+      branch_limit: null,
+      biometric_device_limit: null,
+      modules_json: JSON.stringify(["payroll", "leave", "claims", "loans", "analytics", "api"]),
+      entitlements_json: JSON.stringify({ apiAccess: true, advancedAnalytics: true, reportsExport: true }),
+      status: "ACTIVE",
+      effective_from: "2026-01-01",
+      effective_to: null,
+      created_by: null,
+      updated_by: null,
+      created_at: created,
+      updated_at: created,
+    },
+  ];
+  return {
+    subscriptionPlans: plans,
+    planEntitlements: [
+      { id: "pe-trial-emp", plan_id: trialId, entitlement_key: "employees", limit_value: 10, enabled: true, notes: null, created_at: created, updated_at: created },
+      { id: "pe-starter-emp", plan_id: starterId, entitlement_key: "employees", limit_value: 25, enabled: true, notes: null, created_at: created, updated_at: created },
+    ],
+    planPriceHistory: [],
+    organizationSubscriptions: [
+      {
+        id: subscriptionId,
+        organization_id: ORG_ID,
+        plan_id: trialId,
+        plan_code: "TRIAL",
+        plan_name: "Trial",
+        billing_cycle: "MONTHLY",
+        status: "TRIAL",
+        unit_price: 0,
+        currency: "INR",
+        trial_starts_at: created,
+        trial_ends_at: new Date(Date.now() + 14 * 86400000).toISOString(),
+        current_period_start: created.slice(0, 10),
+        current_period_end: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+        renews_at: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+        cancelled_at: null,
+        cancel_at_period_end: false,
+        grace_ends_at: null,
+        plan_snapshot_json: JSON.stringify(plans[0]),
+        notes: "Demo trial. Provider is unconfigured; this is not a paid activation.",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    subscriptionHistory: [
+      {
+        id: "sh-demo-trial",
+        organization_id: ORG_ID,
+        subscription_id: subscriptionId,
+        event_type: "TRIAL_STARTED",
+        from_status: null,
+        to_status: "TRIAL",
+        from_plan_code: null,
+        to_plan_code: "TRIAL",
+        actor_user_id: null,
+        reason: "Demo seed",
+        metadata_json: "{}",
+        created_at: created,
+      },
+    ],
+    subscriptionUsage: [],
+    billingProfiles: [
+      {
+        organization_id: ORG_ID,
+        legal_name: "BSB Demo Organization",
+        billing_email: "billing@demo.bsbpayroll.example",
+        address_line1: "12 MG Road",
+        address_line2: null,
+        city: "Bengaluru",
+        state: "Karnataka",
+        pin: "560001",
+        country: "IN",
+        gstin: null,
+        pan: null,
+        tax_id: null,
+        tax_label: null,
+        tax_rate: null,
+        currency: "INR",
+        invoice_notes: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    platformBillingSettings: {
+      id: true,
+      legal_name: "BSB Payroll",
+      billing_email: null,
+      address_line1: null,
+      address_line2: null,
+      city: null,
+      state: null,
+      pin: null,
+      country: "IN",
+      gstin: null,
+      pan: null,
+      tax_label: null,
+      tax_rate: null,
+      currency: "INR",
+      invoice_prefix: "BSB",
+      tax_configured: false,
+      updated_by: null,
+      created_at: created,
+      updated_at: created,
+    },
+    billingInvoiceSequences: {},
+    billingInvoices: [
+      {
+        id: invoiceId,
+        organization_id: ORG_ID,
+        subscription_id: subscriptionId,
+        invoice_number: "BSB-2026-000001",
+        status: "DRAFT",
+        billing_cycle: "MONTHLY",
+        period_start: created.slice(0, 10),
+        period_end: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+        plan_id: trialId,
+        plan_code: "TRIAL",
+        plan_name: "Trial",
+        currency: "INR",
+        subtotal: 0,
+        discount_amount: 0,
+        tax_label: null,
+        tax_rate: null,
+        tax_amount: 0,
+        total: 0,
+        amount_paid: 0,
+        outstanding: 0,
+        due_date: null,
+        issued_at: null,
+        paid_at: null,
+        voided_at: null,
+        seller_snapshot_json: JSON.stringify({ legal_name: "BSB Payroll" }),
+        customer_snapshot_json: JSON.stringify({ legal_name: "BSB Demo Organization" }),
+        tax_configured: false,
+        notes: "Draft trial invoice. Tax is not configured. Not a paid activation.",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    billingInvoiceLines: [
+      {
+        id: "il-demo-1",
+        invoice_id: invoiceId,
+        organization_id: ORG_ID,
+        line_type: "SUBSCRIPTION",
+        description: "Trial period",
+        quantity: 1,
+        unit_price: 0,
+        amount: 0,
+        sort_order: 1,
+        created_at: created,
+      },
+    ],
+    billingPayments: [],
+    paymentWebhookEvents: [],
+    billingAdjustments: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -3164,7 +3462,8 @@ export function getDemoStore(): DemoStore {
     !("essNotifications" in globalStore.__bsbDemo) ||
     !("accountingAccounts" in globalStore.__bsbDemo) ||
     !("domainEvents" in globalStore.__bsbDemo) ||
-    !("analyticsAlerts" in globalStore.__bsbDemo)
+    !("analyticsAlerts" in globalStore.__bsbDemo) ||
+    !("subscriptionPlans" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

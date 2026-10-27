@@ -21,3 +21,9 @@ export async function requirePermissionOrRedirect(permission: PermissionCode): P
   if (!hasPermission(user, permission)) redirect("/unauthorized");
   return user;
 }
+
+export async function requirePlatformAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (user.roleCode !== "SUPER_ADMIN") redirect("/unauthorized");
+  return user;
+}

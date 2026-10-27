@@ -57,6 +57,13 @@ export async function saveBranchAction(
   }
 
   const id = optional(formData.get("id"));
+  if (!id && parsed.data.status !== "DISABLED") {
+    const { checkEntitlement, entitlementMessage } = await import("@/lib/billing/entitlements");
+    const decision = await checkEntitlement(access.user.organization.id, "branches", 1);
+    if (!decision.allowed) {
+      return { success: false, message: entitlementMessage(decision) ?? "Branch limit reached." };
+    }
+  }
   const payload = {
     name: parsed.data.name,
     code: parsed.data.code || null,

@@ -4,6 +4,36 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 18 — SaaS subscription and billing
+
+- **Date:** 2026-10-27
+- **Status:** implemented on `261015-feat-ess-portal`
+- **Go-live:** READY WITH DOCUMENTED LIMITATIONS (billing provider live is unverified)
+
+### Implemented
+
+- Additive overlay. Phases 1–17 unchanged. Phase 4 attendance still not started.
+- Configurable plans, entitlements, and price history. Plan edits do not rewrite issued invoices or existing subscription snapshots.
+- Organization subscription lifecycle (trial, active, past due, grace, suspended, cancelled, expired). Job `SUBSCRIPTION_LIFECYCLE`.
+- Usage metrics and server-side entitlement checks on employee, branch, device, API key, and `/api/v1` create/access.
+- Customer billing profile, platform seller settings, invoices with tax-incomplete flag, PDF download.
+- Provider-neutral payments. Razorpay only when credentials exist. Unconfigured checkout cannot mark paid. Webhook signature + idempotency.
+- Subscription billing remains separate from employee salary payment batches. Suspend preserves tenant data.
+- UI: `/settings/subscription`, `/billing/invoices`, `/billing/payments`, `/admin/subscriptions`.
+- Tests: `tests/billing.test.ts`.
+
+### Database
+
+- Additive `supabase/phase18.sql`, appended into `combined.sql`.
+- Tables: plans, entitlements, price history, subscriptions, history, usage, billing profiles/settings/sequences, invoices/lines/payments, webhook events, adjustments.
+- Helper `has_platform_role()`. No card or payment-credential columns.
+
+### Not claimed
+
+- Live Razorpay sandbox/production charges, GST-compliant tax, punch-derived attendance, certified hardware, independently verified statutory rates.
+
+---
+
 ## Phase 17 — Production readiness
 
 - **Date:** 2026-10-26

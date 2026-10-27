@@ -36,6 +36,13 @@ export async function requireApiKey(request: Request, scope: ApiScope): Promise<
     return { ok: false, response: apiError(requestId, 401, "unauthorized", "API key required.") };
   }
   const key = await authenticateApiKey(token);
+  if (key) {
+    const { checkEntitlement } = await import("@/lib/billing/entitlements");
+    const decision = await checkEntitlement(key.organization_id, "api_access");
+    if (!decision.allowed) {
+      return { ok: false, response: apiError(requestId, 403, "subscription_restricted", decision.reason ?? "API access is not allowed on the current subscription.") };
+    }
+  }
   if (!key) {
     await insertApiRequestLog({
       id: crypto.randomUUID(),

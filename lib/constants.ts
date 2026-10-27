@@ -155,13 +155,27 @@ export const PERMISSIONS = [
   { code: "analytics.alerts.manage", group: "Analytics", label: "Acknowledge and resolve analytics alerts" },
   { code: "analytics.thresholds.manage", group: "Analytics", label: "Manage analytics anomaly thresholds" },
   { code: "analytics.assistant.use", group: "Analytics", label: "Use the optional analytics assistant" },
+  { code: "subscriptions.view", group: "Billing", label: "View organization subscription" },
+  { code: "subscriptions.manage", group: "Billing", label: "Manage organization subscriptions" },
+  { code: "plans.manage", group: "Billing", label: "Manage subscription plans" },
+  { code: "billing.view", group: "Billing", label: "View subscription invoices and usage" },
+  { code: "billing.invoice.manage", group: "Billing", label: "Issue and void subscription invoices" },
+  { code: "billing.payment.view", group: "Billing", label: "View subscription payment transactions" },
+  { code: "billing.refund.manage", group: "Billing", label: "Record verified subscription refunds" },
+  { code: "subscription.override", group: "Billing", label: "Override entitlements and subscription status" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
   SUPER_ADMIN: PERMISSIONS.map((p) => p.code),
-  ADMIN: PERMISSIONS.map((p) => p.code),
+  ADMIN: PERMISSIONS.map((p) => p.code).filter(
+    (code) =>
+      code !== "plans.manage" &&
+      code !== "subscription.override" &&
+      code !== "billing.invoice.manage" &&
+      code !== "billing.refund.manage"
+  ),
   HR: [
     "organization.view",
     "user.view",
@@ -268,6 +282,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "analytics.alerts.manage",
     "analytics.thresholds.manage",
     "analytics.assistant.use",
+    "subscriptions.view",
+    "billing.view",
+    "billing.payment.view",
   ],
   PAYROLL: [
     "organization.view",
@@ -384,6 +401,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "analytics.view",
     "analytics.export",
     "analytics.alerts.manage",
+    "subscriptions.view",
+    "billing.view",
+    "billing.payment.view",
   ],
   MANAGER: [
     "organization.view",
@@ -446,6 +466,7 @@ export const NAV_ITEMS = [
   { href: "/contractors", label: "Contractors", icon: "Briefcase", enabled: true, phase: 12 },
   { href: "/reports", label: "Reports", icon: "BarChart3", enabled: true, phase: 14 },
   { href: "/analytics", label: "Analytics", icon: "LineChart", enabled: true, phase: 16 },
+  { href: "/billing/invoices", label: "Billing", icon: "CreditCard", enabled: true, phase: 18 },
   { href: "/accounting", label: "Accounting", icon: "BookOpen", enabled: true, phase: 14 },
   { href: "/payments", label: "Payments", icon: "Landmark", enabled: true, phase: 14 },
   { href: "/notifications", label: "Notifications", icon: "Bell", enabled: true, phase: 15 },
@@ -466,6 +487,7 @@ export const SETTINGS_NAV = [
   { href: "/settings/security", label: "Security" },
   { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/developers", label: "Developers" },
+  { href: "/settings/subscription", label: "Subscription" },
 ] as const;
 
 export const EMPLOYEE_STATUSES = ["ACTIVE", "INACTIVE", "ON_NOTICE", "TERMINATED", "RESIGNED"] as const;
@@ -2023,6 +2045,7 @@ export const JOB_TYPES = [
   "PAYROLL_PERIOD_REMINDER",
   "FAILED_JOB_RETRY",
   "OUTBOX_PROCESS",
+  "SUBSCRIPTION_LIFECYCLE",
 ] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
@@ -2035,6 +2058,7 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   PAYROLL_PERIOD_REMINDER: "Payroll period reminders",
   FAILED_JOB_RETRY: "Eligible failed-job retries",
   OUTBOX_PROCESS: "Process event outbox",
+  SUBSCRIPTION_LIFECYCLE: "Subscription trial, renewal and grace processing",
 };
 
 export const JOB_EXECUTION_STATUSES = ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
@@ -2199,3 +2223,161 @@ export const BIOMETRIC_VERIFICATION_STATUS_LABELS: Record<BiometricVerificationS
 
 export const AI_USAGE_STATUSES = ["UNCONFIGURED", "ANSWERED", "UNAVAILABLE", "FAILED"] as const;
 export type AiUsageStatus = (typeof AI_USAGE_STATUSES)[number];
+
+export const BILLING_CYCLES = ["MONTHLY", "ANNUAL"] as const;
+export type BillingCycle = (typeof BILLING_CYCLES)[number];
+
+export const BILLING_CYCLE_LABELS: Record<BillingCycle, string> = {
+  MONTHLY: "Monthly",
+  ANNUAL: "Annual",
+};
+
+export const PLAN_STATUSES = ["DRAFT", "ACTIVE", "RETIRED"] as const;
+export type PlanStatus = (typeof PLAN_STATUSES)[number];
+
+export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
+  DRAFT: "Draft",
+  ACTIVE: "Active",
+  RETIRED: "Retired",
+};
+
+export const SUBSCRIPTION_STATUSES = [
+  "TRIAL",
+  "ACTIVE",
+  "PAST_DUE",
+  "GRACE_PERIOD",
+  "SUSPENDED",
+  "CANCELLED",
+  "EXPIRED",
+] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
+export const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, string> = {
+  TRIAL: "Trial",
+  ACTIVE: "Active",
+  PAST_DUE: "Past due",
+  GRACE_PERIOD: "Grace period",
+  SUSPENDED: "Suspended",
+  CANCELLED: "Cancelled",
+  EXPIRED: "Expired",
+};
+
+export const BILLING_INVOICE_STATUSES = [
+  "DRAFT",
+  "ISSUED",
+  "PARTIALLY_PAID",
+  "PAID",
+  "OVERDUE",
+  "VOID",
+] as const;
+export type BillingInvoiceStatus = (typeof BILLING_INVOICE_STATUSES)[number];
+
+export const BILLING_INVOICE_STATUS_LABELS: Record<BillingInvoiceStatus, string> = {
+  DRAFT: "Draft",
+  ISSUED: "Issued",
+  PARTIALLY_PAID: "Partially paid",
+  PAID: "Paid",
+  OVERDUE: "Overdue",
+  VOID: "Void",
+};
+
+export const BILLING_PAYMENT_STATUSES = ["PENDING", "FAILED", "SUCCESS", "REFUNDED"] as const;
+export type BillingPaymentStatus = (typeof BILLING_PAYMENT_STATUSES)[number];
+
+export const BILLING_PAYMENT_STATUS_LABELS: Record<BillingPaymentStatus, string> = {
+  PENDING: "Pending",
+  FAILED: "Failed",
+  SUCCESS: "Success",
+  REFUNDED: "Refunded",
+};
+
+export const BILLING_LINE_TYPES = ["SUBSCRIPTION", "DISCOUNT", "TAX", "ADJUSTMENT"] as const;
+export type BillingLineType = (typeof BILLING_LINE_TYPES)[number];
+
+export const BILLING_ADJUSTMENT_KINDS = ["CREDIT", "DEBIT", "ENTITLEMENT_OVERRIDE"] as const;
+export type BillingAdjustmentKind = (typeof BILLING_ADJUSTMENT_KINDS)[number];
+
+export const SUBSCRIPTION_EVENT_TYPES = [
+  "CREATED",
+  "ACTIVATED",
+  "TRIAL_STARTED",
+  "TRIAL_EXPIRED",
+  "RENEWED",
+  "UPGRADED",
+  "DOWNGRADED",
+  "CANCELLED",
+  "PAST_DUE",
+  "GRACE_STARTED",
+  "SUSPENDED",
+  "EXPIRED",
+  "OVERRIDE",
+] as const;
+export type SubscriptionEventType = (typeof SUBSCRIPTION_EVENT_TYPES)[number];
+
+export const ENTITLEMENT_KEYS = [
+  "employees",
+  "branches",
+  "biometric_devices",
+  "api_access",
+  "advanced_analytics",
+  "reports_export",
+] as const;
+export type EntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
+
+export const ENTITLEMENT_KEY_LABELS: Record<EntitlementKey, string> = {
+  employees: "Active employees",
+  branches: "Active branches",
+  biometric_devices: "Registered biometric devices",
+  api_access: "API access",
+  advanced_analytics: "Advanced analytics",
+  reports_export: "Report export",
+};
+
+export const USAGE_METRIC_KEYS = [
+  "active_employees",
+  "active_branches",
+  "registered_biometric_devices",
+  "api_requests_30d",
+] as const;
+export type UsageMetricKey = (typeof USAGE_METRIC_KEYS)[number];
+
+export const USAGE_METRIC_LABELS: Record<UsageMetricKey, string> = {
+  active_employees: "Active employees",
+  active_branches: "Active branches",
+  registered_biometric_devices: "Registered biometric devices",
+  api_requests_30d: "API requests (30 days)",
+};
+
+export const BILLING_NAV = [
+  { href: "/billing/invoices", label: "Invoices" },
+  { href: "/billing/payments", label: "Payments" },
+] as const;
+
+export const ADMIN_SUBSCRIPTION_NAV = [
+  { href: "/admin/subscriptions", label: "Overview" },
+  { href: "/admin/subscriptions/plans", label: "Plans" },
+] as const;
+
+export const SETTINGS_SUBSCRIPTION_NAV = [
+  { href: "/settings/subscription", label: "Subscription" },
+  { href: "/settings/subscription/usage", label: "Usage" },
+] as const;
+
+export const OPEN_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = [
+  "TRIAL",
+  "ACTIVE",
+  "PAST_DUE",
+  "GRACE_PERIOD",
+  "SUSPENDED",
+];
+
+export const RESTRICTED_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ["SUSPENDED", "CANCELLED", "EXPIRED"];
+
+export const SUBSCRIPTION_BILLING_ALLOWED_WHEN_RESTRICTED = [
+  "/settings/subscription",
+  "/settings/subscription/usage",
+  "/billing/invoices",
+  "/billing/payments",
+  "/admin/subscriptions",
+  "/profile",
+] as const;

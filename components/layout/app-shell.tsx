@@ -10,6 +10,7 @@ import {
   BookOpen,
   Briefcase,
   CalendarCheck,
+  CreditCard,
   FileSignature,
   Fingerprint,
   Gift,
@@ -34,7 +35,7 @@ import { Logo } from "@/components/brand/logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/actions/auth";
-import { NAV_ITEMS, SETTINGS_NAV } from "@/lib/constants";
+import { NAV_ITEMS, SETTINGS_NAV, SUBSCRIPTION_BILLING_ALLOWED_WHEN_RESTRICTED } from "@/lib/constants";
 import { cn, initials } from "@/lib/utils";
 import type { SessionUser } from "@/types";
 
@@ -61,22 +62,40 @@ const ICONS = {
   Bell,
   Workflow,
   LineChart,
+  CreditCard,
 } as const;
 
 const NAV = NAV_ITEMS;
 
-export function AppShell({ user, children }: { user: SessionUser; children: React.ReactNode }) {
+export function AppShell({
+  user,
+  children,
+  subscriptionRestricted = false,
+}: {
+  user: SessionUser;
+  children: React.ReactNode;
+  subscriptionRestricted?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const company = user.organization.display_name || user.organization.name;
   const setupExempt = pathname === "/setup" || pathname.startsWith("/setup") || pathname === "/profile";
+  const billingAllowed = SUBSCRIPTION_BILLING_ALLOWED_WHEN_RESTRICTED.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
 
   useEffect(() => {
     if (!user.organization.setup_completed && !setupExempt) {
       router.replace("/setup");
     }
   }, [user.organization.setup_completed, setupExempt, router]);
+
+  useEffect(() => {
+    if (subscriptionRestricted && !billingAllowed && !setupExempt) {
+      router.replace("/settings/subscription");
+    }
+  }, [subscriptionRestricted, billingAllowed, setupExempt, router]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -127,6 +146,21 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
               </Link>
             );
           })}
+          {user.roleCode === "SUPER_ADMIN" ? (
+            <Link
+              href="/admin/subscriptions"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
+                pathname.startsWith("/admin/subscriptions")
+                  ? "bg-brand-50 text-brand-800"
+                  : "text-slate-700 hover:bg-slate-50"
+              )}
+            >
+              <CreditCard className="h-4 w-4" />
+              Subscriptions
+            </Link>
+          ) : null}
         </nav>
       </aside>
 
@@ -170,7 +204,14 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
             </form>
           </div>
         </header>
-        <main className="p-4 sm:p-6">{children}</main>
+        <main className="p-4 sm:p-6">
+          {subscriptionRestricted ? (
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Subscription is restricted. Existing data is preserved. Billing, usage, invoices, and profile remain available.
+            </div>
+          ) : null}
+          {children}
+        </main>
       </div>
     </div>
   );

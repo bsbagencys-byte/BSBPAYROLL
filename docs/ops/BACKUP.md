@@ -16,4 +16,4 @@
 
 ## Tenant suspend vs delete
 
-Organization `status=SUSPENDED` blocks login. Do not auto-delete tenant rows on suspend. Deletion is a separate, authorized legal process and is not implemented as a product action.
+Organization `status=SUSPENDED` blocks login. Subscription status `SUSPENDED` / `CANCELLED` / `EXPIRED` restricts new entitlements but does not delete tenant rows. Deletion is a separate, authorized legal process and is not implemented as a product action.

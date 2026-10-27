@@ -24,6 +24,7 @@ Do not treat this as launch-ready for punch-based attendance, certified biometri
 | Email | PARTIAL | SMTP optional. Unconfigured is never success. |
 | Observability | IMPLEMENTED | `/api/health`, `/api/health/live`, structured logs without secrets. |
 | Backup / deploy / SaaS ops | IMPLEMENTED (docs) | See `docs/ops/`. |
+| Subscription billing | PARTIAL / UNVERIFIED live | Plans, lifecycle, invoices, entitlements implemented. Razorpay live charges UNVERIFIED. GST not assumed. |
 
 ---
 
@@ -33,7 +34,7 @@ Do not treat this as launch-ready for punch-based attendance, certified biometri
 2. Real `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server-only), `SUPABASE_JWT_SECRET`.
 3. `SESSION_SECRET` is a long random string (required to persist webhook signing secrets across restarts).
 4. `JOBS_WORKER_SECRET` set; a scheduler calls `POST /api/internal/jobs`.
-5. Apply `supabase/combined.sql` (includes Phase 17 `secret_encrypted`). Existing projects also run `supabase/phase17.sql`.
+5. Apply `supabase/combined.sql` (includes Phase 17 `secret_encrypted` and Phase 18 billing tables). Existing projects also run `supabase/phase17.sql` and `supabase/phase18.sql`.
 6. `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build` all pass.
 7. Auth users exist for usernames at `{username}@{AUTH_EMAIL_DOMAIN}`.
 8. `NEXT_PUBLIC_APP_URL` is the live HTTPS origin; add it to Supabase Auth redirect URLs.
@@ -53,7 +54,7 @@ Do not treat this as launch-ready for punch-based attendance, certified biometri
 - In-memory rate limits are per process. Use an edge/WAF limit in multi-instance production.
 - Email is SMTP only. WhatsApp/SMS are not implemented.
 - Custom role editing UI is read-only.
-- No billing provider is configured. Do not auto-delete tenant data on suspend.
+- Billing overlay exists. Live Razorpay charges and GST-compliant tax are UNVERIFIED. Do not auto-delete tenant data on suspend.
 - Demo credentials must never be used in production.
 
 ---
@@ -76,7 +77,7 @@ Synthetic fixtures only. No real employee or production financial data.
 ## Rollback
 
 1. Stop sending traffic to the new deploy (platform rollback to previous successful build).
-2. Do not reverse `combined.sql` / `phase17.sql` with DROP. The overlay is additive (`secret_encrypted` nullable).
+2. Do not reverse `combined.sql` / `phase17.sql` / `phase18.sql` with DROP. Overlays are additive (`secret_encrypted` nullable; billing tables preserve tenant data).
 3. Leave payroll runs that reached FINALIZED/LOCKED/PROCESSED/PAID untouched. Corrections are adjustment or reversal runs only.
 4. Rotate `JOBS_WORKER_SECRET`, API keys, and webhook secrets if they leaked.
 5. Record the incident in `docs/ops/INCIDENT.md`.

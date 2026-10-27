@@ -14,6 +14,9 @@ export function collectHealth() {
   const sessionSecretConfigured = Boolean(
     process.env.SESSION_SECRET && process.env.SESSION_SECRET !== "replace-with-a-long-random-string"
   );
+  const paymentProviderConfigured = Boolean(
+    process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET
+  );
   const status: HealthStatus = "ok";
   return {
     ok: true,
@@ -27,11 +30,13 @@ export function collectHealth() {
       jobsWorkerConfigured,
       smtpConfigured,
       sessionSecretConfigured,
+      paymentProviderConfigured,
     },
     limitations: {
       attendanceCalculation: false,
       statutoryRatesVerified: false,
       biometricHardwareCertified: false,
+      billingChargesVerified: false,
     },
   };
 }

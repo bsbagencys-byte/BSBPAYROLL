@@ -116,6 +116,16 @@ import type {
   AnalyticsRuleCode,
   BiometricVerificationStatus,
   AiUsageStatus,
+  BillingCycle,
+  PlanStatus,
+  SubscriptionStatus,
+  BillingInvoiceStatus,
+  BillingPaymentStatus,
+  BillingLineType,
+  BillingAdjustmentKind,
+  SubscriptionEventType,
+  EntitlementKey,
+  UsageMetricKey,
 } from "@/lib/constants";
 
 export type {
@@ -2883,4 +2893,257 @@ export interface AnalyticsAssistantAnswer {
   answer: string;
   sources: string[];
   toolsUsed: string[];
+}
+
+export interface PlanEntitlements {
+  employeeLimit: number | null;
+  branchLimit: number | null;
+  biometricDeviceLimit: number | null;
+  modules: string[];
+  apiAccess: boolean;
+  advancedAnalytics: boolean;
+  reportsExport: boolean;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  billing_cycle_default: BillingCycle;
+  monthly_price: number;
+  annual_price: number;
+  currency: string;
+  trial_days: number;
+  employee_limit: number | null;
+  branch_limit: number | null;
+  biometric_device_limit: number | null;
+  modules_json: string;
+  entitlements_json: string;
+  status: PlanStatus;
+  effective_from: string | null;
+  effective_to: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanEntitlementRow {
+  id: string;
+  plan_id: string;
+  entitlement_key: EntitlementKey | string;
+  limit_value: number | null;
+  enabled: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanPriceHistory {
+  id: string;
+  plan_id: string;
+  monthly_price: number;
+  annual_price: number;
+  currency: string;
+  employee_limit: number | null;
+  branch_limit: number | null;
+  biometric_device_limit: number | null;
+  entitlements_json: string;
+  changed_by: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface OrganizationSubscription {
+  id: string;
+  organization_id: string;
+  plan_id: string;
+  plan_code: string;
+  plan_name: string;
+  billing_cycle: BillingCycle;
+  status: SubscriptionStatus;
+  unit_price: number;
+  currency: string;
+  trial_starts_at: string | null;
+  trial_ends_at: string | null;
+  current_period_start: string;
+  current_period_end: string;
+  renews_at: string | null;
+  cancelled_at: string | null;
+  cancel_at_period_end: boolean;
+  grace_ends_at: string | null;
+  plan_snapshot_json: string;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionHistory {
+  id: string;
+  organization_id: string;
+  subscription_id: string;
+  event_type: SubscriptionEventType | string;
+  from_status: string | null;
+  to_status: string | null;
+  from_plan_code: string | null;
+  to_plan_code: string | null;
+  actor_user_id: string | null;
+  reason: string | null;
+  metadata_json: string;
+  created_at: string;
+}
+
+export interface SubscriptionUsage {
+  id: string;
+  organization_id: string;
+  subscription_id: string | null;
+  metric_key: UsageMetricKey | string;
+  quantity: number;
+  limit_value: number | null;
+  remaining: number | null;
+  measured_at: string;
+  source: string;
+}
+
+export interface BillingProfile {
+  organization_id: string;
+  legal_name: string | null;
+  billing_email: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  pin: string | null;
+  country: string;
+  gstin: string | null;
+  pan: string | null;
+  tax_id: string | null;
+  tax_label: string | null;
+  tax_rate: number | null;
+  currency: string;
+  invoice_notes: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlatformBillingSettings {
+  id: boolean;
+  legal_name: string | null;
+  billing_email: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  pin: string | null;
+  country: string;
+  gstin: string | null;
+  pan: string | null;
+  tax_label: string | null;
+  tax_rate: number | null;
+  currency: string;
+  invoice_prefix: string;
+  tax_configured: boolean;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillingInvoice {
+  id: string;
+  organization_id: string;
+  subscription_id: string | null;
+  invoice_number: string;
+  status: BillingInvoiceStatus;
+  billing_cycle: BillingCycle;
+  period_start: string;
+  period_end: string;
+  plan_id: string | null;
+  plan_code: string;
+  plan_name: string;
+  currency: string;
+  subtotal: number;
+  discount_amount: number;
+  tax_label: string | null;
+  tax_rate: number | null;
+  tax_amount: number;
+  total: number;
+  amount_paid: number;
+  outstanding: number;
+  due_date: string | null;
+  issued_at: string | null;
+  paid_at: string | null;
+  voided_at: string | null;
+  seller_snapshot_json: string;
+  customer_snapshot_json: string;
+  tax_configured: boolean;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillingInvoiceLine {
+  id: string;
+  invoice_id: string;
+  organization_id: string;
+  line_type: BillingLineType;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface BillingPayment {
+  id: string;
+  organization_id: string;
+  invoice_id: string | null;
+  subscription_id: string | null;
+  provider: string;
+  provider_order_id: string | null;
+  provider_payment_id: string | null;
+  amount: number;
+  currency: string;
+  status: BillingPaymentStatus;
+  failure_reason: string | null;
+  verified: boolean;
+  verified_at: string | null;
+  refunded_at: string | null;
+  idempotency_key: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentWebhookEvent {
+  id: string;
+  provider: string;
+  provider_event_id: string;
+  event_type: string | null;
+  organization_id: string | null;
+  payment_id: string | null;
+  signature_valid: boolean;
+  processed: boolean;
+  processed_at: string | null;
+  error_message: string | null;
+  payload_json: string;
+  created_at: string;
+}
+
+export interface BillingAdjustment {
+  id: string;
+  organization_id: string;
+  subscription_id: string | null;
+  invoice_id: string | null;
+  kind: BillingAdjustmentKind;
+  amount: number;
+  reason: string;
+  created_by: string | null;
+  created_at: string;
 }

@@ -92,6 +92,12 @@ export async function saveDeviceAction(
     return { success: true, message: "Device updated.", data: { id } };
   }
 
+  const { checkEntitlement, entitlementMessage } = await import("@/lib/billing/entitlements");
+  const decision = await checkEntitlement(orgId, "biometric_devices", 1);
+  if (!decision.allowed) {
+    return { success: false, message: entitlementMessage(decision) ?? "Biometric device limit reached." };
+  }
+
   const devices = await listDevices(orgId);
   if (devices.some((item) => item.serial_number.toLowerCase() === values.serialNumber.toLowerCase())) {
     return { success: false, errors: { serialNumber: ["A device with this serial number already exists."] } };

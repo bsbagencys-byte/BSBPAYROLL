@@ -116,6 +116,11 @@ export async function createApiKeyAction(
     rateLimitPerMinute: formData.get("rateLimitPerMinute") || 60,
   });
   if (!parsed.success) return { success: false, errors: flattenErrors(parsed.error), message: "API key is invalid." };
+  const { checkEntitlement, entitlementMessage } = await import("@/lib/billing/entitlements");
+  const decision = await checkEntitlement(user.organization.id, "api_access");
+  if (!decision.allowed) {
+    return { success: false, message: entitlementMessage(decision) ?? "API access is not included in the current plan." };
+  }
   try {
     const result = await createApiKey({
       organizationId: user.organization.id,

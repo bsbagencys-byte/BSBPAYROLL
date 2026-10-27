@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 17 overlay)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 18 overlay)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 implemented. Phase 4 Attendance is not started. Go-live: READY WITH DOCUMENTED LIMITATIONS.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 implemented. Phase 4 Attendance is not started. Go-live: READY WITH DOCUMENTED LIMITATIONS.
 
 ---
 
@@ -37,6 +37,7 @@ Status is from code, not README.
 | 15 Automation, notifications, APIs | **COMPLETE** overlay on P1–P14 | Durable outbox, in-app + optional SMTP email, predefined automation rules, scheduled jobs, HMAC webhooks, scoped `/api/v1`. Never fakes external delivery. |
 | 16 Analytics, anomalies, optional AI | **COMPLETE** overlay on P1–P15 | Explainable dashboards from stored data, deterministic anomaly alerts, optional permission-aware assistant, biometric compatibility registry. No Phase 4 calc. AI never approves or mutates payroll. |
 | 17 Production readiness | **COMPLETE** overlay on P1–P16 | Audit, security/integrity fixes, node test runner, health checks, ops docs, go-live checklist. Phase 4 still blocked. Statutory rates and hardware remain UNVERIFIED. |
+| 18 SaaS subscription and billing | **COMPLETE** overlay on P1–P17 | Configurable plans, trial/lifecycle, entitlements, usage, invoices, provider-neutral payments. Separate from salary payment batches. Unconfigured provider cannot mark paid. |
 
 ---
 
@@ -69,7 +70,7 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, My Space, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Reports, Analytics, Accounting, Payments, Notifications, Automation, Compliance, Settings.
+Enabled nav: Dashboard, My Space, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Reports, Analytics, Billing, Accounting, Payments, Notifications, Automation, Compliance, Settings. SUPER_ADMIN also sees Subscriptions (`/admin/subscriptions`).
 
 Disabled nav (no pages): `/attendance` (P4).
 
@@ -83,7 +84,7 @@ Disabled nav (no pages): `/attendance` (P4).
 
 ### Settings
 
-- `/settings/company`, `/branches`, `/departments`, `/designations`, `/locations`, `/employment-types`, `/users`, `/roles`, `/security`, `/notifications`, `/developers`
+- `/settings/company`, `/branches`, `/departments`, `/designations`, `/locations`, `/employment-types`, `/users`, `/roles`, `/security`, `/notifications`, `/developers`, `/settings/subscription`, `/settings/subscription/usage`
 
 ### Employees (P2)
 
@@ -177,6 +178,16 @@ Disabled nav (no pages): `/attendance` (P4).
 - CSV: `/api/analytics/{kpis,variance,alerts}`
 - Permissions: `analytics.view|export`, `analytics.alerts.manage`, `analytics.thresholds.manage`, `analytics.assistant.use`
 
+### Billing (P18)
+
+- `/settings/subscription`, `/settings/subscription/usage`
+- `/billing`, `/billing/invoices`, `/billing/invoices/[id]`, `/billing/payments`
+- `/admin/subscriptions`, `/admin/subscriptions/plans` (SUPER_ADMIN)
+- PDF: `/api/billing/invoices/[id]/pdf`
+- Public webhook: `POST /api/billing/webhook`
+- Permissions: `subscriptions.view|manage`, `plans.manage`, `billing.view`, `billing.invoice.manage`, `billing.payment.view`, `billing.refund.manage`, `subscription.override`
+- ADMIN lacks `plans.manage`, `subscription.override`, `billing.invoice.manage`, `billing.refund.manage`
+
 ### Employee profile tabs
 
 Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, loans, payroll.
@@ -185,7 +196,7 @@ Overview, employment, statutory, bank, documents, history, attendance (later P4 
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16+P17). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15+16+17.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16+P17+P18). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15+16+17+18.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -221,6 +232,8 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 **P17:** `webhook_endpoints.secret_encrypted` (nullable AES-256-GCM ciphertext when `SESSION_SECRET` is set)
 
+**P18:** `subscription_plans`, `plan_entitlements`, `plan_price_history`, `organization_subscriptions`, `subscription_history`, `subscription_usage`, `billing_profiles`, `platform_billing_settings`, `billing_invoice_sequences`, `billing_invoices`, `billing_invoice_lines`, `billing_payments`, `payment_webhook_events`, `billing_adjustments`. Helper `has_platform_role()`. No card/credential columns.
+
 **Not present:** shifts, attendance rules, overtime, LOP calc from punches.
 
 `login_attempts` and `username_lookup` are service-role only. Biometric raw insert from the client is denied; ingest uses admin/demo store.
@@ -229,13 +242,13 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 ## APIs / Services
 
-Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans,exits,ess,accounting,payments,reports,notifications,automation,developers,analytics}.ts`.
+Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans,exits,ess,accounting,payments,reports,notifications,automation,developers,analytics,billing}.ts`.
 
 | Area | Code |
 |---|---|
 | Session / RBAC | `lib/auth/session.ts`, `lib/auth/guards.ts` |
 | Audit | `lib/audit.ts` (free-form action strings) |
-| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, `loanTypes`, `statutoryRules`, `payrollExceptions`, `statutoryRuleVersions`, `employeeExits`, `accountingAccounts`, `domainEvents` or `analyticsAlerts` missing |
+| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, `loanTypes`, `statutoryRules`, `payrollExceptions`, `statutoryRuleVersions`, `employeeExits`, `accountingAccounts`, `domainEvents`, `analyticsAlerts` or `subscriptionPlans` missing |
 | Biometric | `lib/biometric/{gateway,repository,query,hash,time}.ts`, `lib/biometric/adapters/{essl,zkteco,matrix,generic,index,types}.ts` |
 | Leave | `lib/leave/{engine,service,repository,query,csv,dates,attendance}.ts` |
 | Salary | `lib/salary/{formula,engine,service,repository,query,csv}.ts` |
@@ -246,7 +259,8 @@ Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salar
 | Reports / accounting / payments | `lib/reports/{catalog,query,csv}.ts`, `lib/accounting/{repository,service,query,csv}.ts`, `lib/payments/{repository,service,query,columns}.ts` |
 | Events / notifications / automation | `lib/events/{bus,catalog,emit,repository}.ts`, `lib/notifications/{service,email,recipients}.ts`, `lib/automation/{rules}.ts`, `lib/jobs/{service}.ts`, `lib/webhooks/{*}`, `lib/api/{http,query}.ts` |
 | Analytics / AI | `lib/analytics/{metrics,anomalies,repository,csv}.ts`, `lib/ai/{assistant,tools}.ts` |
-| Proxy | `proxy.ts` — public prefixes for login/reset, biometric ingest, `/api/v1`, `/api/internal/jobs` and `/api/health` |
+| Billing | `lib/billing/{engine,provider,repository,entitlements,usage,service,pdf,query}.ts`, `lib/validations/billing.ts` |
+| Proxy | `proxy.ts` — public prefixes for login/reset, biometric ingest, `/api/v1`, `/api/internal/jobs`, `/api/health` and `/api/billing/webhook` |
 
 Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getApprovedPayrollClaimLines` (`lib/claims/service.ts`); `getEmployeeLoanDeductions` / `recordLoanRepayment` (`lib/loans/service.ts`); leave-written `attendance_days`; `employeeExcludedFromOrdinaryPayroll` (`lib/exits/service.ts`).
 
@@ -427,9 +441,9 @@ Demo seed: `createAutomationSeed()` — templates, one leave-approval rule, dail
 
 ## Current Phase
 
-**Phase 17 production-readiness overlay is complete. Go-live: READY WITH DOCUMENTED LIMITATIONS. Next: Phase 4 Attendance (not started), unless requested.**
+**Phase 18 SaaS subscription overlay is complete. Go-live remains READY WITH DOCUMENTED LIMITATIONS. Next: Phase 4 Attendance (not started), unless requested.**
 
-Phase 17 added automated unit tests, health checks, structured logs, webhook secret encryption, suspended-org login block, payroll cancel/adjust immutability after finalize, and ops docs. Do not claim launch-ready for punch-based attendance, certified biometric hardware, or independently verified statutory rates. Phase 4 remains the main accuracy gap. Do not start Phase 4 unless requested.
+Phase 18 added configurable plans, trial/lifecycle, entitlements, usage, invoices, and provider-neutral payments. Unconfigured Razorpay cannot simulate a paid activation. Suspension preserves tenant data. Do not claim production billing until provider, tax, and sandbox verification succeed. Phase 4 remains the main payroll accuracy gap. Do not start Phase 4 unless requested.
 
 See `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 

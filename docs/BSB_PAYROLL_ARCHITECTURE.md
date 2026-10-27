@@ -17,6 +17,7 @@ Legend: **IMPLEMENTED** | **PLANNED** | **FUTURE**
 - Reports, accounting and payments live under `app/(app)/{reports,accounting,payments}` with `lib/{reports,accounting,payments}/*`.
 - Notifications, automation and developer settings live under `app/(app)/{notifications,automation,settings/notifications,settings/developers}`.
 - Analytics live under `app/(app)/analytics` with `lib/analytics/*` and optional `lib/ai/*`.
+- Subscription billing lives under `app/(app)/{billing,settings/subscription,admin/subscriptions}` with `lib/billing/*`.
 - Demo vs production is transparent to pages: repositories switch on `hasSupabaseConfig()` / `isDemoMode()`.
 - `allowedDevOrigins`: `*.monkeycode-ai.live`.
 
@@ -29,8 +30,8 @@ Not a separate SPA. No client-side service-role keys.
 Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
-- **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret); `/api/health` and `/api/health/live`.
-- **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*`, `/api/contractors/reports/*`, `/api/reports/[key]`, `/api/accounting/journals/[id]/csv`, `/api/payments/[id]/csv` and `/api/analytics/[kind]`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`.
+- **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret); `/api/health` and `/api/health/live`; `/api/billing/webhook` (provider signature).
+- **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*`, `/api/contractors/reports/*`, `/api/reports/[key]`, `/api/accounting/journals/[id]/csv`, `/api/payments/[id]/csv` and `/api/analytics/[kind]`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`. Subscription invoice PDF under `/api/billing/invoices/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
 - **Rate limit:** in-memory for login, biometric ingest and `/api/v1`.
@@ -282,6 +283,7 @@ Do not implement these until the named phase:
 - **Phase 15:** automation, notifications, scheduled jobs, APIs and webhooks (implemented).
 - **Phase 16:** AI and advanced analytics (implemented). Additive overlay. Core analytics work without an AI API. Alerts never mutate payroll.
 - **Phase 17:** production readiness (implemented). Tests, health, ops docs, security/integrity fixes. Go-live is READY WITH DOCUMENTED LIMITATIONS.
+- **Phase 18:** SaaS subscription and billing (implemented). Additive overlay. Separate from salary payment batches. Unconfigured provider cannot mark paid.
 - **Later:** Face/QR/GPS, smart auto attendance.
 
 ## Production readiness — IMPLEMENTED (limited)
@@ -290,6 +292,17 @@ Do not implement these until the named phase:
 - Health: `/api/health`, `/api/health/live`.
 - Go-live checklist: `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 - Ops: `docs/ops/{BACKUP,DEPLOY,SAAS,INCIDENT}.md`.
-- Verdict: READY WITH DOCUMENTED LIMITATIONS. Phase 4, hardware certification and statutory source verification remain open.
+- Verdict: READY WITH DOCUMENTED LIMITATIONS. Phase 4, hardware certification, statutory source verification, and live billing provider remain open.
+
+## SaaS subscription and billing — IMPLEMENTED (limited)
+
+- Configurable plans (`subscription_plans` + entitlements + price history). Example Trial/Starter/Professional/Enterprise seeds are not hard-coded commercial packages.
+- Lifecycle: TRIAL / ACTIVE / PAST_DUE / GRACE_PERIOD / SUSPENDED / CANCELLED / EXPIRED. Job `SUBSCRIPTION_LIFECYCLE`.
+- Entitlements enforced in employee/branch/device/API-key create and `/api/v1`. Limit hits explain usage and upgrade; existing records are not mutated.
+- Invoices snapshot seller/customer/plan/tax. Numbers `{prefix}-{year}-{seq}`. GST is not assumed; incomplete tax config is flagged.
+- Payments are provider-neutral. Razorpay adapter only when `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` are set. Browser success cannot mark PAID/ACTIVE. Webhook verifies signature and is idempotent.
+- Subscription billing is separate from employee salary payment batches (`/payments`).
+- Suspension preserves tenant data. Restricted orgs keep billing, usage, invoices, and profile.
+- Platform-only: `plans.manage`, `subscription.override`, `billing.invoice.manage`, `billing.refund.manage` (SUPER_ADMIN).
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

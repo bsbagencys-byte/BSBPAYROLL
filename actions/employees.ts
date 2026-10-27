@@ -145,6 +145,14 @@ export async function saveEmployeeAction(
   const name = displayNameFrom(values);
   const now = stamp();
 
+  if (!id && values.status === "ACTIVE") {
+    const { checkEntitlement, entitlementMessage } = await import("@/lib/billing/entitlements");
+    const decision = await checkEntitlement(orgId, "employees", 1);
+    if (!decision.allowed) {
+      return { success: false, message: entitlementMessage(decision) ?? "Employee limit reached." };
+    }
+  }
+
   if (demoEnabled()) {
     const store = getDemoStore();
     const duplicate = store.employees.find(

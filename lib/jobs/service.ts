@@ -42,6 +42,7 @@ export async function ensureDefaultJobs(organizationId: string, actorId: string 
     { jobType: "BIOMETRIC_DEVICE_HEALTH", name: "Biometric device health" },
     { jobType: "PAYROLL_PERIOD_REMINDER", name: "Payroll period reminders" },
     { jobType: "FAILED_JOB_RETRY", name: "Failed delivery retries" },
+    { jobType: "SUBSCRIPTION_LIFECYCLE", name: "Subscription lifecycle" },
   ];
   const created: ScheduledJob[] = [];
   for (const def of defs) {
@@ -170,6 +171,11 @@ async function runJobBody(job: ScheduledJob): Promise<Record<string, unknown>> {
     case "PAYROLL_PERIOD_REMINDER": {
       const users = await listOrgUsersWithRoles(job.organization_id);
       return { notifiedRoles: users.filter((item) => ["HR", "PAYROLL"].includes(item.roleCode)).length };
+    }
+    case "SUBSCRIPTION_LIFECYCLE": {
+      const { expireDueSubscriptions } = await import("@/lib/billing/service");
+      const updated = await expireDueSubscriptions();
+      return { updated: updated.length };
     }
     default:
       return { skipped: true };
