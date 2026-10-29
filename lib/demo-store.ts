@@ -133,6 +133,15 @@ import type {
   BillingPayment,
   PaymentWebhookEvent,
   BillingAdjustment,
+  DataExportJob,
+  ImportJob,
+  ImportJobRow,
+  OffboardingRequest,
+  OnboardingProgress,
+  OnboardingStepRecord,
+  OpeningBalance,
+  SupportMessage,
+  SupportTicket,
   ExitClearanceItem,
   ExitClearanceTask,
   FinalSettlement,
@@ -458,6 +467,15 @@ export type DemoStore = {
   billingPayments: BillingPayment[];
   paymentWebhookEvents: PaymentWebhookEvent[];
   billingAdjustments: BillingAdjustment[];
+  onboardingProgress: OnboardingProgress[];
+  onboardingSteps: OnboardingStepRecord[];
+  importJobs: ImportJob[];
+  importJobRows: ImportJobRow[];
+  openingBalances: OpeningBalance[];
+  supportTickets: SupportTicket[];
+  supportMessages: SupportMessage[];
+  dataExportJobs: DataExportJob[];
+  offboardingRequests: OffboardingRequest[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -912,6 +930,7 @@ function createStore(): DemoStore {
     ...createAutomationSeed(),
     ...createAnalyticsSeed(),
     ...createBillingSeed(),
+    ...createOnboardingSeed(),
   };
 }
 
@@ -3446,6 +3465,72 @@ function createBillingSeed(): Pick<
   };
 }
 
+function createOnboardingSeed(): Pick<
+  DemoStore,
+  | "onboardingProgress"
+  | "onboardingSteps"
+  | "importJobs"
+  | "importJobRows"
+  | "openingBalances"
+  | "supportTickets"
+  | "supportMessages"
+  | "dataExportJobs"
+  | "offboardingRequests"
+> {
+  const created = nowIso();
+  return {
+    onboardingProgress: [
+      {
+        organization_id: ORG_ID,
+        current_step: "REVIEW",
+        status: "IN_PROGRESS",
+        completed_at: null,
+        skipped_attendance: false,
+        notes: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    onboardingSteps: [],
+    importJobs: [],
+    importJobRows: [],
+    openingBalances: [],
+    supportTickets: [
+      {
+        id: "ticket-demo-open",
+        organization_id: ORG_ID,
+        ticket_number: "SUP-00001",
+        subject: "Need help confirming a leave-balance CSV",
+        category: "MIGRATION",
+        priority: "NORMAL",
+        status: "OPEN",
+        sla_due_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+        sla_breached: false,
+        created_by: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        assigned_to: null,
+        resolved_at: null,
+        closed_at: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    supportMessages: [
+      {
+        id: "msg-demo-open",
+        ticket_id: "ticket-demo-open",
+        organization_id: ORG_ID,
+        author_user_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        visibility: "CUSTOMER",
+        body: "We uploaded a leave-balance CSV and want to confirm it does not overwrite existing ledger rows.",
+        created_at: created,
+      },
+    ],
+    dataExportJobs: [],
+    offboardingRequests: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -3463,7 +3548,8 @@ export function getDemoStore(): DemoStore {
     !("accountingAccounts" in globalStore.__bsbDemo) ||
     !("domainEvents" in globalStore.__bsbDemo) ||
     !("analyticsAlerts" in globalStore.__bsbDemo) ||
-    !("subscriptionPlans" in globalStore.__bsbDemo)
+    !("subscriptionPlans" in globalStore.__bsbDemo) ||
+    !("onboardingProgress" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

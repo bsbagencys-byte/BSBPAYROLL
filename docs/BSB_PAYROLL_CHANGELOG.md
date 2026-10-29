@@ -4,6 +4,36 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 19 — Customer onboarding, migration, support, ops, export
+
+- **Date:** 2026-10-29
+- **Status:** implemented on `261015-feat-ess-portal`
+- **Go-live:** READY WITH DOCUMENTED LIMITATIONS
+
+### Implemented
+
+- Additive overlay. Phases 1–18 unchanged. Phase 4 attendance still not started.
+- Onboarding checklist from stored data. Opening a page does not complete a step. Attendance is BLOCKED/optional.
+- CSV migration with preview then confirm. Excel rejected. Existing `/setup` and `/employees/import` unchanged.
+- Historical payroll labelled imported and never claimed as BSB-calculated. Leave/loan imports preserve history.
+- Org-isolated support tickets with SLA hours. Internal notes are platform-only. No impersonation.
+- Data export (FULL/EMPLOYEES/PAYROLL/LEAVE/BILLING). TTL 72h. Expire does not delete tenant data.
+- Offboarding confirm is SUPER_ADMIN `data.offboard` and preserves existing history.
+- Platform ops `/admin/ops` and `/admin/support` are SUPER_ADMIN-only.
+- Jobs `SUPPORT_SLA` and `DATA_EXPORT_EXPIRE`.
+- Tests: `tests/onboarding.test.ts`.
+
+### Database
+
+- Additive `supabase/phase19.sql`, appended into `combined.sql`.
+- Tables: onboarding progress/steps, import jobs/rows, opening balances, support tickets/messages, data export jobs, offboarding requests.
+
+### Not claimed
+
+- Live production import confirm outside demo store, live Razorpay/GST, punch-derived attendance, certified hardware, independently verified statutory rates.
+
+---
+
 ## Phase 18 — SaaS subscription and billing
 
 - **Date:** 2026-10-27

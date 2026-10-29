@@ -17,7 +17,9 @@ import {
   HandCoins,
   Landmark,
   LayoutDashboard,
+  LifeBuoy,
   LineChart,
+  ListChecks,
   LogOut,
   Menu,
   Palmtree,
@@ -63,6 +65,8 @@ const ICONS = {
   Workflow,
   LineChart,
   CreditCard,
+  ListChecks,
+  LifeBuoy,
 } as const;
 
 const NAV = NAV_ITEMS;
@@ -147,19 +151,34 @@ export function AppShell({
             );
           })}
           {user.roleCode === "SUPER_ADMIN" ? (
-            <Link
-              href="/admin/subscriptions"
-              onClick={() => setOpen(false)}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
-                pathname.startsWith("/admin/subscriptions")
-                  ? "bg-brand-50 text-brand-800"
-                  : "text-slate-700 hover:bg-slate-50"
-              )}
-            >
-              <CreditCard className="h-4 w-4" />
-              Subscriptions
-            </Link>
+            <>
+              <Link
+                href="/admin/subscriptions"
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
+                  pathname.startsWith("/admin/subscriptions")
+                    ? "bg-brand-50 text-brand-800"
+                    : "text-slate-700 hover:bg-slate-50"
+                )}
+              >
+                <CreditCard className="h-4 w-4" />
+                Subscriptions
+              </Link>
+              <Link
+                href="/admin/support"
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium",
+                  pathname.startsWith("/admin/support") || pathname.startsWith("/admin/ops")
+                    ? "bg-brand-50 text-brand-800"
+                    : "text-slate-700 hover:bg-slate-50"
+                )}
+              >
+                <LifeBuoy className="h-4 w-4" />
+                Platform support
+              </Link>
+            </>
           ) : null}
         </nav>
       </aside>

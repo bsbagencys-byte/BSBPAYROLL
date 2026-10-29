@@ -126,6 +126,19 @@ import type {
   SubscriptionEventType,
   EntitlementKey,
   UsageMetricKey,
+  OnboardingStepKey,
+  OnboardingStepStatus,
+  OnboardingProgressStatus,
+  ImportEntityType,
+  ImportJobStatus,
+  ImportRowStatus,
+  SupportCategory,
+  SupportPriority,
+  SupportTicketStatus,
+  SupportMessageVisibility,
+  DataExportKind,
+  DataExportStatus,
+  OffboardingStatus,
 } from "@/lib/constants";
 
 export type {
@@ -234,7 +247,30 @@ export type {
   AnalyticsRuleCode,
   BiometricVerificationStatus,
   AiUsageStatus,
-};
+  BillingCycle,
+  PlanStatus,
+  SubscriptionStatus,
+  BillingInvoiceStatus,
+  BillingPaymentStatus,
+  BillingLineType,
+  BillingAdjustmentKind,
+  SubscriptionEventType,
+  EntitlementKey,
+  UsageMetricKey,
+  OnboardingStepKey,
+  OnboardingStepStatus,
+  OnboardingProgressStatus,
+  ImportEntityType,
+  ImportJobStatus,
+  ImportRowStatus,
+  SupportCategory,
+  SupportPriority,
+  SupportTicketStatus,
+  SupportMessageVisibility,
+  DataExportKind,
+  DataExportStatus,
+  OffboardingStatus,
+} from "@/lib/constants";
 
 export type AccountStatus = "ACTIVE" | "DISABLED" | "PENDING";
 export type OrgStatus = "PENDING_SETUP" | "ACTIVE" | "SUSPENDED";
@@ -3146,4 +3182,147 @@ export interface BillingAdjustment {
   reason: string;
   created_by: string | null;
   created_at: string;
+}
+
+export interface OnboardingProgress {
+  organization_id: string;
+  current_step: OnboardingStepKey;
+  status: OnboardingProgressStatus;
+  completed_at: string | null;
+  skipped_attendance: boolean;
+  notes: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OnboardingStepRecord {
+  id: string;
+  organization_id: string;
+  step_key: OnboardingStepKey;
+  status: OnboardingStepStatus;
+  evidence_json: string;
+  last_checked_at: string | null;
+  completed_at: string | null;
+  skipped_reason: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OnboardingStepView {
+  step_key: OnboardingStepKey;
+  label: string;
+  href: string;
+  status: OnboardingStepStatus;
+  required: boolean;
+  blocked: boolean;
+  evidence: string[];
+  skipped_reason: string | null;
+}
+
+export interface ImportJob {
+  id: string;
+  organization_id: string;
+  entity_type: ImportEntityType;
+  file_name: string;
+  status: ImportJobStatus;
+  total_rows: number;
+  ready_rows: number;
+  error_rows: number;
+  imported_rows: number;
+  skipped_rows: number;
+  previewed_at: string | null;
+  confirmed_at: string | null;
+  imported_at: string | null;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ImportJobRow {
+  id: string;
+  job_id: string;
+  organization_id: string;
+  row_number: number;
+  payload_json: string;
+  status: ImportRowStatus;
+  errors_json: string;
+  warnings_json: string;
+  imported_entity_id: string | null;
+  created_at: string;
+}
+
+export interface OpeningBalance {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  kind: "LEAVE" | "LOAN" | "SALARY";
+  reference_code: string | null;
+  amount: number;
+  as_of_date: string;
+  notes: string | null;
+  import_job_id: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  organization_id: string;
+  ticket_number: string;
+  subject: string;
+  category: SupportCategory;
+  priority: SupportPriority;
+  status: SupportTicketStatus;
+  sla_due_at: string | null;
+  sla_breached: boolean;
+  created_by: string | null;
+  assigned_to: string | null;
+  resolved_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  ticket_id: string;
+  organization_id: string;
+  author_user_id: string | null;
+  visibility: SupportMessageVisibility;
+  body: string;
+  created_at: string;
+}
+
+export interface DataExportJob {
+  id: string;
+  organization_id: string;
+  kind: DataExportKind;
+  status: DataExportStatus;
+  file_name: string | null;
+  content: string | null;
+  requested_by: string | null;
+  ready_at: string | null;
+  expires_at: string | null;
+  downloaded_at: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OffboardingRequest {
+  id: string;
+  organization_id: string;
+  status: OffboardingStatus;
+  reason: string;
+  export_job_id: string | null;
+  confirmed_at: string | null;
+  completed_at: string | null;
+  requested_by: string | null;
+  confirmed_by: string | null;
+  created_at: string;
+  updated_at: string;
 }

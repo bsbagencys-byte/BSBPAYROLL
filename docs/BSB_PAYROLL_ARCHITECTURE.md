@@ -18,6 +18,7 @@ Legend: **IMPLEMENTED** | **PLANNED** | **FUTURE**
 - Notifications, automation and developer settings live under `app/(app)/{notifications,automation,settings/notifications,settings/developers}`.
 - Analytics live under `app/(app)/analytics` with `lib/analytics/*` and optional `lib/ai/*`.
 - Subscription billing lives under `app/(app)/{billing,settings/subscription,admin/subscriptions}` with `lib/billing/*`.
+- Onboarding, support, migration and export live under `app/(app)/{onboarding,support,settings/data-migration,settings/data-export,admin/support,admin/ops}` with `lib/onboarding/*`.
 - Demo vs production is transparent to pages: repositories switch on `hasSupabaseConfig()` / `isDemoMode()`.
 - `allowedDevOrigins`: `*.monkeycode-ai.live`.
 
@@ -41,7 +42,7 @@ Single Next.js process.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
@@ -284,6 +285,7 @@ Do not implement these until the named phase:
 - **Phase 16:** AI and advanced analytics (implemented). Additive overlay. Core analytics work without an AI API. Alerts never mutate payroll.
 - **Phase 17:** production readiness (implemented). Tests, health, ops docs, security/integrity fixes. Go-live is READY WITH DOCUMENTED LIMITATIONS.
 - **Phase 18:** SaaS subscription and billing (implemented). Additive overlay. Separate from salary payment batches. Unconfigured provider cannot mark paid.
+- **Phase 19:** customer onboarding, CSV migration, support, platform ops, data export (implemented). Additive overlay. Attendance step optional/blocked. No silent XLSX. No auto-delete.
 - **Later:** Face/QR/GPS, smart auto attendance.
 
 ## Production readiness — IMPLEMENTED (limited)
@@ -304,5 +306,16 @@ Do not implement these until the named phase:
 - Subscription billing is separate from employee salary payment batches (`/payments`).
 - Suspension preserves tenant data. Restricted orgs keep billing, usage, invoices, and profile.
 - Platform-only: `plans.manage`, `subscription.override`, `billing.invoice.manage`, `billing.refund.manage` (SUPER_ADMIN).
+
+## Customer onboarding, migration, support and export — IMPLEMENTED (limited)
+
+- Checklist completeness is from stored organization, employee, salary, leave and user data. Opening a page does not complete a step.
+- Attendance/shifts remain optional and BLOCKED until Phase 4. Skip records `skipped_attendance`.
+- CSV import requires preview then confirm. Excel is rejected. Historical payroll is labelled imported.
+- Support tickets are organization-isolated. Internal notes are platform-only. No unrestricted impersonation.
+- Data export excludes secrets, full bank numbers and Aadhaar. Ready files expire after 72 hours without deleting tenant data.
+- Offboarding confirm is SUPER_ADMIN `data.offboard` and preserves history.
+- Platform ops and cross-org support are SUPER_ADMIN-only (`platform.ops`, `support.platform`).
+- Jobs: `SUPPORT_SLA`, `DATA_EXPORT_EXPIRE`.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

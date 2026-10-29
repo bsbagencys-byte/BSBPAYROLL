@@ -43,6 +43,8 @@ export async function ensureDefaultJobs(organizationId: string, actorId: string 
     { jobType: "PAYROLL_PERIOD_REMINDER", name: "Payroll period reminders" },
     { jobType: "FAILED_JOB_RETRY", name: "Failed delivery retries" },
     { jobType: "SUBSCRIPTION_LIFECYCLE", name: "Subscription lifecycle" },
+    { jobType: "SUPPORT_SLA", name: "Support ticket SLA reminders" },
+    { jobType: "DATA_EXPORT_EXPIRE", name: "Expire completed data exports" },
   ];
   const created: ScheduledJob[] = [];
   for (const def of defs) {
@@ -176,6 +178,14 @@ async function runJobBody(job: ScheduledJob): Promise<Record<string, unknown>> {
       const { expireDueSubscriptions } = await import("@/lib/billing/service");
       const updated = await expireDueSubscriptions();
       return { updated: updated.length };
+    }
+    case "SUPPORT_SLA": {
+      const { markSupportSla } = await import("@/lib/onboarding/service");
+      return markSupportSla();
+    }
+    case "DATA_EXPORT_EXPIRE": {
+      const { expireReadyExports } = await import("@/lib/onboarding/service");
+      return expireReadyExports();
     }
     default:
       return { skipped: true };

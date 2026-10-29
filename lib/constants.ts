@@ -163,6 +163,17 @@ export const PERMISSIONS = [
   { code: "billing.payment.view", group: "Billing", label: "View subscription payment transactions" },
   { code: "billing.refund.manage", group: "Billing", label: "Record verified subscription refunds" },
   { code: "subscription.override", group: "Billing", label: "Override entitlements and subscription status" },
+  { code: "onboarding.view", group: "Onboarding", label: "View onboarding checklist" },
+  { code: "onboarding.manage", group: "Onboarding", label: "Manage onboarding progress" },
+  { code: "migration.view", group: "Migration", label: "View data migration jobs" },
+  { code: "migration.manage", group: "Migration", label: "Preview and confirm data imports" },
+  { code: "support.view", group: "Support", label: "View support tickets" },
+  { code: "support.create", group: "Support", label: "Create support tickets" },
+  { code: "support.manage", group: "Support", label: "Update organization support tickets" },
+  { code: "support.platform", group: "Support", label: "Manage platform support across organizations" },
+  { code: "data.export", group: "Data", label: "Request organization data export" },
+  { code: "data.offboard", group: "Data", label: "Request organization offboarding" },
+  { code: "platform.ops", group: "Platform", label: "View platform operations" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -174,7 +185,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
       code !== "plans.manage" &&
       code !== "subscription.override" &&
       code !== "billing.invoice.manage" &&
-      code !== "billing.refund.manage"
+      code !== "billing.refund.manage" &&
+      code !== "support.platform" &&
+      code !== "platform.ops" &&
+      code !== "data.offboard"
   ),
   HR: [
     "organization.view",
@@ -285,6 +299,14 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "subscriptions.view",
     "billing.view",
     "billing.payment.view",
+    "onboarding.view",
+    "onboarding.manage",
+    "migration.view",
+    "migration.manage",
+    "support.view",
+    "support.create",
+    "support.manage",
+    "data.export",
   ],
   PAYROLL: [
     "organization.view",
@@ -344,6 +366,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "analytics.export",
     "analytics.alerts.manage",
     "analytics.assistant.use",
+    "onboarding.view",
+    "migration.view",
+    "migration.manage",
+    "support.view",
+    "support.create",
   ],
   ACCOUNTANT: [
     "organization.view",
@@ -404,6 +431,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "subscriptions.view",
     "billing.view",
     "billing.payment.view",
+    "onboarding.view",
+    "support.view",
+    "support.create",
+    "data.export",
   ],
   MANAGER: [
     "organization.view",
@@ -431,6 +462,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "reports.view",
     "notifications.view",
     "analytics.view",
+    "support.view",
+    "support.create",
   ],
   EMPLOYEE: [
     "organization.view",
@@ -446,6 +479,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "self.view",
     "self.profile.update",
     "notifications.view",
+    "support.view",
+    "support.create",
   ],
 };
 
@@ -472,6 +507,8 @@ export const NAV_ITEMS = [
   { href: "/notifications", label: "Notifications", icon: "Bell", enabled: true, phase: 15 },
   { href: "/automation", label: "Automation", icon: "Workflow", enabled: true, phase: 15 },
   { href: "/compliance", label: "Compliance", icon: "ShieldCheck", enabled: true, phase: 9 },
+  { href: "/onboarding", label: "Onboarding", icon: "ListChecks", enabled: true, phase: 19 },
+  { href: "/support", label: "Support", icon: "LifeBuoy", enabled: true, phase: 19 },
   { href: "/settings/company", label: "Settings", icon: "Settings", enabled: true },
 ] as const;
 
@@ -488,6 +525,8 @@ export const SETTINGS_NAV = [
   { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/developers", label: "Developers" },
   { href: "/settings/subscription", label: "Subscription" },
+  { href: "/settings/data-migration", label: "Data migration" },
+  { href: "/settings/data-export", label: "Data export" },
 ] as const;
 
 export const EMPLOYEE_STATUSES = ["ACTIVE", "INACTIVE", "ON_NOTICE", "TERMINATED", "RESIGNED"] as const;
@@ -2046,6 +2085,8 @@ export const JOB_TYPES = [
   "FAILED_JOB_RETRY",
   "OUTBOX_PROCESS",
   "SUBSCRIPTION_LIFECYCLE",
+  "SUPPORT_SLA",
+  "DATA_EXPORT_EXPIRE",
 ] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
@@ -2059,6 +2100,8 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   FAILED_JOB_RETRY: "Eligible failed-job retries",
   OUTBOX_PROCESS: "Process event outbox",
   SUBSCRIPTION_LIFECYCLE: "Subscription trial, renewal and grace processing",
+  SUPPORT_SLA: "Support ticket SLA reminders",
+  DATA_EXPORT_EXPIRE: "Expire completed data exports",
 };
 
 export const JOB_EXECUTION_STATUSES = ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
@@ -2380,4 +2423,231 @@ export const SUBSCRIPTION_BILLING_ALLOWED_WHEN_RESTRICTED = [
   "/billing/payments",
   "/admin/subscriptions",
   "/profile",
+  "/support",
 ] as const;
+
+export const ONBOARDING_STEP_KEYS = [
+  "COMPANY",
+  "BRANCHES",
+  "EMPLOYEES",
+  "STATUTORY",
+  "SALARY",
+  "LEAVE",
+  "ATTENDANCE",
+  "BIOMETRIC",
+  "PAYROLL",
+  "USERS",
+  "REVIEW",
+] as const;
+export type OnboardingStepKey = (typeof ONBOARDING_STEP_KEYS)[number];
+
+export const ONBOARDING_STEP_LABELS: Record<OnboardingStepKey, string> = {
+  COMPANY: "Company profile",
+  BRANCHES: "Branches and departments",
+  EMPLOYEES: "Employees",
+  STATUTORY: "Statutory settings",
+  SALARY: "Salary structures",
+  LEAVE: "Leave types",
+  ATTENDANCE: "Attendance and shifts",
+  BIOMETRIC: "Biometric devices",
+  PAYROLL: "Payroll readiness",
+  USERS: "Users and roles",
+  REVIEW: "Review and go live",
+};
+
+export const ONBOARDING_STEP_HREFS: Record<OnboardingStepKey, string> = {
+  COMPANY: "/settings/company",
+  BRANCHES: "/settings/branches",
+  EMPLOYEES: "/employees",
+  STATUTORY: "/compliance/settings",
+  SALARY: "/salary",
+  LEAVE: "/leave",
+  ATTENDANCE: "/attendance",
+  BIOMETRIC: "/biometric",
+  PAYROLL: "/payroll",
+  USERS: "/settings/users",
+  REVIEW: "/onboarding",
+};
+
+export const ONBOARDING_STEP_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "COMPLETE", "BLOCKED", "SKIPPED"] as const;
+export type OnboardingStepStatus = (typeof ONBOARDING_STEP_STATUSES)[number];
+
+export const ONBOARDING_STEP_STATUS_LABELS: Record<OnboardingStepStatus, string> = {
+  NOT_STARTED: "Not started",
+  IN_PROGRESS: "In progress",
+  COMPLETE: "Complete",
+  BLOCKED: "Blocked",
+  SKIPPED: "Skipped",
+};
+
+export const ONBOARDING_PROGRESS_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "COMPLETE"] as const;
+export type OnboardingProgressStatus = (typeof ONBOARDING_PROGRESS_STATUSES)[number];
+
+export const IMPORT_ENTITY_TYPES = [
+  "EMPLOYEES",
+  "SALARY",
+  "LEAVE_BALANCES",
+  "LOAN_BALANCES",
+  "HISTORICAL_PAYROLL",
+  "OPENING_BALANCES",
+] as const;
+export type ImportEntityType = (typeof IMPORT_ENTITY_TYPES)[number];
+
+export const IMPORT_ENTITY_TYPE_LABELS: Record<ImportEntityType, string> = {
+  EMPLOYEES: "Employees",
+  SALARY: "Salary assignments",
+  LEAVE_BALANCES: "Leave opening balances",
+  LOAN_BALANCES: "Loan opening balances",
+  HISTORICAL_PAYROLL: "Historical payroll",
+  OPENING_BALANCES: "Opening balances",
+};
+
+export const IMPORT_JOB_STATUSES = [
+  "UPLOADED",
+  "PREVIEWED",
+  "CONFIRMED",
+  "IMPORTING",
+  "IMPORTED",
+  "PARTIAL",
+  "FAILED",
+  "CANCELLED",
+] as const;
+export type ImportJobStatus = (typeof IMPORT_JOB_STATUSES)[number];
+
+export const IMPORT_JOB_STATUS_LABELS: Record<ImportJobStatus, string> = {
+  UPLOADED: "Uploaded",
+  PREVIEWED: "Previewed",
+  CONFIRMED: "Confirmed",
+  IMPORTING: "Importing",
+  IMPORTED: "Imported",
+  PARTIAL: "Partial",
+  FAILED: "Failed",
+  CANCELLED: "Cancelled",
+};
+
+export const IMPORT_ROW_STATUSES = ["READY", "ERROR", "WARNING", "IMPORTED", "SKIPPED"] as const;
+export type ImportRowStatus = (typeof IMPORT_ROW_STATUSES)[number];
+
+export const SUPPORT_CATEGORIES = [
+  "PAYROLL",
+  "ATTENDANCE",
+  "BILLING",
+  "MIGRATION",
+  "ACCESS",
+  "OTHER",
+] as const;
+export type SupportCategory = (typeof SUPPORT_CATEGORIES)[number];
+
+export const SUPPORT_CATEGORY_LABELS: Record<SupportCategory, string> = {
+  PAYROLL: "Payroll",
+  ATTENDANCE: "Attendance",
+  BILLING: "Billing",
+  MIGRATION: "Migration",
+  ACCESS: "Access",
+  OTHER: "Other",
+};
+
+export const SUPPORT_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;
+export type SupportPriority = (typeof SUPPORT_PRIORITIES)[number];
+
+export const SUPPORT_PRIORITY_LABELS: Record<SupportPriority, string> = {
+  LOW: "Low",
+  NORMAL: "Normal",
+  HIGH: "High",
+  URGENT: "Urgent",
+};
+
+export const SUPPORT_TICKET_STATUSES = [
+  "OPEN",
+  "IN_PROGRESS",
+  "WAITING_CUSTOMER",
+  "RESOLVED",
+  "CLOSED",
+] as const;
+export type SupportTicketStatus = (typeof SUPPORT_TICKET_STATUSES)[number];
+
+export const SUPPORT_TICKET_STATUS_LABELS: Record<SupportTicketStatus, string> = {
+  OPEN: "Open",
+  IN_PROGRESS: "In progress",
+  WAITING_CUSTOMER: "Waiting on customer",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
+export const SUPPORT_MESSAGE_VISIBILITIES = ["CUSTOMER", "INTERNAL"] as const;
+export type SupportMessageVisibility = (typeof SUPPORT_MESSAGE_VISIBILITIES)[number];
+
+export const DATA_EXPORT_KINDS = ["FULL", "EMPLOYEES", "PAYROLL", "LEAVE", "BILLING"] as const;
+export type DataExportKind = (typeof DATA_EXPORT_KINDS)[number];
+
+export const DATA_EXPORT_KIND_LABELS: Record<DataExportKind, string> = {
+  FULL: "Full organization export",
+  EMPLOYEES: "Employees",
+  PAYROLL: "Payroll history",
+  LEAVE: "Leave balances and requests",
+  BILLING: "Subscription invoices",
+};
+
+export const DATA_EXPORT_STATUSES = [
+  "REQUESTED",
+  "PROCESSING",
+  "READY",
+  "EXPIRED",
+  "FAILED",
+  "CANCELLED",
+] as const;
+export type DataExportStatus = (typeof DATA_EXPORT_STATUSES)[number];
+
+export const DATA_EXPORT_STATUS_LABELS: Record<DataExportStatus, string> = {
+  REQUESTED: "Requested",
+  PROCESSING: "Processing",
+  READY: "Ready",
+  EXPIRED: "Expired",
+  FAILED: "Failed",
+  CANCELLED: "Cancelled",
+};
+
+export const OFFBOARDING_STATUSES = [
+  "REQUESTED",
+  "EXPORT_READY",
+  "CONFIRMED",
+  "COMPLETED",
+  "CANCELLED",
+] as const;
+export type OffboardingStatus = (typeof OFFBOARDING_STATUSES)[number];
+
+export const OFFBOARDING_STATUS_LABELS: Record<OffboardingStatus, string> = {
+  REQUESTED: "Requested",
+  EXPORT_READY: "Export ready",
+  CONFIRMED: "Confirmed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+export const SUPPORT_NAV = [
+  { href: "/support", label: "Tickets" },
+  { href: "/support/new", label: "New ticket" },
+] as const;
+
+export const ADMIN_SUPPORT_NAV = [
+  { href: "/admin/support", label: "Tickets" },
+  { href: "/admin/ops", label: "Operations" },
+] as const;
+
+export const MIGRATION_NAV = [
+  { href: "/settings/data-migration", label: "Import" },
+  { href: "/settings/data-migration/history", label: "History" },
+] as const;
+
+export const DATA_EXPORT_NAV = [
+  { href: "/settings/data-export", label: "Exports" },
+  { href: "/settings/data-export/offboarding", label: "Offboarding" },
+] as const;
+
+export const DATA_EXPORT_TTL_HOURS = 72;
+export const SUPPORT_SLA_HOURS: Record<SupportPriority, number> = {
+  LOW: 72,
+  NORMAL: 24,
+  HIGH: 8,
+  URGENT: 4,
+};
