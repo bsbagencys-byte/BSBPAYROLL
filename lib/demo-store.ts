@@ -136,12 +136,23 @@ import type {
   DataExportJob,
   ImportJob,
   ImportJobRow,
+  IncidentRecord,
+  LaunchDecisionRecord,
+  ModuleReadiness,
   OffboardingRequest,
   OnboardingProgress,
   OnboardingStepRecord,
   OpeningBalance,
+  ParallelPayrollRun,
+  PilotChecklistItem,
+  PilotFeedback,
+  PilotOrganization,
+  BiometricVerificationRecord,
+  ReleaseBlocker,
+  ReleaseGateRecord,
   SupportMessage,
   SupportTicket,
+  UatChecklistItem,
   ExitClearanceItem,
   ExitClearanceTask,
   FinalSettlement,
@@ -476,6 +487,17 @@ export type DemoStore = {
   supportMessages: SupportMessage[];
   dataExportJobs: DataExportJob[];
   offboardingRequests: OffboardingRequest[];
+  launchDecisions: LaunchDecisionRecord[];
+  moduleReadiness: ModuleReadiness[];
+  releaseBlockers: ReleaseBlocker[];
+  pilotOrganizations: PilotOrganization[];
+  pilotChecklistItems: PilotChecklistItem[];
+  biometricVerifications: BiometricVerificationRecord[];
+  parallelPayrollRuns: ParallelPayrollRun[];
+  uatChecklistItems: UatChecklistItem[];
+  incidentRecords: IncidentRecord[];
+  pilotFeedback: PilotFeedback[];
+  releaseGates: ReleaseGateRecord[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -931,6 +953,7 @@ function createStore(): DemoStore {
     ...createAnalyticsSeed(),
     ...createBillingSeed(),
     ...createOnboardingSeed(),
+    ...createLaunchSeed(),
   };
 }
 
@@ -3531,6 +3554,35 @@ function createOnboardingSeed(): Pick<
   };
 }
 
+function createLaunchSeed(): Pick<
+  DemoStore,
+  | "launchDecisions"
+  | "moduleReadiness"
+  | "releaseBlockers"
+  | "pilotOrganizations"
+  | "pilotChecklistItems"
+  | "biometricVerifications"
+  | "parallelPayrollRuns"
+  | "uatChecklistItems"
+  | "incidentRecords"
+  | "pilotFeedback"
+  | "releaseGates"
+> {
+  return {
+    launchDecisions: [],
+    moduleReadiness: [],
+    releaseBlockers: [],
+    pilotOrganizations: [],
+    pilotChecklistItems: [],
+    biometricVerifications: [],
+    parallelPayrollRuns: [],
+    uatChecklistItems: [],
+    incidentRecords: [],
+    pilotFeedback: [],
+    releaseGates: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -3547,9 +3599,10 @@ export function getDemoStore(): DemoStore {
     !("essNotifications" in globalStore.__bsbDemo) ||
     !("accountingAccounts" in globalStore.__bsbDemo) ||
     !("domainEvents" in globalStore.__bsbDemo) ||
-    !("analyticsAlerts" in globalStore.__bsbDemo) ||
-    !("subscriptionPlans" in globalStore.__bsbDemo) ||
-    !("onboardingProgress" in globalStore.__bsbDemo)
+     !("analyticsAlerts" in globalStore.__bsbDemo) ||
+     !("subscriptionPlans" in globalStore.__bsbDemo) ||
+     !("onboardingProgress" in globalStore.__bsbDemo) ||
+     !("moduleReadiness" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

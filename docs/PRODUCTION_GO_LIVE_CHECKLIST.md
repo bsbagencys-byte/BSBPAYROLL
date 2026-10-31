@@ -2,9 +2,9 @@
 
 Status from code, not README. Classification uses IMPLEMENTED AND TESTED, UNVERIFIED, PARTIAL, BLOCKED, or MISSING.
 
-**Go-live verdict: READY WITH DOCUMENTED LIMITATIONS**
+**Go-live verdict: NOT READY**
 
-Do not treat this as launch-ready for punch-based attendance, certified biometric hardware, or independently verified India statutory rates.
+Do not treat this as launch-ready. Phase 4 attendance is not started. Physical biometric hardware is unverified. India statutory rates are unverified. Backup restore was not executed here. No isolated pilot organization has signed off.
 
 ---
 
@@ -26,6 +26,7 @@ Do not treat this as launch-ready for punch-based attendance, certified biometri
 | Backup / deploy / SaaS ops | IMPLEMENTED (docs) | See `docs/ops/`. |
 | Subscription billing | PARTIAL / UNVERIFIED live | Plans, lifecycle, invoices, entitlements implemented. Razorpay live charges UNVERIFIED. GST not assumed. |
 | Onboarding / migration / support | IMPLEMENTED AND TESTED (unit) | Checklist from stored data. CSV preview/confirm. Org-isolated tickets. Export TTL without delete. Live import confirm outside demo is UNVERIFIED. |
+| Pilot launch control | IMPLEMENTED AND TESTED (unit) | Readiness register, isolated pilot templates, biometric matrix, parallel payroll compare, UAT, incidents, feedback. Current computed decision is NOT READY. |
 
 ---
 
@@ -35,7 +36,7 @@ Do not treat this as launch-ready for punch-based attendance, certified biometri
 2. Real `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server-only), `SUPABASE_JWT_SECRET`.
 3. `SESSION_SECRET` is a long random string (required to persist webhook signing secrets across restarts).
 4. `JOBS_WORKER_SECRET` set; a scheduler calls `POST /api/internal/jobs`.
-5. Apply `supabase/combined.sql` (includes Phase 17 `secret_encrypted`, Phase 18 billing tables, and Phase 19 onboarding/support/export tables). Existing projects also run `supabase/phase17.sql`, `supabase/phase18.sql` and `supabase/phase19.sql`.
+5. Apply `supabase/combined.sql` (includes Phase 17 `secret_encrypted`, Phase 18 billing tables, Phase 19 onboarding/support/export tables, and Phase 20 launch-control tables). Existing projects also run `supabase/phase17.sql` through `supabase/phase20.sql`.
 6. `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build` all pass.
 7. Auth users exist for usernames at `{username}@{AUTH_EMAIL_DOMAIN}`.
 8. `NEXT_PUBLIC_APP_URL` is the live HTTPS origin; add it to Supabase Auth redirect URLs.
@@ -58,6 +59,9 @@ Do not treat this as launch-ready for punch-based attendance, certified biometri
 - Billing overlay exists. Live Razorpay charges and GST-compliant tax are UNVERIFIED. Do not auto-delete tenant data on suspend.
 - Data export expiry and offboarding confirm do not delete tenant data. Live import confirm outside demo store is UNVERIFIED.
 - Demo credentials must never be used in production.
+- No physical biometric model is PHYSICAL_DEVICE_VERIFIED.
+- Backup restore and live second-tenant RLS remain UNVERIFIED.
+- Pilot parallel payroll must not be finalized or paid.
 
 ---
 
@@ -79,7 +83,7 @@ Synthetic fixtures only. No real employee or production financial data.
 ## Rollback
 
 1. Stop sending traffic to the new deploy (platform rollback to previous successful build).
-2. Do not reverse `combined.sql` / `phase17.sql` / `phase18.sql` / `phase19.sql` with DROP. Overlays are additive (`secret_encrypted` nullable; billing and onboarding tables preserve tenant data).
+2. Do not reverse `combined.sql` / `phase17.sql` through `phase20.sql` with DROP. Overlays are additive (`secret_encrypted` nullable; billing, onboarding and launch tables preserve tenant data).
 3. Leave payroll runs that reached FINALIZED/LOCKED/PROCESSED/PAID untouched. Corrections are adjustment or reversal runs only.
 4. Rotate `JOBS_WORKER_SECRET`, API keys, and webhook secrets if they leaked.
 5. Record the incident in `docs/ops/INCIDENT.md`.
@@ -92,3 +96,4 @@ Synthetic fixtures only. No real employee or production financial data.
 - Payroll operations: sample run on a non-production org with known expected net.
 - Compliance: statutory versions verified or left disabled.
 - Security: no `NEXT_PUBLIC_` service-role key, demo mode off, suspended-org login blocked.
+- Launch control: `/admin/launch` remains NOT READY until critical gates have evidence.

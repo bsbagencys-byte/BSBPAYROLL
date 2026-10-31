@@ -45,6 +45,7 @@ export async function ensureDefaultJobs(organizationId: string, actorId: string 
     { jobType: "SUBSCRIPTION_LIFECYCLE", name: "Subscription lifecycle" },
     { jobType: "SUPPORT_SLA", name: "Support ticket SLA reminders" },
     { jobType: "DATA_EXPORT_EXPIRE", name: "Expire completed data exports" },
+    { jobType: "INCIDENT_SLA", name: "Open incident SLA reminders" },
   ];
   const created: ScheduledJob[] = [];
   for (const def of defs) {
@@ -186,6 +187,10 @@ async function runJobBody(job: ScheduledJob): Promise<Record<string, unknown>> {
     case "DATA_EXPORT_EXPIRE": {
       const { expireReadyExports } = await import("@/lib/onboarding/service");
       return expireReadyExports();
+    }
+    case "INCIDENT_SLA": {
+      const { markIncidentSla } = await import("@/lib/launch/service");
+      return markIncidentSla();
     }
     default:
       return { skipped: true };

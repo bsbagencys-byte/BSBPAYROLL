@@ -26,12 +26,13 @@ Copy `.env.example`. Production must set:
 - `JOBS_WORKER_SECRET`
 - Optional SMTP: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` or `MAIL_FROM`
 - Optional Razorpay: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
+- Optional staging origin: `NEXT_PUBLIC_STAGING_APP_URL` (must differ from `NEXT_PUBLIC_APP_URL`)
 
-Never prefix the service-role key with `NEXT_PUBLIC_`. Leave Razorpay empty unless the provider is actually configured. An empty provider cannot mark invoices paid.
+Never prefix the service-role key with `NEXT_PUBLIC_`. Leave Razorpay empty unless the provider is actually configured. An empty provider cannot mark invoices paid. Never expose production secrets in staging.
 
 ## Database
 
-Fresh project: `supabase/combined.sql`. Incremental overlays: `supabase/phase17.sql`, `supabase/phase18.sql`. Do not run `seed.sql` in production.
+Fresh project: `supabase/combined.sql`. Incremental overlays: `supabase/phase17.sql`, `supabase/phase18.sql`, `supabase/phase19.sql`, `supabase/phase20.sql`. Do not run `seed.sql` in production. Do not run destructive migrations automatically.
 
 ## Worker
 
@@ -44,4 +45,4 @@ Schedule `POST /api/internal/jobs` with `Authorization: Bearer $JOBS_WORKER_SECR
 
 ## Rollback
 
-Redeploy the previous successful build. Do not DROP Phase 17 or Phase 18 columns. Payroll that is FINALIZED/LOCKED/PROCESSED/PAID stays immutable. Subscription suspend must not delete tenant data.
+See `docs/ops/ROLLBACK.md`. Redeploy the previous successful build. Do not DROP Phase 17–20 columns. Payroll that is FINALIZED/LOCKED/PROCESSED/PAID stays immutable. Subscription suspend must not delete tenant data. Staging must use a separate Supabase project (`docs/ops/STAGING.md`).

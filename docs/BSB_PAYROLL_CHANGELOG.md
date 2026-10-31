@@ -4,6 +4,34 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 20 — Pilot deployment, real-world testing and controlled launch
+
+- **Date:** 2026-10-30
+- **Status:** implemented on `261015-feat-ess-portal`
+- **Go-live:** NOT READY
+
+### Implemented
+
+- Additive overlay. Phases 1–19 unchanged. Phase 4 attendance still not started.
+- Launch control at `/admin/launch` (SUPER_ADMIN). Computed decision from stored evidence, not a marketing claim.
+- Module readiness register, release blockers, isolated pilot templates, biometric verification matrix, parallel payroll compare, UAT, incidents and feedback.
+- Advertised hardware requires PHYSICAL_DEVICE_VERIFIED. This environment has no physical-device PASS.
+- Parallel payroll compare cannot finalize or pay. Shifts cannot be marked complete.
+- Jobs: `INCIDENT_SLA`. Health limitations include backup restore and live RLS flags.
+- Ops docs: `docs/ops/STAGING.md`, `docs/ops/PILOT.md`, `docs/ops/ROLLBACK.md`.
+- Tests: `tests/launch.test.ts`.
+
+### Database
+
+- Additive `supabase/phase20.sql`, appended into `combined.sql`.
+- Tables: launch decisions, module readiness, release blockers, pilot organizations/checklist, biometric verifications, parallel payroll runs, UAT items, incidents, feedback, release gates.
+
+### Not claimed
+
+- Production launch, physical biometric certification, independently verified statutory rates, live second-tenant RLS proof, executed backup restore, customer UAT sign-off.
+
+---
+
 ## Phase 19 — Customer onboarding, migration, support, ops, export
 
 - **Date:** 2026-10-29

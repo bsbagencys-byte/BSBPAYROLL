@@ -13,6 +13,7 @@
 3. Re-enter environment variables. Do not reuse demo mode.
 4. Run `supabase/combined.sql` only on an empty database. On an existing restore, skip schema apply.
 5. Hit `GET /api/health` and sign in with a non-demo admin.
+6. Confirm a known payroll snapshot count. Restore is not verified until that check is recorded in launch control.
 
 ## Tenant suspend vs delete
 

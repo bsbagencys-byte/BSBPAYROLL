@@ -139,6 +139,21 @@ import type {
   DataExportKind,
   DataExportStatus,
   OffboardingStatus,
+  LaunchDecision,
+  ModuleReadinessStatus,
+  ReleaseBlockerSeverity,
+  ReleaseBlockerStatus,
+  PilotOrgKind,
+  PilotOrgStatus,
+  BiometricTestMethod,
+  ParallelRunStatus,
+  UatRole,
+  UatResultStatus,
+  IncidentSeverity,
+  IncidentStatus,
+  FeedbackKind,
+  FeedbackStatus,
+  ReleaseGateKey,
 } from "@/lib/constants";
 
 export type {
@@ -3323,6 +3338,156 @@ export interface OffboardingRequest {
   completed_at: string | null;
   requested_by: string | null;
   confirmed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LaunchDecisionRecord {
+  id: string;
+  decision: LaunchDecision;
+  summary: string;
+  evidence_json: string;
+  decided_by: string | null;
+  decided_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ModuleReadiness {
+  id: string;
+  module_key: string;
+  label: string;
+  status: ModuleReadinessStatus;
+  evidence: string;
+  notes: string | null;
+  sort_order: number;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReleaseBlocker {
+  id: string;
+  title: string;
+  severity: ReleaseBlockerSeverity;
+  status: ReleaseBlockerStatus;
+  module_key: string;
+  evidence: string;
+  required_fix: string;
+  organization_id: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PilotOrganization {
+  id: string;
+  code: string;
+  name: string;
+  kind: PilotOrgKind;
+  status: PilotOrgStatus;
+  organization_id: string | null;
+  contact_name: string | null;
+  notes: string | null;
+  signed_off_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PilotChecklistItem {
+  id: string;
+  pilot_id: string;
+  step_key: string;
+  label: string;
+  required: boolean;
+  complete: boolean;
+  evidence: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BiometricVerificationRecord {
+  id: string;
+  vendor: string;
+  model: string;
+  method: BiometricTestMethod;
+  advertised: boolean;
+  result: ModuleReadinessStatus;
+  notes: string;
+  tested_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ParallelPayrollRun {
+  id: string;
+  pilot_id: string;
+  period_label: string;
+  status: ParallelRunStatus;
+  expected_net: number | null;
+  calculated_net: number | null;
+  mismatch_count: number;
+  notes: string | null;
+  finalized: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UatChecklistItem {
+  id: string;
+  pilot_id: string;
+  role_code: UatRole;
+  journey: string;
+  status: UatResultStatus;
+  tester: string | null;
+  evidence: string | null;
+  tested_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IncidentRecord {
+  id: string;
+  incident_number: string;
+  organization_id: string | null;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  title: string;
+  impact: string;
+  started_at: string;
+  ended_at: string | null;
+  resolution: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PilotFeedback {
+  id: string;
+  pilot_id: string;
+  organization_id: string | null;
+  module_key: string;
+  kind: FeedbackKind;
+  severity: ReleaseBlockerSeverity;
+  status: FeedbackStatus;
+  summary: string;
+  reproduction: string | null;
+  release_version: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReleaseGateRecord {
+  id: string;
+  gate_key: ReleaseGateKey;
+  passing: boolean;
+  evidence: string;
+  blocker: boolean;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }

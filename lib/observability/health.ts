@@ -37,6 +37,8 @@ export function collectHealth() {
       statutoryRatesVerified: false,
       biometricHardwareCertified: false,
       billingChargesVerified: false,
+      backupRestoreVerified: false,
+      liveRlsVerified: false,
     },
   };
 }

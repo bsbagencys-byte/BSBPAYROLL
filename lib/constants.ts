@@ -174,6 +174,8 @@ export const PERMISSIONS = [
   { code: "data.export", group: "Data", label: "Request organization data export" },
   { code: "data.offboard", group: "Data", label: "Request organization offboarding" },
   { code: "platform.ops", group: "Platform", label: "View platform operations" },
+  { code: "launch.view", group: "Launch", label: "View pilot launch control" },
+  { code: "launch.manage", group: "Launch", label: "Manage pilot launch control" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
@@ -188,7 +190,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
       code !== "billing.refund.manage" &&
       code !== "support.platform" &&
       code !== "platform.ops" &&
-      code !== "data.offboard"
+      code !== "data.offboard" &&
+      code !== "launch.view" &&
+      code !== "launch.manage"
   ),
   HR: [
     "organization.view",
@@ -2087,6 +2091,7 @@ export const JOB_TYPES = [
   "SUBSCRIPTION_LIFECYCLE",
   "SUPPORT_SLA",
   "DATA_EXPORT_EXPIRE",
+  "INCIDENT_SLA",
 ] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
@@ -2102,6 +2107,7 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   SUBSCRIPTION_LIFECYCLE: "Subscription trial, renewal and grace processing",
   SUPPORT_SLA: "Support ticket SLA reminders",
   DATA_EXPORT_EXPIRE: "Expire completed data exports",
+  INCIDENT_SLA: "Open incident SLA reminders",
 };
 
 export const JOB_EXECUTION_STATUSES = ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
@@ -2632,6 +2638,7 @@ export const SUPPORT_NAV = [
 export const ADMIN_SUPPORT_NAV = [
   { href: "/admin/support", label: "Tickets" },
   { href: "/admin/ops", label: "Operations" },
+  { href: "/admin/launch", label: "Launch" },
 ] as const;
 
 export const MIGRATION_NAV = [
@@ -2651,3 +2658,183 @@ export const SUPPORT_SLA_HOURS: Record<SupportPriority, number> = {
   HIGH: 8,
   URGENT: 4,
 };
+
+export const LAUNCH_DECISIONS = ["READY", "READY_WITH_LIMITATIONS", "NOT_READY"] as const;
+export type LaunchDecision = (typeof LAUNCH_DECISIONS)[number];
+
+export const LAUNCH_DECISION_LABELS: Record<LaunchDecision, string> = {
+  READY: "Ready",
+  READY_WITH_LIMITATIONS: "Ready with documented limitations",
+  NOT_READY: "Not ready",
+};
+
+export const MODULE_READINESS_STATUSES = ["PASS", "PARTIAL", "FAILED", "BLOCKED", "NOT_TESTED"] as const;
+export type ModuleReadinessStatus = (typeof MODULE_READINESS_STATUSES)[number];
+
+export const MODULE_READINESS_STATUS_LABELS: Record<ModuleReadinessStatus, string> = {
+  PASS: "Pass",
+  PARTIAL: "Partial",
+  FAILED: "Failed",
+  BLOCKED: "Blocked",
+  NOT_TESTED: "Not tested",
+};
+
+export const RELEASE_BLOCKER_SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
+export type ReleaseBlockerSeverity = (typeof RELEASE_BLOCKER_SEVERITIES)[number];
+
+export const RELEASE_BLOCKER_SEVERITY_LABELS: Record<ReleaseBlockerSeverity, string> = {
+  CRITICAL: "Critical",
+  HIGH: "High",
+  MEDIUM: "Medium",
+  LOW: "Low",
+};
+
+export const RELEASE_BLOCKER_STATUSES = ["OPEN", "MITIGATED", "ACCEPTED", "RESOLVED"] as const;
+export type ReleaseBlockerStatus = (typeof RELEASE_BLOCKER_STATUSES)[number];
+
+export const RELEASE_BLOCKER_STATUS_LABELS: Record<ReleaseBlockerStatus, string> = {
+  OPEN: "Open",
+  MITIGATED: "Mitigated",
+  ACCEPTED: "Accepted",
+  RESOLVED: "Resolved",
+};
+
+export const PILOT_ORG_KINDS = ["SCHOOL", "HOSPITAL", "OFFICE", "MULTI_BRANCH"] as const;
+export type PilotOrgKind = (typeof PILOT_ORG_KINDS)[number];
+
+export const PILOT_ORG_KIND_LABELS: Record<PilotOrgKind, string> = {
+  SCHOOL: "School",
+  HOSPITAL: "Hospital / clinic",
+  OFFICE: "Office / business",
+  MULTI_BRANCH: "Multi-branch organization",
+};
+
+export const PILOT_ORG_STATUSES = ["PREPARED", "IN_PILOT", "UAT", "SIGNED_OFF", "BLOCKED", "WITHDRAWN"] as const;
+export type PilotOrgStatus = (typeof PILOT_ORG_STATUSES)[number];
+
+export const PILOT_ORG_STATUS_LABELS: Record<PilotOrgStatus, string> = {
+  PREPARED: "Prepared",
+  IN_PILOT: "In pilot",
+  UAT: "UAT",
+  SIGNED_OFF: "Signed off",
+  BLOCKED: "Blocked",
+  WITHDRAWN: "Withdrawn",
+};
+
+export const BIOMETRIC_TEST_METHODS = ["SIMULATED", "SDK_TESTED", "API_TESTED", "PHYSICAL_DEVICE_VERIFIED"] as const;
+export type BiometricTestMethod = (typeof BIOMETRIC_TEST_METHODS)[number];
+
+export const BIOMETRIC_TEST_METHOD_LABELS: Record<BiometricTestMethod, string> = {
+  SIMULATED: "Simulated",
+  SDK_TESTED: "SDK tested",
+  API_TESTED: "API tested",
+  PHYSICAL_DEVICE_VERIFIED: "Physical device verified",
+};
+
+export const PARALLEL_RUN_STATUSES = ["DRAFT", "COMPARED", "MISMATCHED", "SIGNED_OFF"] as const;
+export type ParallelRunStatus = (typeof PARALLEL_RUN_STATUSES)[number];
+
+export const PARALLEL_RUN_STATUS_LABELS: Record<ParallelRunStatus, string> = {
+  DRAFT: "Draft",
+  COMPARED: "Compared",
+  MISMATCHED: "Mismatched",
+  SIGNED_OFF: "Signed off",
+};
+
+export const UAT_ROLES = ["ADMIN", "HR", "PAYROLL", "EMPLOYEE", "ACCOUNTANT"] as const;
+export type UatRole = (typeof UAT_ROLES)[number];
+
+export const UAT_ROLE_LABELS: Record<UatRole, string> = {
+  ADMIN: "Admin",
+  HR: "HR",
+  PAYROLL: "Payroll",
+  EMPLOYEE: "Employee",
+  ACCOUNTANT: "Accountant",
+};
+
+export const UAT_RESULT_STATUSES = ["PASS", "FAIL", "BLOCKED", "NOT_TESTED"] as const;
+export type UatResultStatus = (typeof UAT_RESULT_STATUSES)[number];
+
+export const UAT_RESULT_STATUS_LABELS: Record<UatResultStatus, string> = {
+  PASS: "Pass",
+  FAIL: "Fail",
+  BLOCKED: "Blocked",
+  NOT_TESTED: "Not tested",
+};
+
+export const INCIDENT_SEVERITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const;
+export type IncidentSeverity = (typeof INCIDENT_SEVERITIES)[number];
+
+export const INCIDENT_SEVERITY_LABELS: Record<IncidentSeverity, string> = {
+  CRITICAL: "Critical",
+  HIGH: "High",
+  MEDIUM: "Medium",
+  LOW: "Low",
+};
+
+export const INCIDENT_STATUSES = ["OPEN", "MITIGATING", "RESOLVED", "CLOSED"] as const;
+export type IncidentStatus = (typeof INCIDENT_STATUSES)[number];
+
+export const INCIDENT_STATUS_LABELS: Record<IncidentStatus, string> = {
+  OPEN: "Open",
+  MITIGATING: "Mitigating",
+  RESOLVED: "Resolved",
+  CLOSED: "Closed",
+};
+
+export const FEEDBACK_KINDS = ["DEFECT", "FEATURE_REQUEST"] as const;
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
+
+export const FEEDBACK_KIND_LABELS: Record<FeedbackKind, string> = {
+  DEFECT: "Defect",
+  FEATURE_REQUEST: "Feature request",
+};
+
+export const FEEDBACK_STATUSES = ["OPEN", "TRIAGED", "IN_PROGRESS", "RESOLVED", "WONT_FIX"] as const;
+export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number];
+
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
+  OPEN: "Open",
+  TRIAGED: "Triaged",
+  IN_PROGRESS: "In progress",
+  RESOLVED: "Resolved",
+  WONT_FIX: "Will not fix",
+};
+
+export const RELEASE_GATE_KEYS = [
+  "SECURITY",
+  "TENANCY",
+  "PAYROLL_RECONCILE",
+  "STATUTORY",
+  "BIOMETRIC_HARDWARE",
+  "PAYROLL_LOCK",
+  "BACKUP_RESTORE",
+  "ROLLBACK_DOCS",
+  "UAT",
+  "PILOT_SIGNOFF",
+] as const;
+export type ReleaseGateKey = (typeof RELEASE_GATE_KEYS)[number];
+
+export const RELEASE_GATE_LABELS: Record<ReleaseGateKey, string> = {
+  SECURITY: "Critical security findings resolved",
+  TENANCY: "Cross-tenant access tests pass",
+  PAYROLL_RECONCILE: "Core payroll calculations reconcile",
+  STATUTORY: "Statutory rules independently verified",
+  BIOMETRIC_HARDWARE: "Real biometric integrations tested for advertised models",
+  PAYROLL_LOCK: "Payroll approval and locking work correctly",
+  BACKUP_RESTORE: "Backup restoration is verified",
+  ROLLBACK_DOCS: "Deployment rollback is documented",
+  UAT: "Critical end-to-end UAT journeys pass",
+  PILOT_SIGNOFF: "Pilot organizations sign off on tested workflows",
+};
+
+export const LAUNCH_NAV = [
+  { href: "/admin/launch", label: "Readiness" },
+  { href: "/admin/launch/blockers", label: "Blockers" },
+  { href: "/admin/launch/pilots", label: "Pilots" },
+  { href: "/admin/launch/biometric", label: "Biometric" },
+  { href: "/admin/launch/payroll", label: "Parallel payroll" },
+  { href: "/admin/launch/uat", label: "UAT" },
+  { href: "/admin/launch/incidents", label: "Incidents" },
+  { href: "/admin/launch/feedback", label: "Feedback" },
+] as const;

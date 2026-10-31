@@ -19,6 +19,7 @@ Legend: **IMPLEMENTED** | **PLANNED** | **FUTURE**
 - Analytics live under `app/(app)/analytics` with `lib/analytics/*` and optional `lib/ai/*`.
 - Subscription billing lives under `app/(app)/{billing,settings/subscription,admin/subscriptions}` with `lib/billing/*`.
 - Onboarding, support, migration and export live under `app/(app)/{onboarding,support,settings/data-migration,settings/data-export,admin/support,admin/ops}` with `lib/onboarding/*`.
+- Pilot launch control lives under `app/(app)/admin/launch` with `lib/launch/*`.
 - Demo vs production is transparent to pages: repositories switch on `hasSupabaseConfig()` / `isDemoMode()`.
 - `allowedDevOrigins`: `*.monkeycode-ai.live`.
 
@@ -42,7 +43,7 @@ Single Next.js process.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
@@ -283,9 +284,10 @@ Do not implement these until the named phase:
 - **Phase 14:** reports hub, accounting exports and bank payment infrastructure (implemented).
 - **Phase 15:** automation, notifications, scheduled jobs, APIs and webhooks (implemented).
 - **Phase 16:** AI and advanced analytics (implemented). Additive overlay. Core analytics work without an AI API. Alerts never mutate payroll.
-- **Phase 17:** production readiness (implemented). Tests, health, ops docs, security/integrity fixes. Go-live is READY WITH DOCUMENTED LIMITATIONS.
+- **Phase 17:** production readiness (implemented). Tests, health, ops docs, security/integrity fixes. Go-live is NOT READY after Phase 20 evidence review.
 - **Phase 18:** SaaS subscription and billing (implemented). Additive overlay. Separate from salary payment batches. Unconfigured provider cannot mark paid.
 - **Phase 19:** customer onboarding, CSV migration, support, platform ops, data export (implemented). Additive overlay. Attendance step optional/blocked. No silent XLSX. No auto-delete.
+- **Phase 20:** pilot launch control (implemented). Additive overlay. Computed decision is NOT READY without evidence.
 - **Later:** Face/QR/GPS, smart auto attendance.
 
 ## Production readiness — IMPLEMENTED (limited)
@@ -293,8 +295,8 @@ Do not implement these until the named phase:
 - Tests: `npm test` (node test runner, no extra deps).
 - Health: `/api/health`, `/api/health/live`.
 - Go-live checklist: `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
-- Ops: `docs/ops/{BACKUP,DEPLOY,SAAS,INCIDENT}.md`.
-- Verdict: READY WITH DOCUMENTED LIMITATIONS. Phase 4, hardware certification, statutory source verification, and live billing provider remain open.
+- Ops: `docs/ops/{BACKUP,DEPLOY,SAAS,INCIDENT,STAGING,PILOT,ROLLBACK}.md`.
+- Verdict: NOT READY. Phase 4, hardware certification, statutory source verification, live billing provider, backup restore and pilot sign-off remain open.
 
 ## SaaS subscription and billing — IMPLEMENTED (limited)
 
@@ -317,5 +319,14 @@ Do not implement these until the named phase:
 - Offboarding confirm is SUPER_ADMIN `data.offboard` and preserves history.
 - Platform ops and cross-org support are SUPER_ADMIN-only (`platform.ops`, `support.platform`).
 - Jobs: `SUPPORT_SLA`, `DATA_EXPORT_EXPIRE`.
+
+## Pilot launch control — IMPLEMENTED (NOT READY)
+
+- SUPER_ADMIN `/admin/launch` computes READY / READY WITH LIMITATIONS / NOT READY from stored gates.
+- Isolated pilot templates (school, hospital, office, multi-branch). Tenants are not mixed.
+- Biometric matrix distinguishes SIMULATED, SDK TESTED, API TESTED and PHYSICAL DEVICE VERIFIED.
+- Parallel payroll compare does not finalize or pay. Statutory review remains required.
+- Incidents redact secrets. Defects are separated from feature requests.
+- Current evidence in this environment yields NOT READY.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.
