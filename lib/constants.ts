@@ -45,6 +45,10 @@ export const PERMISSIONS = [
   { code: "organization.department.manage", group: "Organization", label: "Manage departments" },
   { code: "organization.designation.manage", group: "Organization", label: "Manage designations" },
   { code: "attendance.view", group: "Attendance", label: "View attendance" },
+  { code: "attendance.smart.view", group: "Attendance", label: "View smart attendance" },
+  { code: "attendance.smart.manage", group: "Attendance", label: "Manage smart attendance settings" },
+  { code: "attendance.device.manage", group: "Attendance", label: "Manage trusted employee devices" },
+  { code: "attendance.correct", group: "Attendance", label: "Record authorized attendance corrections" },
   { code: "payroll.view", group: "Payroll", label: "View payroll" },
   { code: "payroll.process", group: "Payroll", label: "Process payroll" },
   { code: "payroll.lock", group: "Payroll", label: "Lock and unlock payroll" },
@@ -209,6 +213,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "organization.department.manage",
     "organization.designation.manage",
     "attendance.view",
+    "attendance.smart.view",
+    "attendance.smart.manage",
+    "attendance.device.manage",
+    "attendance.correct",
     "payroll.view",
     "payroll.review",
     "payroll.approve",
@@ -317,6 +325,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "user.view",
     "employee.view",
     "attendance.view",
+    "attendance.smart.view",
     "payroll.view",
     "payroll.process",
     "payroll.lock",
@@ -445,6 +454,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "user.view",
     "employee.view",
     "attendance.view",
+    "attendance.smart.view",
     "biometric.view",
     "leave.view",
     "leave.request",
@@ -473,6 +483,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "organization.view",
     "employee.view",
     "attendance.view",
+    "attendance.smart.view",
     "leave.view",
     "leave.request",
     "claims.view",
@@ -493,6 +504,7 @@ export const NAV_ITEMS = [
   { href: "/my", label: "My Space", icon: "UserCircle", enabled: true, phase: 13 },
   { href: "/employees", label: "Employees", icon: "Users", enabled: true, phase: 2 },
   { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: false, phase: 4 },
+  { href: "/attendance/smart", label: "Smart Attendance", icon: "MapPin", enabled: true, phase: 21 },
   { href: "/leave", label: "Leave", icon: "Palmtree", enabled: true, phase: 5 },
   { href: "/salary", label: "Salary", icon: "Banknote", enabled: true, phase: 6 },
   { href: "/benefits", label: "Benefits", icon: "Gift", enabled: true, phase: 7 },
@@ -713,10 +725,10 @@ export const BIOMETRIC_EVENT_STATUSES = [
 ] as const;
 export type BiometricEventStatus = (typeof BIOMETRIC_EVENT_STATUSES)[number];
 
-export const BIOMETRIC_SOURCES = ["PUSH", "WEBHOOK", "SIMULATOR"] as const;
+export const BIOMETRIC_SOURCES = ["PUSH", "WEBHOOK", "SIMULATOR", "SMART_GEOFENCE", "QR_FALLBACK"] as const;
 export type BiometricSource = (typeof BIOMETRIC_SOURCES)[number];
 
-export const VERIFICATION_MODES = ["FINGER", "CARD", "PIN", "PASSWORD", "OTHER", "UNKNOWN"] as const;
+export const VERIFICATION_MODES = ["FINGER", "CARD", "PIN", "PASSWORD", "GPS", "QR", "DEVICE_BIOMETRIC", "OTHER", "UNKNOWN"] as const;
 export type VerificationMode = (typeof VERIFICATION_MODES)[number];
 
 export const TIMEZONE_OFFSETS: Record<string, string> = {
@@ -1828,6 +1840,7 @@ export const ESS_NAV = [
   { href: "/my", label: "Home", icon: "LayoutDashboard" },
   { href: "/my/profile", label: "Profile", icon: "UserCircle" },
   { href: "/my/attendance", label: "Attendance", icon: "CalendarCheck" },
+  { href: "/my/smart-attendance", label: "Smart check-in", icon: "MapPin" },
   { href: "/my/leave", label: "Leave", icon: "Palmtree" },
   { href: "/my/payslips", label: "Payslips", icon: "Receipt" },
   { href: "/my/salary", label: "Salary", icon: "Banknote" },
@@ -2092,6 +2105,7 @@ export const JOB_TYPES = [
   "SUPPORT_SLA",
   "DATA_EXPORT_EXPIRE",
   "INCIDENT_SLA",
+  "SMART_QR_EXPIRE",
 ] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
@@ -2108,6 +2122,7 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   SUPPORT_SLA: "Support ticket SLA reminders",
   DATA_EXPORT_EXPIRE: "Expire completed data exports",
   INCIDENT_SLA: "Open incident SLA reminders",
+  SMART_QR_EXPIRE: "Expire unused smart attendance QR sessions",
 };
 
 export const JOB_EXECUTION_STATUSES = ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;
@@ -2838,3 +2853,157 @@ export const LAUNCH_NAV = [
   { href: "/admin/launch/incidents", label: "Incidents" },
   { href: "/admin/launch/feedback", label: "Feedback" },
 ] as const;
+
+export const SMART_ATTENDANCE_NAV = [
+  { href: "/attendance/smart", label: "Overview" },
+  { href: "/attendance/smart-settings", label: "Settings" },
+  { href: "/attendance/locations", label: "Workplaces" },
+  { href: "/attendance/trusted-devices", label: "Trusted devices" },
+  { href: "/attendance/smart-events", label: "Events" },
+] as const;
+
+export const SMART_ATTENDANCE_RATE_LIMIT = {
+  windowMs: 60 * 1000,
+  maxAttempts: 30,
+};
+
+export const GEOFENCE_RADIUS_PRESETS = [50, 100, 150, 250] as const;
+export type GeofenceRadiusPreset = (typeof GEOFENCE_RADIUS_PRESETS)[number];
+
+export const GEO_EVENT_KINDS = ["ENTER", "EXIT", "DWELL"] as const;
+export type GeoEventKind = (typeof GEO_EVENT_KINDS)[number];
+
+export const GEO_EVENT_KIND_LABELS: Record<GeoEventKind, string> = {
+  ENTER: "Workplace entry",
+  EXIT: "Workplace exit",
+  DWELL: "Dwell",
+};
+
+export const TRUSTED_DEVICE_STATUSES = ["PENDING", "ACTIVE", "REVOKED", "LOST", "REPLACEMENT_PENDING"] as const;
+export type TrustedDeviceStatus = (typeof TRUSTED_DEVICE_STATUSES)[number];
+
+export const TRUSTED_DEVICE_STATUS_LABELS: Record<TrustedDeviceStatus, string> = {
+  PENDING: "Pending verification",
+  ACTIVE: "Active",
+  REVOKED: "Revoked",
+  LOST: "Lost",
+  REPLACEMENT_PENDING: "Replacement pending",
+};
+
+export const SMART_EVENT_SOURCES = ["GEOFENCE", "QR", "MANUAL_CORRECTION"] as const;
+export type SmartEventSource = (typeof SMART_EVENT_SOURCES)[number];
+
+export const SMART_EVENT_SOURCE_LABELS: Record<SmartEventSource, string> = {
+  GEOFENCE: "Smart geofence",
+  QR: "Dynamic QR fallback",
+  MANUAL_CORRECTION: "Authorized correction",
+};
+
+export const SMART_EVENT_STATUSES = [
+  "RECEIVED",
+  "ACCEPTED",
+  "REJECTED",
+  "FLAGGED",
+  "PENDING_VERIFICATION",
+  "PENDING_REVIEW",
+  "DUPLICATE",
+  "EXPIRED",
+] as const;
+export type SmartEventStatus = (typeof SMART_EVENT_STATUSES)[number];
+
+export const SMART_EVENT_STATUS_LABELS: Record<SmartEventStatus, string> = {
+  RECEIVED: "Received",
+  ACCEPTED: "Accepted",
+  REJECTED: "Rejected",
+  FLAGGED: "Flagged",
+  PENDING_VERIFICATION: "Pending verification",
+  PENDING_REVIEW: "Pending HR review",
+  DUPLICATE: "Duplicate",
+  EXPIRED: "Expired",
+};
+
+export const ATTENDANCE_RISK_LEVELS = ["LOW", "MEDIUM", "HIGH"] as const;
+export type AttendanceRiskLevel = (typeof ATTENDANCE_RISK_LEVELS)[number];
+
+export const ATTENDANCE_RISK_LEVEL_LABELS: Record<AttendanceRiskLevel, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+};
+
+export const FACE_PROVIDER_KINDS = ["NONE", "EXTERNAL"] as const;
+export type FaceProviderKind = (typeof FACE_PROVIDER_KINDS)[number];
+
+export const FACE_PROVIDER_KIND_LABELS: Record<FaceProviderKind, string> = {
+  NONE: "Not configured",
+  EXTERNAL: "External provider",
+};
+
+export const VERIFICATION_METHODS = [
+  "NONE",
+  "DEVICE_BIOMETRIC",
+  "DYNAMIC_PIN",
+  "FACE_PROVIDER",
+  "HR_REVIEW",
+] as const;
+export type VerificationMethod = (typeof VERIFICATION_METHODS)[number];
+
+export const VERIFICATION_METHOD_LABELS: Record<VerificationMethod, string> = {
+  NONE: "None",
+  DEVICE_BIOMETRIC: "Phone biometric",
+  DYNAMIC_PIN: "Dynamic PIN",
+  FACE_PROVIDER: "Face provider",
+  HR_REVIEW: "HR review",
+};
+
+export const VERIFICATION_OUTCOMES = ["PASSED", "FAILED", "SKIPPED", "UNAVAILABLE"] as const;
+export type VerificationOutcome = (typeof VERIFICATION_OUTCOMES)[number];
+
+export const VERIFICATION_OUTCOME_LABELS: Record<VerificationOutcome, string> = {
+  PASSED: "Passed",
+  FAILED: "Failed",
+  SKIPPED: "Skipped",
+  UNAVAILABLE: "Unavailable",
+};
+
+export const QR_SESSION_STATUSES = ["ACTIVE", "USED", "EXPIRED", "REVOKED"] as const;
+export type QrSessionStatus = (typeof QR_SESSION_STATUSES)[number];
+
+export const QR_SESSION_STATUS_LABELS: Record<QrSessionStatus, string> = {
+  ACTIVE: "Active",
+  USED: "Used",
+  EXPIRED: "Expired",
+  REVOKED: "Revoked",
+};
+
+export const SMART_AUTO_ACCEPT_POLICIES = ["OFF", "LOW_RISK_ONLY", "LOW_AND_MEDIUM"] as const;
+export type SmartAutoAcceptPolicy = (typeof SMART_AUTO_ACCEPT_POLICIES)[number];
+
+export const SMART_AUTO_ACCEPT_POLICY_LABELS: Record<SmartAutoAcceptPolicy, string> = {
+  OFF: "Never auto-accept",
+  LOW_RISK_ONLY: "Auto-accept low risk only",
+  LOW_AND_MEDIUM: "Auto-accept low and medium after extra verification",
+};
+
+export const DEFAULT_SMART_SETTINGS = {
+  enabled: false,
+  geofenceRadiusMeters: 100,
+  accuracyThresholdMeters: 50,
+  freshnessSeconds: 120,
+  maxTrustedDevices: 1,
+  requireTrustedDevice: true,
+  requirePreciseLocation: true,
+  backgroundLocationEnabled: false,
+  autoAcceptPolicy: "LOW_RISK_ONLY" as SmartAutoAcceptPolicy,
+  qrFallbackEnabled: true,
+  dynamicPinEnabled: false,
+  qrTtlSeconds: 90,
+  entryWindowStart: "00:00",
+  entryWindowEnd: "23:59",
+  faceProviderKind: "NONE" as FaceProviderKind,
+  retentionDays: 365,
+};
+
+export const SMART_VIRTUAL_DEVICE_SERIAL = "BSB-SMART";
+export const DEMO_SMART_WORKPLACE_ID = "a2111111-1111-1111-1111-111111111111";
+export const DEMO_SMART_SETTINGS_ID = "a3111111-1111-1111-1111-111111111111";

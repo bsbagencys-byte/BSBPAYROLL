@@ -154,6 +154,16 @@ import type {
   FeedbackKind,
   FeedbackStatus,
   ReleaseGateKey,
+  GeoEventKind,
+  TrustedDeviceStatus,
+  SmartEventSource,
+  SmartEventStatus,
+  AttendanceRiskLevel,
+  FaceProviderKind,
+  VerificationMethod,
+  VerificationOutcome,
+  QrSessionStatus,
+  SmartAutoAcceptPolicy,
 } from "@/lib/constants";
 
 export type {
@@ -3488,6 +3498,150 @@ export interface ReleaseGateRecord {
   evidence: string;
   blocker: boolean;
   updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SmartAttendanceSettings {
+  id: string;
+  organization_id: string;
+  enabled: boolean;
+  geofence_radius_meters: number;
+  accuracy_threshold_meters: number;
+  freshness_seconds: number;
+  max_trusted_devices: number;
+  require_trusted_device: boolean;
+  require_precise_location: boolean;
+  background_location_enabled: boolean;
+  auto_accept_policy: SmartAutoAcceptPolicy;
+  qr_fallback_enabled: boolean;
+  dynamic_pin_enabled: boolean;
+  qr_ttl_seconds: number;
+  entry_window_start: string;
+  entry_window_end: string;
+  face_provider_kind: FaceProviderKind;
+  face_provider_configured: boolean;
+  retention_days: number;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceLocationConfig {
+  id: string;
+  organization_id: string;
+  location_id: string | null;
+  branch_id: string | null;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius_meters: number;
+  status: "ACTIVE" | "DISABLED";
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TrustedEmployeeDevice {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  public_key: string;
+  device_model: string;
+  os_version: string;
+  app_version: string;
+  attestation_kind: string;
+  attestation_result: string | null;
+  status: TrustedDeviceStatus;
+  registered_at: string;
+  last_active_at: string | null;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GeofenceEventCandidate {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  device_id: string;
+  workplace_id: string;
+  kind: GeoEventKind;
+  latitude: number;
+  longitude: number;
+  accuracy_meters: number;
+  occurred_at: string;
+  received_at: string;
+  permission_status: string;
+  mock_location: boolean;
+  integrity_result: string | null;
+  idempotency_key: string;
+  created_at: string;
+}
+
+export interface SmartAttendanceEvent {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  device_id: string | null;
+  workplace_id: string | null;
+  candidate_id: string | null;
+  source: SmartEventSource;
+  direction: PunchDirection;
+  status: SmartEventStatus;
+  risk_level: AttendanceRiskLevel;
+  risk_reasons: string[];
+  latitude: number | null;
+  longitude: number | null;
+  accuracy_meters: number | null;
+  occurred_at: string;
+  idempotency_key: string;
+  punch_id: string | null;
+  notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceVerificationRecord {
+  id: string;
+  organization_id: string;
+  event_id: string;
+  method: VerificationMethod;
+  outcome: VerificationOutcome;
+  provider: string | null;
+  risk_reason: string;
+  recorded_at: string;
+  created_at: string;
+}
+
+export interface DeviceSecurityAssessment {
+  id: string;
+  organization_id: string;
+  device_id: string;
+  mock_location: boolean;
+  play_integrity: string | null;
+  rooted: boolean | null;
+  notes: string;
+  assessed_at: string;
+  created_at: string;
+}
+
+export interface DynamicQrSession {
+  id: string;
+  organization_id: string;
+  workplace_id: string;
+  token_hash: string;
+  token_hint: string;
+  pin_hash: string | null;
+  direction: PunchDirection;
+  status: QrSessionStatus;
+  expires_at: string;
+  used_at: string | null;
+  used_by_employee_id: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }

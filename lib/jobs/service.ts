@@ -46,6 +46,7 @@ export async function ensureDefaultJobs(organizationId: string, actorId: string 
     { jobType: "SUPPORT_SLA", name: "Support ticket SLA reminders" },
     { jobType: "DATA_EXPORT_EXPIRE", name: "Expire completed data exports" },
     { jobType: "INCIDENT_SLA", name: "Open incident SLA reminders" },
+    { jobType: "SMART_QR_EXPIRE", name: "Expire unused smart attendance QR sessions" },
   ];
   const created: ScheduledJob[] = [];
   for (const def of defs) {
@@ -191,6 +192,10 @@ async function runJobBody(job: ScheduledJob): Promise<Record<string, unknown>> {
     case "INCIDENT_SLA": {
       const { markIncidentSla } = await import("@/lib/launch/service");
       return markIncidentSla();
+    }
+    case "SMART_QR_EXPIRE": {
+      const { expireSmartQrJob } = await import("@/lib/smart-attendance/service");
+      return expireSmartQrJob();
     }
     default:
       return { skipped: true };

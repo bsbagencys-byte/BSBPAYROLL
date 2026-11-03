@@ -21,6 +21,7 @@ import {
   LineChart,
   ListChecks,
   LogOut,
+  MapPin,
   Menu,
   Palmtree,
   Receipt,
@@ -67,6 +68,7 @@ const ICONS = {
   CreditCard,
   ListChecks,
   LifeBuoy,
+  MapPin,
 } as const;
 
 const NAV = NAV_ITEMS;

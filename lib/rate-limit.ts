@@ -1,4 +1,4 @@
-import { API_RATE_LIMIT, BIOMETRIC_RATE_LIMIT, LOGIN_RATE_LIMIT } from "@/lib/constants";
+import { API_RATE_LIMIT, BIOMETRIC_RATE_LIMIT, LOGIN_RATE_LIMIT, SMART_ATTENDANCE_RATE_LIMIT } from "@/lib/constants";
 
 type Bucket = { count: number; resetAt: number };
 
@@ -47,6 +47,13 @@ export function checkApiRateLimit(key: string, maxAttempts = API_RATE_LIMIT.maxA
   retryAfterSeconds: number;
 } {
   return checkLimit(key, API_RATE_LIMIT.windowMs, maxAttempts);
+}
+
+export function checkSmartAttendanceRateLimit(key: string): {
+  allowed: boolean;
+  retryAfterSeconds: number;
+} {
+  return checkLimit(key, SMART_ATTENDANCE_RATE_LIMIT.windowMs, SMART_ATTENDANCE_RATE_LIMIT.maxAttempts);
 }
 
 export function clearLoginRateLimit(key: string) {

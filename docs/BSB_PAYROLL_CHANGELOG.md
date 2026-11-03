@@ -4,6 +4,33 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 21 — Smart Auto Attendance
+
+- **Date:** 2026-11-01
+- **Status:** implemented on `261015-feat-ess-portal`
+- **Go-live:** NOT READY
+
+### Implemented
+
+- Additive overlay. Phases 1–20 unchanged. Phase 4 attendance still not started.
+- Server-side geofence, trusted device, freshness, accuracy and window checks. The Android app never decides validity.
+- Accepted events enter existing `attendance_punches` via virtual GENERIC device `BSB-SMART`.
+- Dynamic short-lived signed QR fallback. Permanent static QR rejected. Job `SMART_QR_EXPIRE`.
+- Face provider is an unconfigured stub. Mock location / Play Integrity are risk signals, not fraud proof.
+- Admin `/attendance/smart*`, ESS `/my/smart-attendance`, mobile `/api/mobile/*`, Android Compose/MVVM sources in `android/`.
+- Tests: `tests/smart-attendance.test.ts`.
+
+### Database
+
+- Additive `supabase/phase21.sql`, appended into `combined.sql`.
+- Tables: smart settings, workplaces, trusted devices, geofence candidates, smart events, verifications, device assessments, QR sessions.
+
+### Not claimed
+
+- Phase 4 day calculation, late/OT, continuous tracking, facial matching, physical-device certification, production launch.
+
+---
+
 ## Phase 20 — Pilot deployment, real-world testing and controlled launch
 
 - **Date:** 2026-10-30

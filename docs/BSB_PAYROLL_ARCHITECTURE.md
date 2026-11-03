@@ -20,6 +20,7 @@ Legend: **IMPLEMENTED** | **PLANNED** | **FUTURE**
 - Subscription billing lives under `app/(app)/{billing,settings/subscription,admin/subscriptions}` with `lib/billing/*`.
 - Onboarding, support, migration and export live under `app/(app)/{onboarding,support,settings/data-migration,settings/data-export,admin/support,admin/ops}` with `lib/onboarding/*`.
 - Pilot launch control lives under `app/(app)/admin/launch` with `lib/launch/*`.
+- Smart attendance lives under `app/(app)/attendance` smart pages and `/my/smart-attendance` with `lib/smart-attendance/*`.
 - Demo vs production is transparent to pages: repositories switch on `hasSupabaseConfig()` / `isDemoMode()`.
 - `allowedDevOrigins`: `*.monkeycode-ai.live`.
 
@@ -32,18 +33,18 @@ Not a separate SPA. No client-side service-role keys.
 Single Next.js process.
 
 - **Mutations:** `"use server"` actions in `actions/*.ts`.
-- **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret); `/api/health` and `/api/health/live`; `/api/billing/webhook` (provider signature).
+- **Public HTTP:** biometric ingest (`/api/biometric/push`, `/api/biometric/webhook`); scoped `/api/v1/*` (API key); `/api/internal/jobs` (worker secret); `/api/health` and `/api/health/live`; `/api/billing/webhook` (provider signature); `/api/mobile/*` (HMAC mobile token for the Android overlay).
 - **Authenticated HTTP:** self-service document and tax-proof signed URLs are server actions, not public routes. CSV report downloads under `/api/leave/reports/*`, `/api/salary/reports/*`, `/api/benefits/reports/*`, `/api/claims/reports/*`, `/api/loans/reports/*`, `/api/payroll/reports/*`, `/api/compliance/reports/*`, `/api/exits/reports/*`, `/api/settlements/reports/*`, `/api/contractors/reports/*`, `/api/reports/[key]`, `/api/accounting/journals/[id]/csv`, `/api/payments/[id]/csv` and `/api/analytics/[kind]`. Payslip PDF under `/api/payroll/payslips/[id]/pdf`. Settlement PDF under `/api/settlements/[id]/pdf`. Subscription invoice PDF under `/api/billing/invoices/[id]/pdf`.
 - **Data:** `createAdminClient()` (service role) or `getDemoStore()`.
 - **Audit:** `writeAudit()` to `audit_logs` or in-memory ring.
-- **Rate limit:** in-memory for login, biometric ingest and `/api/v1`.
+- **Rate limit:** in-memory for login, biometric ingest, `/api/v1` and `/api/mobile`.
 - **Jobs:** durable outbox + claimed `job_executions`. Worker is `POST /api/internal/jobs`, not an in-process timer.
 
 ---
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`, `phase21.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
@@ -239,12 +240,12 @@ Exits never write attendance or leave tables.
 - Additive overlay at `/my`. Reuses existing services: `loadEmployeeLeave`, `loadClaimListItems`, `loadLoanListItems` / `loadAccountListItems`, `loadPayslipViews`, `loadEmployeeCompensation`, `getEmployeeRecord`, `loadLeaveOverview`, statutory declaration queries.
 - Identity is resolved server-side in `lib/ess/identity.ts` (`resolveSelfEmployee`) from the authenticated `SessionUser` → `employees.user_id`. A browser-supplied employee id is never used for authorisation. RLS adds `public.current_employee_ids()` and restricts `ess_change_requests` reads to the current employee or an authorized reviewer.
 - Unlinked users see an explicit setup state; no employee or organisation data is rendered.
-- Routes: `/my`, `/my/profile`, `/my/attendance`, `/my/leave`, `/my/payslips`, `/my/salary`, `/my/claims`, `/my/loans`, `/my/documents`, `/my/tax-documents`, `/my/requests`, `/my/notifications`, `/my/team`.
+- Routes: `/my`, `/my/profile`, `/my/attendance`, `/my/smart-attendance`, `/my/leave`, `/my/payslips`, `/my/salary`, `/my/claims`, `/my/loans`, `/my/documents`, `/my/tax-documents`, `/my/requests`, `/my/notifications`, `/my/team`.
 - Profile change requests (`ess_change_requests`) are the only write path for personal data. Bank and statutory categories are sensitive and are never auto-applied: approval records the decision and notifies the employee; HR applies the value through the employee master.
 - Downloads: payslips use `/api/payroll/payslips/[id]/pdf`; employee documents use short-lived signed URLs through `getSelfDocumentUrlAction`, which re-checks ownership. No public document URLs.
 - Sensitive values are masked in ESS (`maskAccountNumber`, `maskPan`, `maskAadhaarLast4`, `maskIdentifier`).
 - Notifications (`ess_notifications`) remain the ESS inbox. Phase 15 extends those rows with `event_type` and `delivery_status`. Email is optional SMTP only; WhatsApp/SMS are not implemented. Managers see only direct reports (`reporting_manager_id`) in `/my/team`; decisions link to existing leave/claims/loans approval screens, so no second approval engine is introduced.
-- No QR, GPS, face recognition, smart auto attendance, raw punch editing or leave-balance bypass.
+- P21 adds `/my/smart-attendance` for the employee's own events and trusted devices. Raw punch editing and leave-balance bypass remain unimplemented. Face matching is not implemented.
 
 ---
 
@@ -288,7 +289,8 @@ Do not implement these until the named phase:
 - **Phase 18:** SaaS subscription and billing (implemented). Additive overlay. Separate from salary payment batches. Unconfigured provider cannot mark paid.
 - **Phase 19:** customer onboarding, CSV migration, support, platform ops, data export (implemented). Additive overlay. Attendance step optional/blocked. No silent XLSX. No auto-delete.
 - **Phase 20:** pilot launch control (implemented). Additive overlay. Computed decision is NOT READY without evidence.
-- **Later:** Face/QR/GPS, smart auto attendance.
+- **Phase 21:** smart auto attendance overlay (implemented). Feeds punches; does not calculate days. Face matching not implemented.
+- **Later:** Face attendance provider, Phase 4 day calculation.
 
 ## Production readiness — IMPLEMENTED (limited)
 
@@ -328,5 +330,15 @@ Do not implement these until the named phase:
 - Parallel payroll compare does not finalize or pay. Statutory review remains required.
 - Incidents redact secrets. Defects are separated from feature requests.
 - Current evidence in this environment yields NOT READY.
+
+## Smart Auto Attendance — IMPLEMENTED (overlay)
+
+- Admin: `/attendance/smart`, settings, workplaces, trusted devices, events. ESS: `/my/smart-attendance`.
+- Server evaluates geofence, trusted device, freshness, accuracy, window, mock-location and integrity. App never decides validity.
+- Accepted events write `attendance_punches` through virtual GENERIC device serial `BSB-SMART`. Duplicate idempotency keys do not create a second punch.
+- Dynamic QR is a short-lived HMAC token. Permanent static QR is rejected. Job `SMART_QR_EXPIRE`.
+- Face provider is `UnconfiguredFaceProvider`. Health flags: `smartAttendanceHardwareFree`, `faceMatchingImplemented: false`.
+- Android sources under `android/` call `/api/mobile/*`. No separate mobile database.
+- Radius is organization-configured (presets 50/100/150/250 or custom 30–2000m). Background location defaults off.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

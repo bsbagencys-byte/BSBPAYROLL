@@ -10,6 +10,7 @@ import {
   HandCoins,
   Inbox,
   LayoutDashboard,
+  MapPin,
   Palmtree,
   Receipt,
   ShieldCheck,
@@ -32,6 +33,7 @@ const ICONS = {
   ShieldCheck,
   Inbox,
   Bell,
+  MapPin,
 } as const;
 
 export function EssSubnav({ unreadCount = 0 }: { unreadCount?: number }) {

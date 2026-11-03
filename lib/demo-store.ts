@@ -153,6 +153,14 @@ import type {
   SupportMessage,
   SupportTicket,
   UatChecklistItem,
+  SmartAttendanceSettings,
+  AttendanceLocationConfig,
+  TrustedEmployeeDevice,
+  GeofenceEventCandidate,
+  SmartAttendanceEvent,
+  AttendanceVerificationRecord,
+  DeviceSecurityAssessment,
+  DynamicQrSession,
   ExitClearanceItem,
   ExitClearanceTask,
   FinalSettlement,
@@ -165,6 +173,8 @@ import {
   DEFAULT_ROLE_PERMISSIONS,
   DEMO_ESSL_DEVICE_ID,
   DEMO_ESSL_DEVICE_TOKEN,
+  DEMO_SMART_SETTINGS_ID,
+  DEMO_SMART_WORKPLACE_ID,
   PERMISSIONS,
   ROLE_LABELS,
   type PermissionCode,
@@ -498,6 +508,14 @@ export type DemoStore = {
   incidentRecords: IncidentRecord[];
   pilotFeedback: PilotFeedback[];
   releaseGates: ReleaseGateRecord[];
+  smartAttendanceSettings: SmartAttendanceSettings[];
+  attendanceLocationConfigs: AttendanceLocationConfig[];
+  trustedEmployeeDevices: TrustedEmployeeDevice[];
+  geofenceEventCandidates: GeofenceEventCandidate[];
+  smartAttendanceEvents: SmartAttendanceEvent[];
+  attendanceVerificationRecords: AttendanceVerificationRecord[];
+  deviceSecurityAssessments: DeviceSecurityAssessment[];
+  dynamicQrSessions: DynamicQrSession[];
 };
 
 const globalStore = globalThis as unknown as {
@@ -954,6 +972,7 @@ function createStore(): DemoStore {
     ...createBillingSeed(),
     ...createOnboardingSeed(),
     ...createLaunchSeed(),
+    ...createSmartAttendanceSeed(),
   };
 }
 
@@ -3583,6 +3602,70 @@ function createLaunchSeed(): Pick<
   };
 }
 
+function createSmartAttendanceSeed(): Pick<
+  DemoStore,
+  | "smartAttendanceSettings"
+  | "attendanceLocationConfigs"
+  | "trustedEmployeeDevices"
+  | "geofenceEventCandidates"
+  | "smartAttendanceEvents"
+  | "attendanceVerificationRecords"
+  | "deviceSecurityAssessments"
+  | "dynamicQrSessions"
+> {
+  const created = nowIso();
+  return {
+    smartAttendanceSettings: [
+      {
+        id: DEMO_SMART_SETTINGS_ID,
+        organization_id: ORG_ID,
+        enabled: true,
+        geofence_radius_meters: 100,
+        accuracy_threshold_meters: 50,
+        freshness_seconds: 120,
+        max_trusted_devices: 1,
+        require_trusted_device: true,
+        require_precise_location: true,
+        background_location_enabled: false,
+        auto_accept_policy: "LOW_RISK_ONLY",
+        qr_fallback_enabled: true,
+        dynamic_pin_enabled: false,
+        qr_ttl_seconds: 90,
+        entry_window_start: "00:00",
+        entry_window_end: "23:59",
+        face_provider_kind: "NONE",
+        face_provider_configured: false,
+        retention_days: 365,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    attendanceLocationConfigs: [
+      {
+        id: DEMO_SMART_WORKPLACE_ID,
+        organization_id: ORG_ID,
+        location_id: LOCATION_ID,
+        branch_id: BRANCH_ID,
+        name: "MG Road Campus",
+        latitude: 12.9716,
+        longitude: 77.5946,
+        radius_meters: 100,
+        status: "ACTIVE",
+        created_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    trustedEmployeeDevices: [],
+    geofenceEventCandidates: [],
+    smartAttendanceEvents: [],
+    attendanceVerificationRecords: [],
+    deviceSecurityAssessments: [],
+    dynamicQrSessions: [],
+  };
+}
+
 export function getDemoStore(): DemoStore {
   if (
     !globalStore.__bsbDemo ||
@@ -3602,7 +3685,8 @@ export function getDemoStore(): DemoStore {
      !("analyticsAlerts" in globalStore.__bsbDemo) ||
      !("subscriptionPlans" in globalStore.__bsbDemo) ||
      !("onboardingProgress" in globalStore.__bsbDemo) ||
-     !("moduleReadiness" in globalStore.__bsbDemo)
+     !("moduleReadiness" in globalStore.__bsbDemo) ||
+     !("smartAttendanceSettings" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

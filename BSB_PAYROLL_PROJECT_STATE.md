@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 20 overlay)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 21 overlay)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 implemented. Phase 4 Attendance is not started. Go-live: NOT READY.
+- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 implemented. Phase 4 Attendance is not started. Go-live: NOT READY.
 
 ---
 
@@ -40,6 +40,7 @@ Status is from code, not README.
 | 18 SaaS subscription and billing | **COMPLETE** overlay on P1–P17 | Configurable plans, trial/lifecycle, entitlements, usage, invoices, provider-neutral payments. Separate from salary payment batches. Unconfigured provider cannot mark paid. |
 | 19 Onboarding, migration, support, ops, export | **COMPLETE** overlay on P1–P18 | Checklist from stored data, CSV preview/confirm import, org-isolated support, SUPER_ADMIN ops, data export with 72h TTL. Attendance step optional/blocked. No silent XLSX. No auto-delete. |
 | 20 Pilot launch control | **COMPLETE** overlay on P1–P19 | Readiness register, isolated pilots, biometric matrix, parallel payroll compare, UAT, incidents, feedback. Computed launch decision is NOT READY. |
+| 21 Smart Auto Attendance | **COMPLETE** overlay on P3/P13/P20 | Geofence + trusted device + server validation + dynamic QR. Accepted events write `attendance_punches` via virtual GENERIC device `BSB-SMART`. App never decides validity. Face matching not implemented. Phase 4 still not started. |
 
 ---
 
@@ -55,15 +56,15 @@ Status is from code, not README.
 - eSSL first; generic JSON adapter also shipped. ZKTeco PUSH/JSON and Matrix COSEC JSON adapters added as protocol foundations. Physical hardware is not marked complete.
 - Normalized biometric events, then punches.
 - Pipeline: Biometric ingest -> Attendance calculation -> Payroll. Do not skip Phase 4.
-- Smart Auto Attendance later.
-- Dynamic QR + location later (fallback).
-- Face attendance later.
+- Smart Auto Attendance is a P21 overlay that feeds punches; it does not calculate days.
+- Dynamic QR is short-lived and signed; permanent static QR is rejected.
+- Face attendance is not implemented (`UnconfiguredFaceProvider`).
 - Do not build future phases prematurely.
 - MonkeyCode prompts must remain below 8,000 characters with a safe buffer.
 - Demo mode without live Supabase.
 - Never prefix service-role keys with `NEXT_PUBLIC_`.
 - Next.js 16 uses `proxy.ts` (no `middleware.ts`).
-- Mutations are server actions; public HTTP APIs are biometric ingest, scoped `/api/v1` (API key), CSV downloads, and `/api/internal/jobs` (worker secret).
+- Mutations are server actions; public HTTP APIs are biometric ingest, scoped `/api/v1` (API key), CSV downloads, `/api/internal/jobs` (worker secret), and `/api/mobile` (HMAC mobile token).
 - Salary is effective-date based and auditable; previous CTC is never overwritten.
 - Formula engine is a controlled parser, not `eval`.
 - Attendance and leave are read-only inputs to salary; salary never writes those tables.
@@ -72,9 +73,9 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, My Space, Employees, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Reports, Analytics, Billing, Accounting, Payments, Notifications, Automation, Compliance, Onboarding, Support, Settings. SUPER_ADMIN also sees Subscriptions (`/admin/subscriptions`) and Platform support (`/admin/support`, `/admin/ops`, `/admin/launch`).
+Enabled nav: Dashboard, My Space, Employees, Smart Attendance, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Reports, Analytics, Billing, Accounting, Payments, Notifications, Automation, Compliance, Onboarding, Support, Settings. SUPER_ADMIN also sees Subscriptions (`/admin/subscriptions`) and Platform support (`/admin/support`, `/admin/ops`, `/admin/launch`).
 
-Disabled nav (no pages): `/attendance` (P4).
+Disabled nav (no pages): `/attendance` (P4). Smart Attendance lives at `/attendance/smart` and does not start Phase 4.
 
 ### Auth / foundation
 
@@ -82,7 +83,7 @@ Disabled nav (no pages): `/attendance` (P4).
 
 ### Employee self-service (P13)
 
-- `/my`, `/my/profile`, `/my/attendance`, `/my/leave`, `/my/payslips`, `/my/salary`, `/my/claims`, `/my/loans`, `/my/documents`, `/my/tax-documents`, `/my/requests`, `/my/notifications`, `/my/team`
+- `/my`, `/my/profile`, `/my/attendance`, `/my/smart-attendance`, `/my/leave`, `/my/payslips`, `/my/salary`, `/my/claims`, `/my/loans`, `/my/documents`, `/my/tax-documents`, `/my/requests`, `/my/notifications`, `/my/team`
 
 ### Settings
 
@@ -96,6 +97,13 @@ Disabled nav (no pages): `/attendance` (P4).
 
 - `/biometric`, `/biometric/devices/new`, `/biometric/devices/[id]`, `/biometric/mapping`, `/biometric/punches`, `/biometric/live`, `/biometric/logs`, `/biometric/simulator`, `/biometric/compatibility`
 - `POST /api/biometric/push`, `POST /api/biometric/webhook` (public, token + rate limit)
+
+### Smart Attendance (P21)
+
+- `/attendance/smart`, `/attendance/smart-settings`, `/attendance/locations`, `/attendance/trusted-devices`, `/attendance/smart-events`, `/my/smart-attendance`
+- `POST /api/mobile/auth/login`, `GET /api/mobile/me`, `POST /api/mobile/devices/register`, `POST /api/mobile/events/geofence`, `POST /api/mobile/qr/scan`
+- Permissions: `attendance.smart.view|manage`, `attendance.device.manage`, `attendance.correct`
+- Android overlay: `android/` (Kotlin Compose/MVVM sources against existing backend)
 
 ### Leave (P5)
 
@@ -219,7 +227,7 @@ Overview, employment, statutory, bank, documents, history, attendance (later P4 
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16+P17+P18+P19+P20). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16+P17+P18+P19+P20+P21). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`, `phase21.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20+21.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -260,6 +268,8 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 **P19:** `onboarding_progress`, `onboarding_steps`, `import_jobs`, `import_job_rows`, `opening_balances`, `support_tickets`, `support_messages`, `data_export_jobs`, `offboarding_requests`. Expire does not delete tenant data.
 
 **P20:** `launch_decisions`, `module_readiness`, `release_blockers`, `pilot_organizations`, `pilot_checklist_items`, `biometric_verifications`, `parallel_payroll_runs`, `uat_checklist_items`, `incident_records`, `pilot_feedback`, `release_gates`. Platform SUPER_ADMIN RLS only.
+
+**P21:** `smart_attendance_settings`, `attendance_location_configs`, `trusted_employee_devices`, `geofence_event_candidates`, `smart_attendance_events`, `attendance_verification_records`, `device_security_assessments`, `dynamic_qr_sessions`. Org-scoped RLS. Does not add attendance_days calculation tables.
 
 **Not present:** shifts, attendance rules, overtime, LOP calc from punches.
 
@@ -413,7 +423,7 @@ Permissions: `self.view`, `self.profile.update`, `self.change_request.review`, `
 
 Demo seed: one pending bank change request for Rahul, plus notifications for Rahul and HR.
 
-Explicitly not implemented: QR, GPS, face recognition, smart auto attendance, raw punch editing, leave-balance bypass.
+P21 adds `/my/smart-attendance` as a view of the employee's own smart events and devices. Raw punch editing and leave-balance bypass remain unimplemented. Face matching is not implemented.
 
 ---
 
@@ -468,14 +478,16 @@ Demo seed: `createAutomationSeed()` — templates, one leave-approval rule, dail
 - No physical biometric model is PHYSICAL_DEVICE_VERIFIED.
 - Backup restore was documented, not executed against a staging project here.
 - Pilot parallel payroll must not be finalized or paid. Current launch decision is NOT READY.
+- Smart attendance does not calculate PRESENT/ABSENT/late/OT. Accepted events only write punches.
+- Face matching is an unconfigured stub. Mock location / Play Integrity are risk signals, not fraud proof.
 
 ---
 
 ## Current Phase
 
-**Phase 20 launch overlay is complete. Go-live is NOT READY. Next: Phase 4 Attendance (not started), unless requested.**
+**Phase 21 smart attendance overlay is complete. Go-live is NOT READY. Next: Phase 4 Attendance (not started), unless requested.**
 
-Phase 20 added pilot launch control, isolated tenant templates, biometric verification matrix, parallel payroll compare, UAT, incidents and feedback. Current evidence fails critical gates: attendance blocked, statutory unverified, hardware unverified, backup restore unverified, no pilot sign-off. Do not start Phase 4 unless requested.
+Phase 21 added geofence + trusted device + server validation + dynamic QR as an overlay that feeds `attendance_punches`. The app never decides validity. Face matching is not implemented. Phase 4 remains blocked. Do not start Phase 4 unless requested.
 
 See `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 

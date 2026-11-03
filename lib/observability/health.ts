@@ -39,6 +39,8 @@ export function collectHealth() {
       billingChargesVerified: false,
       backupRestoreVerified: false,
       liveRlsVerified: false,
+      smartAttendanceHardwareFree: true,
+      faceMatchingImplemented: false,
     },
   };
 }

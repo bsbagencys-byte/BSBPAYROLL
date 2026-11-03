@@ -13,6 +13,7 @@ const PUBLIC_PREFIXES = [
   "/api/internal/jobs",
   "/api/health",
   "/api/billing/webhook",
+  "/api/mobile",
 ];
 
 function isPublicPath(pathname: string) {
