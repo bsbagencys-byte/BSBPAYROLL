@@ -36,7 +36,7 @@ export const PILOT_CHECKLIST_STEPS: Array<{ key: string; label: string; required
   { key: "BRANCHES", label: "Branches, departments and locations", required: true },
   { key: "ROLES", label: "Users and role assignments", required: true },
   { key: "EMPLOYEES", label: "Employee master for this organization only", required: true },
-  { key: "SHIFTS", label: "Shifts and attendance rules", required: false },
+  { key: "SHIFTS", label: "Shifts and attendance rules", required: true },
   { key: "SALARY", label: "Salary structures and assignments", required: true },
   { key: "LEAVE", label: "Leave types, policies and holidays", required: true },
   { key: "STATUTORY", label: "Statutory configuration with source citation", required: true },
@@ -228,11 +228,11 @@ export function decideLaunch(facts: LaunchFacts): { decision: LaunchDecision; su
       failedGates: failed,
     };
   }
-  const attendanceBlocked = facts.modules.some((row) => row.key === "ATTENDANCE" && (row.status === "BLOCKED" || row.status === "NOT_TESTED"));
-  if (attendanceBlocked) {
+  const attendancePartial = facts.modules.some((row) => row.key === "ATTENDANCE" && row.status === "PARTIAL");
+  if (attendancePartial) {
     return {
       decision: "READY_WITH_LIMITATIONS",
-      summary: "Launch gates passed with documented limitations. Phase 4 attendance remains blocked. Do not sell punch-derived LOP, late or OT.",
+      summary: "Launch gates passed with documented limitations. Attendance engine exists; face matching and hardware certification remain open.",
       failedGates: [],
     };
   }
@@ -248,13 +248,13 @@ export function defaultModuleReadiness(): Array<{ key: string; label: string; st
     { key: "AUTH", label: "Authentication and organization management", status: "PARTIAL", evidence: "Username login, reset, RBAC and suspended-org block are unit tested. Live Supabase Auth path is unverified here.", notes: "Custom role editing remains read-only.", sort_order: 1 },
     { key: "EMPLOYEES", label: "Employees and documents", status: "PASS", evidence: "Employee master, statutory, bank, documents, CSV import and hierarchy exist.", notes: null, sort_order: 2 },
     { key: "BIOMETRIC", label: "Universal biometric gateway", status: "PARTIAL", evidence: "Ingest, token hash, duplicate device+user+time and mapping are unit tested. Physical hardware is not verified.", notes: "ZKTeco/Matrix are protocol foundations.", sort_order: 3 },
-    { key: "ATTENDANCE", label: "Attendance and leave", status: "BLOCKED", evidence: "Leave module is complete. Phase 4 attendance engine is not started. Punches exist; days are leave/holiday marks only.", notes: "Do not sell late, OT or punch-derived LOP.", sort_order: 4 },
-    { key: "SALARY", label: "Salary and compensation", status: "PASS", evidence: "Structures, assignments, revisions and formula parser exist. lateCount/otMinutes remain stubbed at 0.", notes: null, sort_order: 5 },
+    { key: "ATTENDANCE", label: "Attendance and leave", status: "PARTIAL", evidence: "Leave module is complete. Punch pairing, shifts, late/OT and regularization exist. Face matching is not implemented.", notes: "Payroll-locked days stay immutable. Raw punches are never rewritten.", sort_order: 4 },
+    { key: "SALARY", label: "Salary and compensation", status: "PASS", evidence: "Structures, assignments, revisions and formula parser exist. lateCount/otMinutes come from attendance_days.", notes: null, sort_order: 5 },
     { key: "BENEFITS", label: "Benefits, claims and loans", status: "PASS", evidence: "Benefits, claims and loans are consumed by payroll process.", notes: null, sort_order: 6 },
-    { key: "PAYROLL", label: "Payroll and payslips", status: "PARTIAL", evidence: "Calculate/review/finalize/lock/process are unit tested. Unmarked working days are paid until Phase 4.", notes: "Do not auto-finalize or pay a pilot payroll.", sort_order: 7 },
+    { key: "PAYROLL", label: "Payroll and payslips", status: "PARTIAL", evidence: "Calculate/review/finalize/lock/process are unit tested. ABSENT working days are unpaid. Unmarked days remain paid until recalculated.", notes: "Do not auto-finalize or pay a pilot payroll.", sort_order: 7 },
     { key: "STATUTORY", label: "Statutory compliance", status: "NOT_TESTED", evidence: "Versioned engine exists. Seed versions are DISABLED/unverified. Official rates were not independently reviewed here.", notes: "Requires qualified payroll/accounting review.", sort_order: 8 },
     { key: "ESS", label: "Employee self-service", status: "PASS", evidence: "Server-resolved identity. Sensitive fields masked. Unit coverage for identity and tenancy.", notes: null, sort_order: 9 },
-    { key: "REPORTS", label: "Reports and accounting", status: "PARTIAL", evidence: "Reports and journals consume stored/finalized data. Phase 4 attendance reports return not-calculated.", notes: null, sort_order: 10 },
+    { key: "REPORTS", label: "Reports and accounting", status: "PARTIAL", evidence: "Reports and journals consume stored/finalized data. Attendance late/OT/present-absent reports use calculated days.", notes: null, sort_order: 10 },
     { key: "PAYMENTS", label: "Payment reconciliation", status: "PARTIAL", evidence: "Generic bank CSV and reconciliation exist. EXPORTED is not proof of payment. Live bank APIs are not implemented.", notes: null, sort_order: 11 },
     { key: "AUTOMATION", label: "Notifications and APIs", status: "PARTIAL", evidence: "Outbox, jobs, HMAC webhooks and scoped /api/v1 exist. SMTP is optional and never faked.", notes: "In-memory rate limits are per process.", sort_order: 12 },
     { key: "BILLING", label: "Subscriptions and onboarding", status: "PARTIAL", evidence: "Plans, lifecycle, CSV onboarding and support exist. Live Razorpay/GST unverified. Live import confirm outside demo is unverified.", notes: null, sort_order: 13 },
@@ -265,12 +265,12 @@ export function defaultModuleReadiness(): Array<{ key: string; label: string; st
 export function defaultReleaseBlockers() {
   return [
     {
-      title: "Phase 4 attendance engine is not started",
-      severity: "CRITICAL" as const,
-      status: "OPEN" as const,
+      title: "Face matching is not implemented",
+      severity: "MEDIUM" as const,
+      status: "ACCEPTED" as const,
       module_key: "ATTENDANCE",
-      evidence: "No /attendance page, no phase4.sql, late/OT stubbed at 0, unmarked working days paid.",
-      required_fix: "Implement Phase 4 day engine before selling punch-based attendance or LOP.",
+      evidence: "Punch pairing, shifts, late/OT and regularization exist. Face provider remains an unconfigured stub.",
+      required_fix: "Do not sell face attendance until a verified provider is configured.",
     },
     {
       title: "India statutory rates are unverified",
@@ -327,7 +327,7 @@ export function defaultBiometricMatrix() {
 export function defaultPilotTemplates() {
   return [
     { code: "PILOT-SCHOOL", name: "Pilot school", kind: "SCHOOL" as const, notes: "Isolated school tenant template. Do not mix employees with other pilots." },
-    { code: "PILOT-HOSPITAL", name: "Pilot hospital", kind: "HOSPITAL" as const, notes: "Isolated hospital/clinic tenant template. Shift coverage remains blocked until Phase 4." },
+    { code: "PILOT-HOSPITAL", name: "Pilot hospital", kind: "HOSPITAL" as const, notes: "Isolated hospital/clinic tenant template. Configure overnight shifts before claiming coverage." },
     { code: "PILOT-OFFICE", name: "Pilot office", kind: "OFFICE" as const, notes: "Isolated office/business tenant template." },
     { code: "PILOT-MULTI", name: "Pilot multi-branch", kind: "MULTI_BRANCH" as const, notes: "Isolated multi-branch tenant template. Branches stay inside this organization_id." },
   ];

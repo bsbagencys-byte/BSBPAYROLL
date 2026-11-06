@@ -41,7 +41,7 @@ export default async function AnalyticsPage({
     <div>
       <PageHeader
         title="Analytics"
-        description="Explainable metrics from stored payroll, leave, claims, loans and biometric data. Draft runs are labelled. Late, OT and punch-based LOP wait for Phase 4."
+        description="Explainable metrics from stored payroll, leave, claims, loans and biometric data. Draft runs are labelled. Late and OT come from attendance_days."
         actions={
           canExport ? (
             <a href={csvHref}>

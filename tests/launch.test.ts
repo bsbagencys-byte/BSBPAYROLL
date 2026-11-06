@@ -46,7 +46,7 @@ test("current evidence yields NOT READY and does not claim hardware", () => {
   assert.match(verdict.summary, /NOT READY/);
   assert.equal(advertisedHardwareClaimed(facts().biometric), false);
   const attendance = defaultModuleReadiness().find((row) => row.key === "ATTENDANCE");
-  assert.equal(attendance?.status, "BLOCKED");
+  assert.equal(attendance?.status, "PARTIAL");
 });
 
 test("advertised unverified hardware and finalized pilot payroll fail launch", () => {

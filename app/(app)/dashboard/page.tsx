@@ -221,7 +221,7 @@ export default async function DashboardPage() {
 
       <p className="mt-6 flex items-center gap-2 text-xs text-slate-500">
         <Shield className="h-3.5 w-3.5" />
-        Attendance calculation is not shown. Leave marks attendance days; unmarked working days count as paid in payroll until Phase 4. Salary, claims and loans feed the monthly run.
+        Attendance days come from punch pairing, leave overlays and calendar. Recalculate after new punches. Salary, claims and loans feed the monthly run.
       </p>
     </div>
   );

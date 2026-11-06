@@ -45,6 +45,8 @@ export const PERMISSIONS = [
   { code: "organization.department.manage", group: "Organization", label: "Manage departments" },
   { code: "organization.designation.manage", group: "Organization", label: "Manage designations" },
   { code: "attendance.view", group: "Attendance", label: "View attendance" },
+  { code: "attendance.manage", group: "Attendance", label: "Manage attendance settings and recalculation" },
+  { code: "attendance.regularize", group: "Attendance", label: "Submit and decide attendance regularization" },
   { code: "attendance.smart.view", group: "Attendance", label: "View smart attendance" },
   { code: "attendance.smart.manage", group: "Attendance", label: "Manage smart attendance settings" },
   { code: "attendance.device.manage", group: "Attendance", label: "Manage trusted employee devices" },
@@ -213,6 +215,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "organization.department.manage",
     "organization.designation.manage",
     "attendance.view",
+    "attendance.manage",
+    "attendance.regularize",
     "attendance.smart.view",
     "attendance.smart.manage",
     "attendance.device.manage",
@@ -325,6 +329,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "user.view",
     "employee.view",
     "attendance.view",
+    "attendance.regularize",
     "attendance.smart.view",
     "payroll.view",
     "payroll.process",
@@ -454,6 +459,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "user.view",
     "employee.view",
     "attendance.view",
+    "attendance.regularize",
     "attendance.smart.view",
     "biometric.view",
     "leave.view",
@@ -483,6 +489,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, PermissionCode[]> = {
     "organization.view",
     "employee.view",
     "attendance.view",
+    "attendance.regularize",
     "attendance.smart.view",
     "leave.view",
     "leave.request",
@@ -503,7 +510,7 @@ export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard", enabled: true },
   { href: "/my", label: "My Space", icon: "UserCircle", enabled: true, phase: 13 },
   { href: "/employees", label: "Employees", icon: "Users", enabled: true, phase: 2 },
-  { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: false, phase: 4 },
+  { href: "/attendance", label: "Attendance", icon: "CalendarCheck", enabled: true, phase: 4 },
   { href: "/attendance/smart", label: "Smart Attendance", icon: "MapPin", enabled: true, phase: 21 },
   { href: "/leave", label: "Leave", icon: "Palmtree", enabled: true, phase: 5 },
   { href: "/salary", label: "Salary", icon: "Banknote", enabled: true, phase: 6 },
@@ -860,6 +867,75 @@ export const ATTENDANCE_DAY_STATUS_LABELS: Record<AttendanceDayStatus, string> =
   HALF_DAY_LEAVE: "Half-day leave",
   COMP_OFF: "Comp-off",
 };
+
+export const ATTENDANCE_NAV = [
+  { href: "/attendance", label: "Overview" },
+  { href: "/attendance/live", label: "Live" },
+  { href: "/attendance/register", label: "Register" },
+  { href: "/attendance/daily", label: "Daily" },
+  { href: "/attendance/exceptions", label: "Exceptions" },
+  { href: "/attendance/regularization", label: "Regularization" },
+  { href: "/attendance/shifts", label: "Shifts" },
+  { href: "/attendance/settings", label: "Settings" },
+] as const;
+
+export const SHIFT_STATUSES = ["ACTIVE", "DISABLED"] as const;
+export type ShiftStatus = (typeof SHIFT_STATUSES)[number];
+
+export const PUNCH_PAIRING_MODES = ["FIRST_LAST", "PAIRWISE"] as const;
+export type PunchPairingMode = (typeof PUNCH_PAIRING_MODES)[number];
+
+export const ATTENDANCE_EXCEPTION_CODES = [
+  "MISSING_IN",
+  "MISSING_OUT",
+  "ABSENT",
+  "LATE",
+  "EARLY_EXIT",
+  "UNMAPPED",
+] as const;
+export type AttendanceExceptionCode = (typeof ATTENDANCE_EXCEPTION_CODES)[number];
+
+export const ATTENDANCE_EXCEPTION_CODE_LABELS: Record<AttendanceExceptionCode, string> = {
+  MISSING_IN: "Missing IN",
+  MISSING_OUT: "Missing OUT",
+  ABSENT: "Absent",
+  LATE: "Late",
+  EARLY_EXIT: "Early exit",
+  UNMAPPED: "Unmapped punch",
+};
+
+export const ATTENDANCE_EXCEPTION_STATUSES = ["OPEN", "RESOLVED", "DISMISSED"] as const;
+export type AttendanceExceptionStatus = (typeof ATTENDANCE_EXCEPTION_STATUSES)[number];
+
+export const ATTENDANCE_EXCEPTION_STATUS_LABELS: Record<AttendanceExceptionStatus, string> = {
+  OPEN: "Open",
+  RESOLVED: "Resolved",
+  DISMISSED: "Dismissed",
+};
+
+export const ATTENDANCE_REGULARIZATION_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
+export type AttendanceRegularizationStatus = (typeof ATTENDANCE_REGULARIZATION_STATUSES)[number];
+
+export const ATTENDANCE_REGULARIZATION_STATUS_LABELS: Record<AttendanceRegularizationStatus, string> = {
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
+};
+
+export const DEFAULT_ATTENDANCE_POLICY = {
+  graceMinutes: 15,
+  breakMinutes: 60,
+  fullDayMinutes: 480,
+  halfDayMinutes: 240,
+  otMinimumMinutes: 30,
+  otRoundingMinutes: 15,
+  punchPairing: "FIRST_LAST" as PunchPairingMode,
+  allowOvernight: true,
+};
+
+export const DEMO_SHIFT_ID = "s1111111-1111-1111-1111-111111111111";
+export const DEMO_ATTENDANCE_POLICY_ID = "s2111111-1111-1111-1111-111111111111";
 
 export const LEAVE_NAV = [
   { href: "/leave", label: "Overview" },
@@ -2106,6 +2182,7 @@ export const JOB_TYPES = [
   "DATA_EXPORT_EXPIRE",
   "INCIDENT_SLA",
   "SMART_QR_EXPIRE",
+  "ATTENDANCE_RECALC",
 ] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
@@ -2123,6 +2200,7 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   DATA_EXPORT_EXPIRE: "Expire completed data exports",
   INCIDENT_SLA: "Open incident SLA reminders",
   SMART_QR_EXPIRE: "Expire unused smart attendance QR sessions",
+  ATTENDANCE_RECALC: "Recalculate attendance days from punches",
 };
 
 export const JOB_EXECUTION_STATUSES = ["QUEUED", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] as const;

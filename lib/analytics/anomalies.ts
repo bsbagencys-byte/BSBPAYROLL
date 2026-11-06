@@ -125,8 +125,8 @@ function candidatesFrom(snapshot: AnalyticsSnapshot, thresholds: AnalyticsThresh
         baseline: `${snapshot.previousLop} days`,
         threshold: `${lopSpike}%`,
         severity: severityFor(change / lopSpike),
-        explanation: `Stored payroll item LOP days increased from ${snapshot.previousLop} to ${snapshot.lopDays}. Punch-based LOP is not calculated until Phase 4.`,
-        recommended: "Review leave-written attendance days. Do not treat this as a Phase 4 punch engine result.",
+        explanation: `Stored payroll item LOP days increased from ${snapshot.previousLop} to ${snapshot.lopDays}. LOP includes unpaid leave and ABSENT working days.`,
+        recommended: "Review attendance_days and leave marks for the period.",
         runId: snapshot.current.run?.id ?? null,
       });
     }

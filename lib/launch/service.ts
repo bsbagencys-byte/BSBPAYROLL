@@ -159,7 +159,7 @@ export async function ensureLaunchCatalog(actorId: string | null) {
           label: step.label,
           required: step.required,
           complete: false,
-          evidence: step.required ? null : "Optional until Phase 4 exists.",
+          evidence: step.required ? null : "Optional biometric mapping.",
           updated_by: actorId,
           created_at: now,
           updated_at: now,
@@ -171,9 +171,9 @@ export async function ensureLaunchCatalog(actorId: string | null) {
           pilot_id: pilot.id,
           role_code: journey.role,
           journey: journey.journey,
-          status: journey.role === "HR" && journey.journey.includes("shifts") ? "BLOCKED" : "NOT_TESTED",
+          status: "NOT_TESTED",
           tester: null,
-          evidence: journey.role === "HR" ? "Shift/attendance journeys are blocked until Phase 4." : null,
+          evidence: null,
           tested_at: null,
           created_at: now,
           updated_at: now,
@@ -389,9 +389,9 @@ export async function recordUatResult(itemId: string, status: UatResultStatus, t
   const rows = await listUatChecklist();
   const existing = rows.find((row) => row.id === itemId);
   if (!existing) throw new Error("UAT item not found.");
-  if (existing.status === "BLOCKED" && status === "PASS") {
-    throw new Error("Blocked journeys cannot be marked PASS. Phase 4 attendance remains unavailable.");
-  }
+    if (existing.status === "BLOCKED" && status === "PASS") {
+      throw new Error("Blocked journeys cannot be marked PASS.");
+    }
   const row = await upsertUatChecklistItem({
     ...existing,
     status,
@@ -496,9 +496,6 @@ export async function togglePilotChecklist(itemId: string, complete: boolean, ev
     const items = await listPilotChecklist(pilot.id);
     const existing = items.find((row) => row.id === itemId);
     if (!existing) continue;
-    if (existing.step_key === "SHIFTS" && complete) {
-      throw new Error("Shifts cannot be marked complete. Phase 4 attendance is not started.");
-    }
     return upsertPilotChecklistItem({
       ...existing,
       complete,

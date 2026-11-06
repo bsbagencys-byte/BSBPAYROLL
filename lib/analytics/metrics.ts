@@ -122,7 +122,7 @@ export async function loadAnalyticsSnapshot(organizationId: string, timezone: st
       value: lopDays,
       display: String(lopDays),
       unit: "days",
-      source: "Stored payroll item lop_days. Punch-based LOP waits for Phase 4.",
+      source: "Stored payroll item lop_days from unpaid leave and ABSENT working days.",
       draft: current.draft,
     },
     {

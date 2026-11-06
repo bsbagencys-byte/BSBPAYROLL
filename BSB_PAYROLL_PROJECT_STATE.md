@@ -7,10 +7,10 @@ Before implementing any future BSB Payroll phase, read this file first. Do not r
 ## Project
 
 - **Product:** BSB Payroll
-- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 21 overlay)
+- **Repo:** `bsbagencys-byte/BSBPAYROLL`, branch `261015-feat-ess-portal` (Phase 4 overlay)
 - **Stack:** Next.js 16.3.6 App Router, React 19.2.8, TypeScript, Tailwind CSS 4, Zod 4, Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`, `@supabase/supabase-js`). Node `>=20`.
 - **Runtime modes:** Demo in-memory store when unconfigured or `NEXT_PUBLIC_DEMO_MODE=true`. Production: real Supabase, `NEXT_PUBLIC_DEMO_MODE=false`. Service-role key is server-only.
-- **Status:** Phases 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 implemented. Phase 4 Attendance is not started. Go-live: NOT READY.
+- **Status:** Phases 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 implemented. Go-live: NOT READY.
 
 ---
 
@@ -23,24 +23,24 @@ Status is from code, not README.
 | 1 Foundation | **COMPLETE** (partial: custom role editing) | Login, setup, dashboard, org settings, users, audit, RBAC. Roles page is a read-only matrix. |
 | 2 Employee & Organization | **COMPLETE** | Employee master, employment, statutory, bank, documents, history, CSV import, hierarchy. |
 | 3 Universal Biometric | **COMPLETE** (ingest only) | Devices, mapping, gateway, eSSL + ZKTeco + Matrix + generic adapters, raw/normalized events, punches. Does not calculate days. ZKTeco/Matrix are protocol foundations, not certified hardware. |
-| 4 Attendance | **NOT STARTED** | Nav `enabled: false`. No `/attendance` page, no `phase4.sql`, no shift/late/OT engine. Thin `attendance_days` exists for leave marks only. |
+| 4 Attendance | **COMPLETE** overlay on P3/P5 | Punch pairing, shifts, late/OT, exceptions, regularization. Consumes `attendance_punches`. Leave overlays win. Payroll-locked days immutable. Face/QR/GPS not implemented here (P21 overlay feeds punches). |
 | 5 Leave & Holiday | **COMPLETE** | Types, policies, requests, approvals, balances/ledger, holidays, calendar, comp-off, CSV reports. Approved leave writes `attendance_days`. |
-| 6 Salary & Compensation | **COMPLETE** for master CTC; consumed by P9 | Components, structures, assignments, revisions, history, formula parser, variable/reimbursement storage. `lateCount` / `otMinutes` stubbed at `0`. |
+| 6 Salary & Compensation | **COMPLETE** for master CTC; consumed by P9 | Components, structures, assignments, revisions, history, formula parser, variable/reimbursement storage. `lateCount` / `otMinutes` from calculated `attendance_days`. |
 | 7 Benefits, Reimbursements, TA/DA & Claims | **COMPLETE**; consumed by P9 | Types, policies, assignments, claims, approvals, policy engine, TA/DA calc, receipts, CSV. `getApprovedPayrollClaimLines` used by payroll. Process marks `INCLUDED_IN_PAYROLL`; mark-paid sets `PAID`. |
 | 8 Loans & Advances | **COMPLETE**; consumed by P9 | Types, policies, applications, accounts, EMI schedule, ledger, repayments, adjustments. `getEmployeeLoanDeductions` used by payroll. Process posts `recordLoanRepayment` (`source: "PAYROLL"`). |
-| 9 Payroll & Compliance | **COMPLETE** with Phase 4 attendance gap | Monthly run, proration from leave-written days (unmarked working days paid), PF/ESI/PT/TDS, payslips, lock/process/paid, CSV, compliance filings. |
+| 9 Payroll & Compliance | **COMPLETE** | Monthly run, proration from calculated attendance days (ABSENT unpaid; unmarked remain paid until recalc), PF/ESI/PT/TDS, payslips, lock/process/paid, CSV, compliance filings. |
 | 10 Review / Finalize / Payslip | **COMPLETE** overlay on P9 | Review, exceptions, two-step approval, finalize+snapshot, lock after finalize, numbered PDF payslips, adjustments. |
 | 11 Statutory / tax engine | **COMPLETE** overlay on P9/P10 | Versioned PF/ESI/PT/LWF/TDS, org settings, tax declarations, payroll statutory snapshots, real payslip deductions. Seed versions DISABLED/unverified. |
 | 12 Exit, F&F, contractors | **COMPLETE** overlay on P9–P11 | Employee exits + clearance, full & final settlement, contractor register/engagements/invoices. Ordinary payroll excludes exited employees whose LWD is before the period. |
 | 13 Employee self-service | **COMPLETE** overlay on P2/P5/P7/P8/P9/P11 | `/my` portal: profile, attendance, leave, payslips, salary, claims, loans, documents, tax, requests, notifications, manager team view. Server-resolved identity; profile change requests; in-app notifications. |
-| 14 Reports, accounting, payments | **COMPLETE** overlay on P9–P13 | Reports hub from stored data; payroll journals from finalized snapshots; payment batches and generic bank CSV. Late/OT/punch LOP not calculated. |
+| 14 Reports, accounting, payments | **COMPLETE** overlay on P9–P13 | Reports hub from stored data; payroll journals from finalized snapshots; payment batches and generic bank CSV. Attendance late/OT/present-absent reports use calculated days. |
 | 15 Automation, notifications, APIs | **COMPLETE** overlay on P1–P14 | Durable outbox, in-app + optional SMTP email, predefined automation rules, scheduled jobs, HMAC webhooks, scoped `/api/v1`. Never fakes external delivery. |
-| 16 Analytics, anomalies, optional AI | **COMPLETE** overlay on P1–P15 | Explainable dashboards from stored data, deterministic anomaly alerts, optional permission-aware assistant, biometric compatibility registry. No Phase 4 calc. AI never approves or mutates payroll. |
-| 17 Production readiness | **COMPLETE** overlay on P1–P16 | Audit, security/integrity fixes, node test runner, health checks, ops docs, go-live checklist. Phase 4 still blocked. Statutory rates and hardware remain UNVERIFIED. |
+| 16 Analytics, anomalies, optional AI | **COMPLETE** overlay on P1–P15 | Explainable dashboards from stored data, deterministic anomaly alerts, optional permission-aware assistant, biometric compatibility registry. AI never approves or mutates payroll. |
+| 17 Production readiness | **COMPLETE** overlay on P1–P16 | Audit, security/integrity fixes, node test runner, health checks, ops docs, go-live checklist. Statutory rates and hardware remain UNVERIFIED. |
 | 18 SaaS subscription and billing | **COMPLETE** overlay on P1–P17 | Configurable plans, trial/lifecycle, entitlements, usage, invoices, provider-neutral payments. Separate from salary payment batches. Unconfigured provider cannot mark paid. |
-| 19 Onboarding, migration, support, ops, export | **COMPLETE** overlay on P1–P18 | Checklist from stored data, CSV preview/confirm import, org-isolated support, SUPER_ADMIN ops, data export with 72h TTL. Attendance step optional/blocked. No silent XLSX. No auto-delete. |
+| 19 Onboarding, migration, support, ops, export | **COMPLETE** overlay on P1–P18 | Checklist from stored data, CSV preview/confirm import, org-isolated support, SUPER_ADMIN ops, data export with 72h TTL. Attendance step optional from shifts/policy. No silent XLSX. No auto-delete. |
 | 20 Pilot launch control | **COMPLETE** overlay on P1–P19 | Readiness register, isolated pilots, biometric matrix, parallel payroll compare, UAT, incidents, feedback. Computed launch decision is NOT READY. |
-| 21 Smart Auto Attendance | **COMPLETE** overlay on P3/P13/P20 | Geofence + trusted device + server validation + dynamic QR. Accepted events write `attendance_punches` via virtual GENERIC device `BSB-SMART`. App never decides validity. Face matching not implemented. Phase 4 still not started. |
+| 21 Smart Auto Attendance | **COMPLETE** overlay on P3/P13/P20 | Geofence + trusted device + server validation + dynamic QR. Accepted events write `attendance_punches` via virtual GENERIC device `BSB-SMART`. App never decides validity. Face matching not implemented. Recalculate attendance to turn punches into day results. |
 
 ---
 
@@ -73,9 +73,9 @@ Status is from code, not README.
 
 ## Current Modules
 
-Enabled nav: Dashboard, My Space, Employees, Smart Attendance, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Reports, Analytics, Billing, Accounting, Payments, Notifications, Automation, Compliance, Onboarding, Support, Settings. SUPER_ADMIN also sees Subscriptions (`/admin/subscriptions`) and Platform support (`/admin/support`, `/admin/ops`, `/admin/launch`).
+Enabled nav: Dashboard, My Space, Employees, Attendance, Smart Attendance, Leave, Salary, Benefits, Claims, Loans, Biometric, Payroll, Exits, Settlements, Contractors, Reports, Analytics, Billing, Accounting, Payments, Notifications, Automation, Compliance, Onboarding, Support, Settings. SUPER_ADMIN also sees Subscriptions (`/admin/subscriptions`) and Platform support (`/admin/support`, `/admin/ops`, `/admin/launch`).
 
-Disabled nav (no pages): `/attendance` (P4). Smart Attendance lives at `/attendance/smart` and does not start Phase 4.
+Disabled nav (no pages): none. Smart Attendance lives at `/attendance/smart` and feeds punches into Phase 4.
 
 ### Auth / foundation
 
@@ -200,7 +200,7 @@ Disabled nav (no pages): `/attendance` (P4). Smart Attendance lives at `/attenda
 
 ### Onboarding, migration, support, ops, export (P19)
 
-- `/onboarding` — checklist from stored data. Attendance is BLOCKED/optional (Phase 4 not started). Skip records `skipped_attendance`. Opening a page does not complete a step.
+- `/onboarding` — checklist from stored data. Attendance is optional from shifts/policy. Skip records `skipped_attendance`. Opening a page does not complete a step.
 - `/support`, `/support/new`, `/support/[id]` — org-isolated tickets. Internal notes are platform-only. Available when subscription is restricted.
 - `/settings/data-migration`, `/settings/data-migration/history` — CSV preview then confirm. Excel rejected. Existing `/employees/import` and `/setup` unchanged.
 - `/settings/data-export`, `/settings/data-export/offboarding` — FULL/EMPLOYEES/PAYROLL/LEAVE/BILLING. TTL 72h. Expire does not delete tenant data. Offboarding confirm is SUPER_ADMIN `data.offboard`.
@@ -227,7 +227,7 @@ Overview, employment, statutory, bank, documents, history, attendance (later P4 
 
 ## Database
 
-Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16+P17+P18+P19+P20+P21). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`, `phase21.sql`. `seed.sql` is non-production. **No `phase4.sql`.** Header is Phase 1+2+3+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20+21.
+Apply `supabase/combined.sql` for a fresh project (contains P1+P2+P3+P4+P5+P6+P7+P8+P9+P10+P11+P12+P13+P14+P15+P16+P17+P18+P19+P20+P21). Incremental: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase4.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`, `phase21.sql`. `seed.sql` is non-production. Header is Phase 1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+16+17+18+19+20+21.
 
 All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `current_org_ids()`, `has_org_permission()`, `set_updated_at()`.
 
@@ -236,6 +236,8 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 **P2:** `locations`, `employment_types`, `employees`, `employee_addresses`, `employee_employment`, `employee_statutory`, `employee_bank_accounts`, `employee_documents`, `employee_history` + storage bucket `employee-documents`
 
 **P3:** `biometric_devices`, `biometric_identity_maps`, `biometric_raw_events`, `biometric_normalized_events`, `attendance_punches`
+
+**P4:** extra columns on `attendance_days` (`shift_id`, `first_in`, `last_out`, `worked_minutes`, `late_minutes`, `early_exit_minutes`, `ot_minutes`, `locked`); tables `attendance_policies`, `shifts`, `shift_assignments`, `attendance_exceptions`, `attendance_regularizations`
 
 **P5:** `leave_types`, `leave_policies`, `leave_policy_assignments`, `leave_balances`, `leave_balance_transactions`, `leave_requests`, `leave_request_days`, `leave_approvals`, `holidays`, `comp_off_earnings`, `comp_off_transactions`, `attendance_days`
 
@@ -319,14 +321,15 @@ Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getAppr
 
 ## Attendance
 
-**Not implemented as a module.** Nav disabled. No calculation of PRESENT/ABSENT/late/OT from punches.
+**Implemented as an overlay on P3 punches and P5 leave marks.** Nav `/attendance` enabled. Screens: overview, live, register, daily, exceptions, regularization, shifts, settings.
 
-What exists:
-
-- `attendance_punches` from Phase 3 ingest.
-- `attendance_days` from Phase 5: leave approval writes `PAID_LEAVE` / `UNPAID_LEAVE` / `HALF_DAY_LEAVE` / `COMP_OFF` with `source=LEAVE`. Cancel restores `previous_status`. Demo seed has one `HOLIDAY` row.
-- Status enum also includes PRESENT, ABSENT, WEEKLY_OFF — unused by a calculation engine.
-- Salary `loadAttendanceInputs` reads `attendance_days` and leave requests; `lateCount` and `otMinutes` are always `0`.
+- Consumes `attendance_punches`. Raw punches are never rewritten.
+- Pairing: `FIRST_LAST` default, optional `PAIRWISE`. Overnight via work-date assignment.
+- Leave overlays (`PAID_LEAVE` / `UNPAID_LEAVE` / `HALF_DAY_LEAVE` / `COMP_OFF`) win. Weekly-off and holiday are not marked absent.
+- One day result per employee/work date/session. Payroll-locked days skip recalc.
+- Exceptions: MISSING_IN/OUT, ABSENT, LATE, EARLY_EXIT. Unmapped punches stay on biometric.
+- Salary `loadAttendanceInputs` reads `lateCount` / `otMinutes` from calculated days.
+- Job `ATTENDANCE_RECALC`. Face, QR and GPS are not implemented in this phase (P21 overlay feeds punches).
 
 ---
 
@@ -383,7 +386,7 @@ Monthly run overlay: DRAFT → CALCULATED → UNDER_REVIEW → APPROVAL_PENDING 
 
 Payslip numbers are `PREFIX/FY/MON/000001`. Payslips show PF/ESI/PT/TDS/LWF employee deductions; employer contributions are not deducted from net. Adjustments require a reason; processed/paid cannot be adjusted in place.
 
-Statutory: versioned `statutory_rule_versions` when ACTIVE, else Phase 9 `statutory_rules` with a warning. Attendance: leave-written days; unmarked working days count as paid until Phase 4.
+Statutory: versioned `statutory_rule_versions` when ACTIVE, else Phase 9 `statutory_rules` with a warning. Attendance: calculated days; ABSENT working days unpaid; unmarked remain paid until recalc.
 
 Permissions: `payroll.view|process|lock|review|approve|reject|finalize|adjust|payslip.view|export|settings`, `payslip.generate|export`, `compliance.view|export|manage|rules.manage|tax.manage|proofs.review`. HR all four compliance manage; ACCOUNTANT tax+proofs; PAYROLL view/export only.
 
@@ -429,7 +432,7 @@ P21 adds `/my/smart-attendance` as a view of the employee's own smart events and
 
 ## Reports, accounting and payments (P14)
 
-Reports hub at `/reports` runs stored-data queries (`lib/reports/query.ts`). Payroll totals come from payroll runs/items/lines, not a second engine. Phase 4 late/early/OT/present-absent reports return an explicit “not calculated” table.
+Reports hub at `/reports` runs stored-data queries (`lib/reports/query.ts`). Payroll totals come from payroll runs/items/lines, not a second engine. Attendance late/early/OT/present-absent reports use calculated `attendance_days`.
 
 Accounting journals consume the finalized payroll snapshot (`payload_json` = `{ run, items, lines, exceptions, totals }`). Live rows are fallback only if snapshot JSON cannot be parsed. Unmapped components block export. Debit must equal credit. One non-VOID journal per run. Duplicate export requires explicit confirmation. Generic journal CSV only — no Tally/Zoho API.
 
@@ -466,10 +469,8 @@ Demo seed: `createAutomationSeed()` — templates, one leave-approval rule, dail
 - `app/(app)/coming-soon.tsx` is unused; disabled nav items are non-links with a Soon badge.
 - Roles UI is read-only; custom role editing not built.
 - Employee CSV import only (Excel rejected).
-- Salary OT/late inputs stubbed; proration not finalized.
-- No `/attendance` route; hitting it 404s.
 - Tax treatment on benefits is stored as a placeholder only.
-- Unmarked working days count as paid in payroll until Phase 4 produces PRESENT/ABSENT.
+- Unmarked working days count as paid in payroll until attendance is recalculated. ABSENT working days are unpaid.
 - Seed statutory versions are DISABLED/unverified; official rates were not independently verified in this environment.
 - Contractor withholding is blocked until a verified TDS rule version exists for the invoice date.
 - In-memory rate limits are per process; use an edge/WAF limit for multi-instance production.
@@ -478,16 +479,16 @@ Demo seed: `createAutomationSeed()` — templates, one leave-approval rule, dail
 - No physical biometric model is PHYSICAL_DEVICE_VERIFIED.
 - Backup restore was documented, not executed against a staging project here.
 - Pilot parallel payroll must not be finalized or paid. Current launch decision is NOT READY.
-- Smart attendance does not calculate PRESENT/ABSENT/late/OT. Accepted events only write punches.
+- Smart attendance does not calculate PRESENT/ABSENT/late/OT by itself. Accepted events write punches; Phase 4 recalc produces day results.
 - Face matching is an unconfigured stub. Mock location / Play Integrity are risk signals, not fraud proof.
 
 ---
 
 ## Current Phase
 
-**Phase 21 smart attendance overlay is complete. Go-live is NOT READY. Next: Phase 4 Attendance (not started), unless requested.**
+**Phase 4 attendance overlay is complete. Go-live is NOT READY.** Remaining launch gates: hardware certification, statutory source verification, live billing provider, backup restore and pilot sign-off.
 
-Phase 21 added geofence + trusted device + server validation + dynamic QR as an overlay that feeds `attendance_punches`. The app never decides validity. Face matching is not implemented. Phase 4 remains blocked. Do not start Phase 4 unless requested.
+Phase 4 added punch pairing, shifts, late/OT, exceptions and regularization as an overlay on `attendance_punches` and leave-written `attendance_days`. Raw punches are never rewritten. Leave overlays win. Face matching is not implemented.
 
 See `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 
@@ -495,18 +496,13 @@ See `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 
 ## Next Dependencies
 
-Phase 4 should consume, not rebuild:
+Do not rebuild Phases 1–3 or 5–21. Remaining work is launch evidence, not another attendance engine:
 
-- Employees, org timezone, `weekly_off`, branches/locations (P1–P2)
-- `attendance_punches` and identity maps (P3)
-- `holidays`, leave-written `attendance_days`, leave request days (P5)
-- Salary already reads `attendance_days` via `loadAttendanceInputs` / formula tokens `WORKING_DAYS`, `PRESENT_DAYS`, `LOP_DAYS`
-- Phase 7 `getApprovedPayrollClaimLines` is consumed by payroll
-- Phase 8 `getEmployeeLoanDeductions` is consumed by payroll
-- Phase 9 payroll reads `attendance_days` and treats unmarked working days as paid
-- Phase 12 F&F also prorates through LWD using the same attendance summary
-
-Phase 4 must fill PRESENT/ABSENT/WEEKLY_OFF/HOLIDAY (and later late/OT) without erasing leave marks or punch history.
+- Physical biometric hardware certification
+- Qualified statutory source citation and enablement
+- Staging backup restore and live second-tenant RLS proof
+- Isolated pilot sign-off without finalizing pilot payroll
+- Face attendance provider (unconfigured stub)
 
 ---
 

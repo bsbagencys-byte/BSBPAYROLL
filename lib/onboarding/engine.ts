@@ -37,6 +37,8 @@ export type OnboardingFacts = {
   biometricDeviceCount: number;
   userCount: number;
   skippedAttendance: boolean;
+  shiftCount: number;
+  attendancePolicyConfigured: boolean;
 };
 
 export function splitCsv(text: string) {
@@ -138,19 +140,17 @@ export function evaluateStep(key: OnboardingStepKey, facts: OnboardingFacts): On
       return {
         ...base,
         status: "SKIPPED",
-        blocked: true,
         required: false,
-        skipped_reason: "Phase 4 attendance is not started. This step is optional.",
-        evidence: ["Attendance calculation is not available"],
+        skipped_reason: "Attendance configuration skipped. Punch pairing can be enabled later.",
+        evidence: ["Attendance step skipped"],
       };
     }
+    const complete = facts.shiftCount > 0 && facts.attendancePolicyConfigured;
     return {
       ...base,
-      status: "BLOCKED",
-      blocked: true,
       required: false,
-      skipped_reason: "Phase 4 attendance is not started.",
-      evidence: ["Shifts and punch-to-day calculation are not implemented"],
+      status: complete ? "COMPLETE" : facts.shiftCount > 0 || facts.attendancePolicyConfigured ? "IN_PROGRESS" : "NOT_STARTED",
+      evidence: [`${facts.shiftCount} shift(s)`, facts.attendancePolicyConfigured ? "Attendance policy configured" : "Attendance policy missing"],
     };
   }
   if (key === "BIOMETRIC") {

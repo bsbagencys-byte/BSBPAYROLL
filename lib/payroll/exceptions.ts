@@ -125,7 +125,7 @@ export async function scanPayrollExceptions(organizationId: string, run: Payroll
           item,
           code: "MISSING_ATTENDANCE",
           severity: "WARNING",
-          message: "No attendance day marks for this period. Unmarked working days are treated as paid until Phase 4.",
+          message: "No attendance day marks for this period. Recalculate attendance or unmarked working days remain paid.",
           sourceType: "attendance_days",
         })
       );

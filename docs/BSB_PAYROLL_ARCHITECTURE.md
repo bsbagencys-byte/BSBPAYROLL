@@ -44,11 +44,11 @@ Single Next.js process.
 
 ## Database — IMPLEMENTED
 
-PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`, `phase21.sql`. Dev seed: `supabase/seed.sql`.
+PostgreSQL via Supabase. Fresh install: `supabase/combined.sql`. Incremental phase files: `schema.sql`, `phase2.sql`, `phase3.sql`, `phase4.sql`, `phase5.sql`, `phase6.sql`, `phase7.sql`, `phase8.sql`, `phase9.sql`, `phase10.sql`, `phase11.sql`, `phase12.sql`, `phase13.sql`, `phase14.sql`, `phase15.sql`, `phase16.sql`, `phase17.sql`, `phase18.sql`, `phase19.sql`, `phase20.sql`, `phase21.sql`. Dev seed: `supabase/seed.sql`.
 
 Every business table is org-scoped. RLS on. Triggers for `updated_at`.
 
-See `BSB_PAYROLL_PROJECT_STATE.md` for the table list. There is no Phase 4 schema file.
+See `BSB_PAYROLL_PROJECT_STATE.md` for the table list. Phase 4 schema is `supabase/phase4.sql`, appended into `combined.sql`.
 
 Storage: private buckets `employee-documents`, `claim-receipts`, `payslips`, `tax-proofs`, `settlement-statements` and `payment-exports`.
 
@@ -131,7 +131,7 @@ New vendor = new adapter file + registry entry. Do not rewrite the gateway.
 
 - Raw: vendor payload, headers, hash, ingest status.
 - Normalized: org, device, vendor, external user id, punch time (org timezone), direction IN/OUT/UNKNOWN, verification mode, mapping status.
-- Punch: employee-linked attendance punch ready for Phase 4.
+- Punch: employee-linked attendance punch consumed by Phase 4.
 
 Pipeline stop today: punches. Days are not derived here.
 
@@ -144,12 +144,12 @@ Pipeline stop today: punches. Days are not derived here.
 | Ingest punches | IMPLEMENTED (P3) |
 | Leave marks on `attendance_days` | IMPLEMENTED (P5) |
 | Holiday / weekly-off calendar data | IMPLEMENTED as leave/org data (P5 / org settings) |
-| Day engine: PRESENT/ABSENT/late/OT from punches | **PLANNED (Phase 4)** |
-| Smart Auto Attendance | **FUTURE** |
-| QR + location fallback | **FUTURE** |
+| Day engine: PRESENT/ABSENT/late/OT from punches | **IMPLEMENTED (Phase 4)** |
+| Smart Auto Attendance | **IMPLEMENTED overlay (Phase 21)** |
+| QR + location fallback | **IMPLEMENTED overlay (Phase 21)** |
 | Face attendance | **FUTURE** |
 
-Salary already reads `attendance_days` (`loadAttendanceInputs`). Phase 4 should write those rows without wiping leave marks or punches.
+Salary reads `attendance_days` (`loadAttendanceInputs`) including `lateCount` / `otMinutes`. Phase 4 writes those rows without wiping leave marks or punches.
 
 ---
 
@@ -165,7 +165,7 @@ Implemented:
 - `getEmployeeSalaryForDate(orgId, employeeId, date)` — contract for payroll.
 - Variable earnings and reimbursements stored.
 
-Payroll (Phase 9) consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, and prorates using leave-written attendance days (unmarked working days paid until Phase 4).
+Payroll (Phase 9) consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, and prorates using calculated attendance days (ABSENT unpaid; unmarked remain paid until recalc).
 
 Salary never writes attendance or leave tables.
 
@@ -213,7 +213,7 @@ Loans never write salary, attendance or leave tables.
 - Engine in `lib/payroll/engine.ts`: period bounds, attendance summary, proration. Statutory overlay in `lib/statutory/engine.ts`.
 - Overlay in `lib/payroll/{workflow,exceptions,numbering,pdf}.ts`: review, exceptions, finalize snapshot, payslip PDF.
 - Service consumes `getEmployeeSalaryForDate`, approved variable/reimbursement, `getApprovedPayrollClaimLines`, `getEmployeeLoanDeductions`, `calculateStatutoryBreakdown`.
-- Unmarked working days count as paid until Phase 4 attendance calculation exists.
+- Unmarked working days count as paid until attendance is recalculated. ABSENT working days are unpaid.
 - Process posts loan EMI (`source: "PAYROLL"`), marks claims `INCLUDED_IN_PAYROLL`, generates numbered PDFs if missing. Mark-paid sets claims `PAID`.
 - Compliance filings (PF/ESI/PT/TDS/LWF) generated on process. Payslips show employee statutory deductions; employer cost is separate from net.
 
@@ -251,7 +251,7 @@ Exits never write attendance or leave tables.
 
 ## Reports, accounting and payments — IMPLEMENTED
 
-- Reports hub at `/reports` (`lib/reports/{catalog,query,csv}.ts`). Payroll register/gross-net/cost use stored run and item totals. Phase 4 late/early/OT/present-absent return an explicit not-calculated table.
+- Reports hub at `/reports` (`lib/reports/{catalog,query,csv}.ts`). Payroll register/gross-net/cost use stored run and item totals. Attendance late/early/OT/present-absent use calculated days.
 - Journals (`lib/accounting/service.ts`) consume finalized snapshot payload. Unmapped components block export. Debit must equal credit. One non-VOID journal per run. Duplicate export requires confirmation. Generic CSV (`lib/accounting/csv.ts`) — no Tally/Zoho.
 - Payment batches (`lib/payments/service.ts`) from finalized runs. Bank-file export is an instruction (`EXPORTED` ≠ paid). Exclusion requires a reason and does not change finalized net. Bank details masked. Configurable generic CSV columns (`lib/payments/columns.ts`). Outcomes append history. Reconciliation confirms MATCHED rows only.
 - No XLSX library. No direct bank API.
@@ -266,7 +266,7 @@ Exits never write attendance or leave tables.
 - Jobs claimed uniquely on `(job_id, scheduled_for)`. Worker `POST /api/internal/jobs` requires `JOBS_WORKER_SECRET`.
 - Webhooks: HMAC + timestamp + event id, secret rotation, retry/backoff, SSRF block of localhost/private/metadata. Signing secret is encrypted at rest (`secret_encrypted`) when `SESSION_SECRET` is set. No passwords, tokens, full bank or Aadhaar in payloads.
 - API keys: `bsb_live_` prefix, sha256 hash, org-scoped, granular read scopes, expiry/revoke/rotate, rate limit, request IDs. Plaintext shown only at create. Cannot bypass RLS/approvals/finalized payroll.
-- `/api/v1` attendance summaries do not claim Phase 4 punch calculation.
+- `/api/v1` attendance summaries use calculated `attendance_days`.
 
 ---
 
@@ -274,7 +274,7 @@ Exits never write attendance or leave tables.
 
 Do not implement these until the named phase:
 
-- **Phase 4:** shift/rules, punch-to-day, late/early, OT minutes, weekly-off/holiday application that does not erase leave.
+- **Phase 4:** shift/rules, punch-to-day, late/early, OT minutes, weekly-off/holiday application that does not erase leave (implemented).
 - **Phase 7:** benefits, reimbursements, TA/DA and claims (implemented).
 - **Phase 8:** loans and advances (implemented).
 - **Phase 9:** payroll run and compliance (implemented). Consumes salary, leave-written days, claims and loans.
@@ -290,7 +290,7 @@ Do not implement these until the named phase:
 - **Phase 19:** customer onboarding, CSV migration, support, platform ops, data export (implemented). Additive overlay. Attendance step optional/blocked. No silent XLSX. No auto-delete.
 - **Phase 20:** pilot launch control (implemented). Additive overlay. Computed decision is NOT READY without evidence.
 - **Phase 21:** smart auto attendance overlay (implemented). Feeds punches; does not calculate days. Face matching not implemented.
-- **Later:** Face attendance provider, Phase 4 day calculation.
+- **Later:** Face attendance provider.
 
 ## Production readiness — IMPLEMENTED (limited)
 
@@ -298,7 +298,7 @@ Do not implement these until the named phase:
 - Health: `/api/health`, `/api/health/live`.
 - Go-live checklist: `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 - Ops: `docs/ops/{BACKUP,DEPLOY,SAAS,INCIDENT,STAGING,PILOT,ROLLBACK}.md`.
-- Verdict: NOT READY. Phase 4, hardware certification, statutory source verification, live billing provider, backup restore and pilot sign-off remain open.
+- Verdict: NOT READY. Hardware certification, statutory source verification, live billing provider, backup restore and pilot sign-off remain open.
 
 ## SaaS subscription and billing — IMPLEMENTED (limited)
 
@@ -314,7 +314,7 @@ Do not implement these until the named phase:
 ## Customer onboarding, migration, support and export — IMPLEMENTED (limited)
 
 - Checklist completeness is from stored organization, employee, salary, leave and user data. Opening a page does not complete a step.
-- Attendance/shifts remain optional and BLOCKED until Phase 4. Skip records `skipped_attendance`.
+- Attendance/shifts remain optional. Completeness is from stored policy and shifts. Skip records `skipped_attendance`.
 - CSV import requires preview then confirm. Excel is rejected. Historical payroll is labelled imported.
 - Support tickets are organization-isolated. Internal notes are platform-only. No unrestricted impersonation.
 - Data export excludes secrets, full bank numbers and Aadhaar. Ready files expire after 72 hours without deleting tenant data.

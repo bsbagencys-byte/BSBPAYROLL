@@ -47,7 +47,7 @@ export default async function MyAttendancePage() {
     <div>
       <PageHeader
         title="My attendance"
-        description="Attendance days written from approved leave and (once Phase 4 ships) biometric processing. Raw punches are never edited here."
+        description="Attendance days from punch pairing, leave overlays and calendar. Raw punches are never edited here."
       />
 
       <div className="grid gap-4 sm:grid-cols-3">

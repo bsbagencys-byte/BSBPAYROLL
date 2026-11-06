@@ -23,7 +23,7 @@ export default async function ReportsPage({
     <div>
       <PageHeader
         title="Reports"
-        description="HR, leave, payroll, compliance, claims, exits and biometric reports from stored data. Late, OT and punch-based LOP wait for Phase 4."
+        description="HR, leave, payroll, compliance, claims, exits and biometric reports from stored data. Attendance late/OT use calculated days."
       />
       <Suspense>
         <ReportsSubnav />

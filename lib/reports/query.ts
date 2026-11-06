@@ -95,17 +95,6 @@ export async function recordReportExport(input: {
   });
 }
 
-function phase4Table(key: ReportKey, title: string, description: string): ReportTable {
-  return {
-    key,
-    title,
-    description,
-    note: "Phase 4 attendance calculation is not started. Late, early exit, overtime and punch-based LOP/present/absent are not produced.",
-    headers: ["Message"],
-    rows: [["Not calculated until Phase 4 attendance."]],
-  };
-}
-
 export async function runReport(
   organizationId: string,
   key: ReportKey,
@@ -122,10 +111,6 @@ export async function runReport(
     if (filters.departmentId && row?.department_id !== filters.departmentId) return false;
     return true;
   };
-
-  if (def.phase4 && (key === "attendance.late" || key === "attendance.early" || key === "attendance.overtime" || key === "attendance.present-absent")) {
-    return phase4Table(key, def.title, def.description);
-  }
 
   if (key.startsWith("hr.")) {
     const employees = catalog.employees.filter((employee) => {
@@ -220,19 +205,83 @@ export async function runReport(
   }
 
   if (key.startsWith("attendance.") || key.startsWith("biometric.")) {
-    if (key === "attendance.daily" || key === "attendance.monthly" || key === "attendance.lop") {
+    if (
+      key === "attendance.daily" ||
+      key === "attendance.monthly" ||
+      key === "attendance.lop" ||
+      key === "attendance.present-absent" ||
+      key === "attendance.late" ||
+      key === "attendance.early" ||
+      key === "attendance.overtime"
+    ) {
       const days = (await listAttendanceDays(organizationId, filters.from, filters.to)).filter((row) => matchEmployee(row.employee_id));
+      const named = (row: (typeof days)[number]) => {
+        const employee = catalog.employees.find((item) => item.id === row.employee_id);
+        return { code: employee?.employee_code ?? "—", name: employee?.display_name ?? "Unknown" };
+      };
       if (key === "attendance.lop") {
-        const lop = days.filter((row) => row.status === "UNPAID_LEAVE");
+        const lop = days.filter((row) => row.status === "UNPAID_LEAVE" || row.status === "ABSENT");
         return {
           key,
           title: def.title,
           description: def.description,
-          note: "These are unpaid-leave marks written by leave approval. Punch-based LOP is Phase 4.",
+          note: "UNPAID_LEAVE from leave approval and ABSENT from punch pairing. Leave overlays are not overwritten.",
           headers: ["Date", "Code", "Name", "Status", "Source"],
           rows: lop.map((row) => {
-            const employee = catalog.employees.find((item) => item.id === row.employee_id);
-            return [row.work_date, employee?.employee_code ?? "—", employee?.display_name ?? "Unknown", row.status, row.source];
+            const employee = named(row);
+            return [row.work_date, employee.code, employee.name, row.status, row.source];
+          }),
+        };
+      }
+      if (key === "attendance.present-absent") {
+        const filtered = days.filter((row) => row.status === "PRESENT" || row.status === "ABSENT");
+        return {
+          key,
+          title: def.title,
+          description: def.description,
+          headers: ["Date", "Code", "Name", "Status", "First in", "Last out", "Source"],
+          rows: filtered.map((row) => {
+            const employee = named(row);
+            return [row.work_date, employee.code, employee.name, row.status, row.first_in ?? "—", row.last_out ?? "—", row.source];
+          }),
+        };
+      }
+      if (key === "attendance.late") {
+        const filtered = days.filter((row) => (row.late_minutes ?? 0) > 0);
+        return {
+          key,
+          title: def.title,
+          description: def.description,
+          headers: ["Date", "Code", "Name", "Late minutes", "First in"],
+          rows: filtered.map((row) => {
+            const employee = named(row);
+            return [row.work_date, employee.code, employee.name, row.late_minutes ?? 0, row.first_in ?? "—"];
+          }),
+        };
+      }
+      if (key === "attendance.early") {
+        const filtered = days.filter((row) => (row.early_exit_minutes ?? 0) > 0);
+        return {
+          key,
+          title: def.title,
+          description: def.description,
+          headers: ["Date", "Code", "Name", "Early exit minutes", "Last out"],
+          rows: filtered.map((row) => {
+            const employee = named(row);
+            return [row.work_date, employee.code, employee.name, row.early_exit_minutes ?? 0, row.last_out ?? "—"];
+          }),
+        };
+      }
+      if (key === "attendance.overtime") {
+        const filtered = days.filter((row) => (row.ot_minutes ?? 0) > 0);
+        return {
+          key,
+          title: def.title,
+          description: def.description,
+          headers: ["Date", "Code", "Name", "OT minutes", "Worked minutes"],
+          rows: filtered.map((row) => {
+            const employee = named(row);
+            return [row.work_date, employee.code, employee.name, row.ot_minutes ?? 0, row.worked_minutes ?? 0];
           }),
         };
       }
@@ -256,7 +305,7 @@ export async function runReport(
           key,
           title: def.title,
           description: def.description,
-          note: "Counts leave-written attendance_days only.",
+          note: "Counts calculated attendance_days including punch, leave and calendar marks.",
           headers: ["Month", "Code", "Name", "Marked days"],
           rows: [...groups.values()].map((row) => [row.month, row.code, row.name, row.marks]),
         };
@@ -266,11 +315,11 @@ export async function runReport(
         key,
         title: def.title,
         description: def.description,
-        note: "Unmarked working days are treated as paid in payroll until Phase 4.",
-        headers: ["Date", "Code", "Name", "Status", "Session", "Source"],
+        note: "ABSENT working days are unpaid. Leave, weekly-off and holiday overlays are preserved.",
+        headers: ["Date", "Code", "Name", "Status", "Session", "Source", "Late", "OT"],
         rows: filtered.map((row) => {
-          const employee = catalog.employees.find((item) => item.id === row.employee_id);
-          return [row.work_date, employee?.employee_code ?? "—", employee?.display_name ?? "Unknown", row.status, row.session, row.source];
+          const employee = named(row);
+          return [row.work_date, employee.code, employee.name, row.status, row.session, row.source, row.late_minutes ?? 0, row.ot_minutes ?? 0];
         }),
       };
     }

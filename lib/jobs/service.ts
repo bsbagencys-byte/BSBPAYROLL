@@ -47,6 +47,7 @@ export async function ensureDefaultJobs(organizationId: string, actorId: string 
     { jobType: "DATA_EXPORT_EXPIRE", name: "Expire completed data exports" },
     { jobType: "INCIDENT_SLA", name: "Open incident SLA reminders" },
     { jobType: "SMART_QR_EXPIRE", name: "Expire unused smart attendance QR sessions" },
+    { jobType: "ATTENDANCE_RECALC", name: "Recalculate attendance days from punches" },
   ];
   const created: ScheduledJob[] = [];
   for (const def of defs) {
@@ -82,6 +83,16 @@ async function loadOrgTimezone(organizationId: string) {
   if (!admin) return "Asia/Kolkata";
   const { data } = await admin.from("organizations").select("timezone").eq("id", organizationId).maybeSingle();
   return (data?.timezone as string | undefined) || "Asia/Kolkata";
+}
+
+async function loadOrgWeeklyOff(organizationId: string) {
+  if (!hasSupabaseConfig() || isDemoMode()) {
+    return getDemoStore().org.weekly_off || "SUNDAY";
+  }
+  const admin = createAdminClient();
+  if (!admin) return "SUNDAY";
+  const { data } = await admin.from("organizations").select("weekly_off").eq("id", organizationId).maybeSingle();
+  return (data?.weekly_off as string | undefined) || "SUNDAY";
 }
 
 async function runJobBody(job: ScheduledJob): Promise<Record<string, unknown>> {
@@ -196,6 +207,20 @@ async function runJobBody(job: ScheduledJob): Promise<Record<string, unknown>> {
     case "SMART_QR_EXPIRE": {
       const { expireSmartQrJob } = await import("@/lib/smart-attendance/service");
       return expireSmartQrJob();
+    }
+    case "ATTENDANCE_RECALC": {
+      const { recalculateAttendance } = await import("@/lib/attendance/service");
+      const [timezone, weeklyOff] = await Promise.all([loadOrgTimezone(job.organization_id), loadOrgWeeklyOff(job.organization_id)]);
+      const today = new Date().toISOString().slice(0, 10);
+      const from = `${today.slice(0, 8)}01`;
+      return recalculateAttendance({
+        organizationId: job.organization_id,
+        actorId: null,
+        from,
+        to: today,
+        timezone,
+        weeklyOff,
+      });
     }
     default:
       return { skipped: true };

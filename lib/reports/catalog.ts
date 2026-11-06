@@ -65,12 +65,11 @@ export type ReportDef = {
   description: string;
   permission: PermissionCode;
   filters: Array<"period" | "from" | "to" | "branch" | "department" | "employee" | "status">;
-  phase4?: boolean;
 };
 
 export const REPORT_GROUPS: Array<{ id: ReportGroup; title: string; description: string }> = [
   { id: "hr", title: "HR", description: "Employee register, joining/exit and headcount." },
-  { id: "attendance", title: "Attendance", description: "Leave-written days and punch ingest. Phase 4 late/OT/LOP is not calculated yet." },
+  { id: "attendance", title: "Attendance", description: "Daily results from punch pairing, leave overlays and calendar marks." },
   { id: "leave", title: "Leave", description: "Requests, balances and department summaries." },
   { id: "payroll", title: "Payroll", description: "Register, components and cost from finalized payroll rows." },
   { id: "compliance", title: "Compliance", description: "PF, ESI, PT, LWF, TDS from Phase 11 filings and results." },
@@ -84,13 +83,13 @@ export const REPORTS: ReportDef[] = [
   { key: "hr.joining-exit", group: "hr", title: "Joining / exit", description: "Joiners from employment dates and recorded exits.", permission: "employee.view", filters: ["from", "to", "branch", "department"] },
   { key: "hr.headcount", group: "hr", title: "Department / branch headcount", description: "Active headcount grouped by department and branch.", permission: "employee.view", filters: ["branch", "department", "status"] },
   { key: "hr.status", group: "hr", title: "Employment status", description: "Employees grouped by employment status.", permission: "employee.view", filters: ["status", "branch"] },
-  { key: "attendance.daily", group: "attendance", title: "Daily register", description: "Leave-written attendance_days. Unmarked working days are not calculated until Phase 4.", permission: "attendance.view", filters: ["from", "to", "branch", "department", "employee", "status"] },
+  { key: "attendance.daily", group: "attendance", title: "Daily register", description: "Calculated attendance_days from punches, leave overlays and calendar.", permission: "attendance.view", filters: ["from", "to", "branch", "department", "employee", "status"] },
   { key: "attendance.monthly", group: "attendance", title: "Monthly register", description: "Day marks rolled up by employee and month.", permission: "attendance.view", filters: ["period", "branch", "department", "employee"] },
-  { key: "attendance.present-absent", group: "attendance", title: "Present / absent", description: "PRESENT and ABSENT marks only. Phase 4 will fill these from punches.", permission: "attendance.view", filters: ["from", "to", "employee"], phase4: true },
-  { key: "attendance.late", group: "attendance", title: "Late", description: "Not calculated. Phase 4 attendance engine is not started.", permission: "attendance.view", filters: ["from", "to"], phase4: true },
-  { key: "attendance.early", group: "attendance", title: "Early exit", description: "Not calculated. Phase 4 attendance engine is not started.", permission: "attendance.view", filters: ["from", "to"], phase4: true },
-  { key: "attendance.overtime", group: "attendance", title: "Overtime", description: "Not calculated. Phase 4 attendance engine is not started.", permission: "attendance.view", filters: ["from", "to"], phase4: true },
-  { key: "attendance.lop", group: "attendance", title: "LOP", description: "Unpaid leave marks from attendance_days. Punch-based LOP waits for Phase 4.", permission: "attendance.view", filters: ["from", "to", "employee"] },
+  { key: "attendance.present-absent", group: "attendance", title: "Present / absent", description: "PRESENT and ABSENT marks from the attendance engine.", permission: "attendance.view", filters: ["from", "to", "employee"] },
+  { key: "attendance.late", group: "attendance", title: "Late", description: "Days with late minutes from punch pairing.", permission: "attendance.view", filters: ["from", "to"] },
+  { key: "attendance.early", group: "attendance", title: "Early exit", description: "Days with early-exit minutes from punch pairing.", permission: "attendance.view", filters: ["from", "to"] },
+  { key: "attendance.overtime", group: "attendance", title: "Overtime", description: "Days with overtime minutes from punch pairing.", permission: "attendance.view", filters: ["from", "to"] },
+  { key: "attendance.lop", group: "attendance", title: "LOP", description: "Unpaid leave and ABSENT marks from attendance_days.", permission: "attendance.view", filters: ["from", "to", "employee"] },
   { key: "attendance.missing-punches", group: "attendance", title: "Missing punches", description: "Normalized events that stayed UNMAPPED, plus days with no punch (informational).", permission: "biometric.view", filters: ["from", "to"] },
   { key: "attendance.device-events", group: "attendance", title: "Device events", description: "Normalized biometric events.", permission: "biometric.view", filters: ["from", "to", "status"] },
   { key: "leave.register", group: "leave", title: "Leave register", description: "All leave requests.", permission: "leave.view", filters: ["from", "to", "branch", "department", "employee", "status"] },

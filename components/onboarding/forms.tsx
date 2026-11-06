@@ -73,11 +73,11 @@ export function SkipAttendanceForm() {
       <CardContent>
         <form action={action} className="grid gap-3">
           <p className="text-sm text-slate-600">
-            Phase 4 attendance is not started. Skipping records that this step is optional. It does not mark onboarding complete by itself.
+            Attendance is optional. Skipping records that this step can be completed later. It does not mark onboarding complete by itself.
           </p>
           <div>
             <Label htmlFor="reason">Reason</Label>
-            <Input id="reason" name="reason" required minLength={3} placeholder="We will configure shifts after Phase 4" />
+            <Input id="reason" name="reason" required minLength={3} placeholder="We will configure shifts after go-live" />
             <FieldError>{state.errors?.reason?.[0]}</FieldError>
           </div>
           {state.message ? <Alert variant={state.success ? "success" : "error"}>{state.message}</Alert> : null}

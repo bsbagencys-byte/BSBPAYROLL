@@ -28,4 +28,4 @@ Staging is a separate environment. It must not share production database, storag
 
 ## Health
 
-`GET /api/health` must return `ok: true` without secrets. `limitations.attendanceCalculation` remains false until Phase 4 exists.
+`GET /api/health` must return `ok: true` without secrets. `limitations.attendanceCalculation` is true after Phase 4.

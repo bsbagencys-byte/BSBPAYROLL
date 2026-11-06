@@ -4,6 +4,32 @@ Entries record what landed in git, not planned work.
 
 ---
 
+## Phase 4 — Attendance engine
+
+- **Date:** 2026-11-04
+- **Status:** implemented on `261015-feat-ess-portal`
+- **Go-live:** NOT READY
+
+### Implemented
+
+- Additive overlay. Phases 1–3 and 5–21 unchanged. Face matching is not implemented.
+- Punch pairing (`FIRST_LAST` default, optional `PAIRWISE`), shifts, overnight work-date assignment, late/OT, exceptions and regularization.
+- Leave overlays win. Weekly-off and holiday are not marked absent. Payroll-locked days skip recalc. Raw punches are never rewritten.
+- Screens: `/attendance`, `/attendance/live`, `/attendance/register`, `/attendance/daily`, `/attendance/exceptions`, `/attendance/regularization`, `/attendance/shifts`, `/attendance/settings`.
+- Salary `lateCount` / `otMinutes` from calculated `attendance_days`. Job `ATTENDANCE_RECALC`.
+- Tests: `tests/attendance.test.ts`.
+
+### Database
+
+- Additive `supabase/phase4.sql`, appended into `combined.sql`.
+- Extra columns on `attendance_days`. Tables: policies, shifts, assignments, exceptions, regularizations.
+
+### Not claimed
+
+- Face matching, physical-device certification, production launch.
+
+---
+
 ## Phase 21 — Smart Auto Attendance
 
 - **Date:** 2026-11-01

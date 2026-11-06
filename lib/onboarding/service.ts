@@ -99,6 +99,8 @@ async function loadFacts(organizationId: string): Promise<OnboardingFacts> {
       biometricDeviceCount: store.biometricDevices.filter((row) => row.organization_id === organizationId).length,
       userCount: store.memberships.filter((row) => row.organization_id === organizationId).length,
       skippedAttendance: Boolean((await getOnboardingProgress(organizationId))?.skipped_attendance),
+      shiftCount: store.shifts.filter((row) => row.organization_id === organizationId).length,
+      attendancePolicyConfigured: store.attendancePolicies.some((row) => row.organization_id === organizationId),
     };
   }
   const admin = createAdminClient();
@@ -115,6 +117,8 @@ async function loadFacts(organizationId: string): Promise<OnboardingFacts> {
       biometricDeviceCount: 0,
       userCount: 0,
       skippedAttendance: false,
+      shiftCount: 0,
+      attendancePolicyConfigured: false,
     };
   }
   const [
@@ -128,6 +132,8 @@ async function loadFacts(organizationId: string): Promise<OnboardingFacts> {
     devices,
     users,
     progress,
+    shifts,
+    policies,
   ] = await Promise.all([
     admin.from("organizations").select("*").eq("id", organizationId).maybeSingle(),
     admin.from("branches").select("id").eq("organization_id", organizationId),
@@ -139,6 +145,8 @@ async function loadFacts(organizationId: string): Promise<OnboardingFacts> {
     admin.from("biometric_devices").select("id").eq("organization_id", organizationId),
     admin.from("organization_users").select("id").eq("organization_id", organizationId),
     getOnboardingProgress(organizationId),
+    admin.from("shifts").select("id").eq("organization_id", organizationId),
+    admin.from("attendance_policies").select("id").eq("organization_id", organizationId).maybeSingle(),
   ]);
   const org = orgRes.data as { name?: string; legal_name?: string; pan?: string; timezone?: string; weekly_off?: string } | null;
   const companyEvidence: string[] = [];
@@ -158,6 +166,8 @@ async function loadFacts(organizationId: string): Promise<OnboardingFacts> {
     biometricDeviceCount: devices.data?.length ?? 0,
     userCount: users.data?.length ?? 0,
     skippedAttendance: Boolean(progress?.skipped_attendance),
+    shiftCount: shifts.data?.length ?? 0,
+    attendancePolicyConfigured: Boolean(policies.data),
   };
 }
 

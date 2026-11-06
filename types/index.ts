@@ -2,6 +2,11 @@ import type {
   AccrualFrequency,
   AccrualMethod,
   AttendanceDayStatus,
+  AttendanceExceptionCode,
+  AttendanceExceptionStatus,
+  AttendanceRegularizationStatus,
+  PunchPairingMode,
+  ShiftStatus,
   BiometricEventStatus,
   BiometricSource,
   BiometricVendor,
@@ -170,6 +175,11 @@ export type {
   AccrualFrequency,
   AccrualMethod,
   AttendanceDayStatus,
+  AttendanceExceptionCode,
+  AttendanceExceptionStatus,
+  AttendanceRegularizationStatus,
+  PunchPairingMode,
+  ShiftStatus,
   CompOffStatus,
   CompensationEntryStatus,
   HolidayType,
@@ -963,8 +973,108 @@ export interface AttendanceDay {
   leave_request_id: string | null;
   source: string;
   previous_status: AttendanceDayStatus | null;
+  shift_id?: string | null;
+  first_in?: string | null;
+  last_out?: string | null;
+  worked_minutes?: number;
+  late_minutes?: number;
+  early_exit_minutes?: number;
+  ot_minutes?: number;
+  locked?: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface AttendancePolicy {
+  id: string;
+  organization_id: string;
+  grace_minutes: number;
+  break_minutes: number;
+  full_day_minutes: number;
+  half_day_minutes: number;
+  ot_minimum_minutes: number;
+  ot_rounding_minutes: number;
+  punch_pairing: PunchPairingMode;
+  allow_overnight: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Shift {
+  id: string;
+  organization_id: string;
+  name: string;
+  code: string;
+  start_time: string;
+  end_time: string;
+  break_minutes: number;
+  overnight: boolean;
+  status: ShiftStatus;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftAssignment {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  shift_id: string;
+  effective_from: string;
+  effective_to: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface AttendanceException {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  work_date: string;
+  attendance_day_id: string | null;
+  code: AttendanceExceptionCode;
+  status: AttendanceExceptionStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceRegularization {
+  id: string;
+  organization_id: string;
+  employee_id: string;
+  work_date: string;
+  requested_in: string | null;
+  requested_out: string | null;
+  reason: string;
+  status: AttendanceRegularizationStatus;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_notes: string | null;
+  original_first_in: string | null;
+  original_last_out: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceRegisterRow {
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  workDate: string;
+  status: AttendanceDayStatus;
+  firstIn: string | null;
+  lastOut: string | null;
+  workedMinutes: number;
+  lateMinutes: number;
+  earlyExitMinutes: number;
+  otMinutes: number;
+  source: string;
+  locked: boolean;
 }
 
 export interface LeaveDayPreview {

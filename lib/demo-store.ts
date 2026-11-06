@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import type {
   AttendanceDay,
+  AttendanceException,
+  AttendancePolicy,
   AttendancePunch,
+  AttendanceRegularization,
+  Shift,
+  ShiftAssignment,
   AuditLog,
   BiometricDevice,
   BiometricIdentityMap,
@@ -171,8 +176,11 @@ import type {
 import {
   DEFAULT_EMPLOYMENT_TYPES,
   DEFAULT_ROLE_PERMISSIONS,
+  DEFAULT_ATTENDANCE_POLICY,
+  DEMO_ATTENDANCE_POLICY_ID,
   DEMO_ESSL_DEVICE_ID,
   DEMO_ESSL_DEVICE_TOKEN,
+  DEMO_SHIFT_ID,
   DEMO_SMART_SETTINGS_ID,
   DEMO_SMART_WORKPLACE_ID,
   PERMISSIONS,
@@ -371,6 +379,11 @@ export type DemoStore = {
   biometricRawEvents: BiometricRawEvent[];
   biometricNormalizedEvents: BiometricNormalizedEvent[];
   attendancePunches: AttendancePunch[];
+  attendancePolicies: AttendancePolicy[];
+  shifts: Shift[];
+  shiftAssignments: ShiftAssignment[];
+  attendanceExceptions: AttendanceException[];
+  attendanceRegularizations: AttendanceRegularization[];
   leaveTypes: LeaveType[];
   leavePolicies: LeavePolicy[];
   leavePolicyAssignments: LeavePolicyAssignment[];
@@ -959,6 +972,7 @@ function createStore(): DemoStore {
     biometricRawEvents: [] as BiometricRawEvent[],
     biometricNormalizedEvents: [] as BiometricNormalizedEvent[],
     attendancePunches: [] as AttendancePunch[],
+    ...createAttendanceSeed(),
     ...createLeaveSeed(),
     ...createSalarySeed(),
     ...createBenefitsSeed(),
@@ -973,6 +987,84 @@ function createStore(): DemoStore {
     ...createOnboardingSeed(),
     ...createLaunchSeed(),
     ...createSmartAttendanceSeed(),
+  };
+}
+
+function createAttendanceSeed(): Pick<
+  DemoStore,
+  "attendancePolicies" | "shifts" | "shiftAssignments" | "attendanceExceptions" | "attendanceRegularizations"
+> {
+  const created = nowIso();
+  return {
+    attendancePolicies: [
+      {
+        id: DEMO_ATTENDANCE_POLICY_ID,
+        organization_id: ORG_ID,
+        grace_minutes: DEFAULT_ATTENDANCE_POLICY.graceMinutes,
+        break_minutes: DEFAULT_ATTENDANCE_POLICY.breakMinutes,
+        full_day_minutes: DEFAULT_ATTENDANCE_POLICY.fullDayMinutes,
+        half_day_minutes: DEFAULT_ATTENDANCE_POLICY.halfDayMinutes,
+        ot_minimum_minutes: DEFAULT_ATTENDANCE_POLICY.otMinimumMinutes,
+        ot_rounding_minutes: DEFAULT_ATTENDANCE_POLICY.otRoundingMinutes,
+        punch_pairing: DEFAULT_ATTENDANCE_POLICY.punchPairing,
+        allow_overnight: DEFAULT_ATTENDANCE_POLICY.allowOvernight,
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    shifts: [
+      {
+        id: DEMO_SHIFT_ID,
+        organization_id: ORG_ID,
+        name: "General",
+        code: "GEN",
+        start_time: "09:00",
+        end_time: "18:00",
+        break_minutes: 60,
+        overnight: false,
+        status: "ACTIVE",
+        created_by: null,
+        updated_by: null,
+        created_at: created,
+        updated_at: created,
+      },
+    ],
+    shiftAssignments: [
+      {
+        id: "sa111111-1111-1111-1111-111111111111",
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_ADMIN_ID,
+        shift_id: DEMO_SHIFT_ID,
+        effective_from: "2020-01-01",
+        effective_to: null,
+        created_by: null,
+        created_at: created,
+      },
+      {
+        id: "sa222222-2222-2222-2222-222222222222",
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_HR_ID,
+        shift_id: DEMO_SHIFT_ID,
+        effective_from: "2020-01-01",
+        effective_to: null,
+        created_by: null,
+        created_at: created,
+      },
+      {
+        id: "sa333333-3333-3333-3333-333333333333",
+        organization_id: ORG_ID,
+        employee_id: EMPLOYEE_STAFF_ID,
+        shift_id: DEMO_SHIFT_ID,
+        effective_from: "2020-01-01",
+        effective_to: null,
+        created_by: null,
+        created_at: created,
+      },
+    ],
+    attendanceExceptions: [],
+    attendanceRegularizations: [],
   };
 }
 
@@ -3686,7 +3778,8 @@ export function getDemoStore(): DemoStore {
      !("subscriptionPlans" in globalStore.__bsbDemo) ||
      !("onboardingProgress" in globalStore.__bsbDemo) ||
      !("moduleReadiness" in globalStore.__bsbDemo) ||
-     !("smartAttendanceSettings" in globalStore.__bsbDemo)
+      !("smartAttendanceSettings" in globalStore.__bsbDemo) ||
+      !("attendancePolicies" in globalStore.__bsbDemo)
   ) {
     globalStore.__bsbDemo = createStore();
   }

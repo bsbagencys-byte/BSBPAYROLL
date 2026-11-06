@@ -26,5 +26,5 @@ test("health payload never includes secrets", () => {
   const text = JSON.stringify(health);
   assert.equal(/service_role|password|whsec_|bsb_live_/i.test(text), false);
   assert.equal(health.ok, true);
-  assert.equal(health.limitations.attendanceCalculation, false);
+  assert.equal(health.limitations.attendanceCalculation, true);
 });

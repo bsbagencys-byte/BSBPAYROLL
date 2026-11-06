@@ -16,7 +16,7 @@ const adapterContext = {
   rawBody: "",
 };
 
-test("journey A: join employee, assign salary, leave, payroll — attendance calc skipped (Phase 4)", () => {
+test("journey A: join employee, assign salary, leave, payroll — unmarked days paid until recalculated", () => {
   const salary = evaluateFormula("BASIC * 0.4", { BASIC: 25000 });
   assert.equal(salary.ok, true);
   const attendance = summarizeAttendance({
@@ -28,13 +28,13 @@ test("journey A: join employee, assign salary, leave, payroll — attendance cal
     joiningDate: "2026-01-01",
   });
   assert.equal(attendance.paidLeaveDays, 1);
-  assert.ok(attendance.presentDays > 0, "unmarked working days paid until Phase 4");
+  assert.ok(attendance.presentDays > 0, "unmarked working days paid until recalculated");
   const net = roundMoney(prorate(25000, attendance.paidDays, attendance.workingDays));
   assert.ok(net > 0);
   assert.equal(eligibleEmployee({ status: "ACTIVE", id: EMPLOYEE_A } as never, { joining_date: "2026-01-01" } as never, "2026-01-31").ok, true);
 });
 
-test("journey B: punch ingest maps or stays unmapped; day calc not claimed", () => {
+test("journey B: punch ingest maps or stays unmapped; day calc is a separate engine", () => {
   const mapped = genericAdapter.parse({ deviceUserId: "101", punchedAt: "2026-01-15T09:00:00+05:30" }, adapterContext);
   const retry = genericAdapter.parse({ deviceUserId: "101", punchedAt: "2026-01-15T09:00:00+05:30" }, adapterContext);
   assert.equal(mapped.ok && retry.ok, true);

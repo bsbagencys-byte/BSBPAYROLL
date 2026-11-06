@@ -38,7 +38,7 @@ export default async function PayrollPage() {
     <div>
       <PageHeader
         title="Payroll"
-        description="Monthly run using salary, leave-marked attendance days, approved claims and loan EMI. Unmarked working days count as paid until Phase 4."
+        description="Monthly run using salary, calculated attendance days, approved claims and loan EMI. ABSENT working days are unpaid. Recalculate attendance after new punches."
         actions={
           overview.latest ? (
             <Link href={`/payroll/runs/${overview.latest.id}`}>

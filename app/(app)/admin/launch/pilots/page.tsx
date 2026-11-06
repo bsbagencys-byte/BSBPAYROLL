@@ -21,7 +21,7 @@ export default async function LaunchPilotsPage() {
     <div>
       <PageHeader
         title="Isolated pilot organizations"
-        description="Templates are organization-specific. Do not mix employees, punches or payroll between pilots. Shifts stay optional until Phase 4."
+        description="Templates are organization-specific. Do not mix employees, punches or payroll between pilots."
       />
       <LaunchSubnav />
       <div className="grid gap-6">

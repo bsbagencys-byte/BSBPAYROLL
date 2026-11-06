@@ -38,7 +38,7 @@ export default async function OnboardingPage() {
         <Card>
           <CardHeader><CardTitle className="text-sm font-medium text-slate-500">Attendance</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm">{data.facts.skippedAttendance ? "Skipped (optional)" : "Blocked until Phase 4"}</p>
+            <p className="text-sm">{data.facts.skippedAttendance ? "Skipped (optional)" : data.facts.attendancePolicyConfigured ? "Configured" : "Not started"}</p>
           </CardContent>
         </Card>
       </div>

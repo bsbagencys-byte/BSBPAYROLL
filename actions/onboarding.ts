@@ -69,7 +69,7 @@ export async function skipAttendanceAction(
   if (!parsed.success) return { success: false, errors: flattenErrors(parsed.error), message: "Please explain why attendance is skipped." };
   await skipAttendanceStep(access.user.organization.id, access.user.id, parsed.data.reason);
   refresh();
-  return { success: true, message: "Attendance step skipped. It remains optional until Phase 4 exists." };
+  return { success: true, message: "Attendance step skipped. Configure shifts later from /attendance." };
 }
 
 export async function previewImportAction(

@@ -21,7 +21,7 @@ export default async function ApiDocsPage() {
           <ul className="list-disc space-y-1 pl-5">
             <li>GET /api/v1/employees — employees.read</li>
             <li>GET /api/v1/organization — organization.read</li>
-            <li>GET /api/v1/attendance/summaries — attendance.read (Phase 4 punch calc is not claimed)</li>
+            <li>GET /api/v1/attendance/summaries — attendance.read (calculated attendance_days)</li>
             <li>GET /api/v1/leave — leave.read</li>
             <li>GET /api/v1/payroll/runs — payroll.read</li>
             <li>GET /api/v1/payslips — payslips.read (metadata only; no public PDF URL)</li>

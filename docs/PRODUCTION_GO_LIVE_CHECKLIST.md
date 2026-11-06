@@ -4,7 +4,7 @@ Status from code, not README. Classification uses IMPLEMENTED AND TESTED, UNVERI
 
 **Go-live verdict: NOT READY**
 
-Do not treat this as launch-ready. Phase 4 attendance is not started. Physical biometric hardware is unverified. India statutory rates are unverified. Backup restore was not executed here. No isolated pilot organization has signed off.
+Do not treat this as launch-ready. Physical biometric hardware is unverified. India statutory rates are unverified. Backup restore was not executed here. No isolated pilot organization has signed off. Face matching is not implemented.
 
 ---
 
@@ -18,7 +18,7 @@ Do not treat this as launch-ready. Phase 4 attendance is not started. Physical b
 | Payroll calculate / finalize / lock / process | IMPLEMENTED AND TESTED (unit) | Engine, workflow, proration, loan EMI, leave-written LOP. Snapshot unique per run. Cancel/adjust blocked after finalize. |
 | Statutory PF/ESI/PT/TDS/LWF | UNVERIFIED rates | Versioned engine with warnings. Seed versions DISABLED/unverified. Do not claim official rates. |
 | Biometric ingest | IMPLEMENTED AND TESTED (unit parse/dedupe) | Token hash, duplicate device+user+time, unmapped vs mapped. Hardware UNVERIFIED. ZKTeco/Matrix PROTOCOL_FOUNDATION. |
-| Attendance day engine | BLOCKED (Phase 4 not started) | Punches exist. Days are leave/holiday marks only. Unmarked working days paid. |
+| Attendance day engine | IMPLEMENTED AND TESTED (unit) | Punch pairing, shifts, late/OT, leave overlay, regularization. Payroll-locked days immutable. Face matching not implemented. |
 | ESS identity | IMPLEMENTED AND TESTED (unit) | Session `user_id` + org only. |
 | API keys / webhooks / jobs | IMPLEMENTED AND TESTED (unit SSRF/HMAC) | Jobs secret compared in constant time. Webhook secret encrypted at rest when `SESSION_SECRET` is set. |
 | Email | PARTIAL | SMTP optional. Unconfigured is never success. |
@@ -49,8 +49,8 @@ Do not treat this as launch-ready. Phase 4 attendance is not started. Physical b
 
 ## Documented limitations (not blockers for a limited go-live)
 
-- Phase 4 attendance is not started. Do not sell late, OT, or punch-derived LOP.
-- Unmarked working days count as paid.
+- Recalculate attendance after new punches. Unmarked working days remain paid until recalculated. ABSENT working days are unpaid.
+- Face matching is not implemented. Do not sell face attendance.
 - Statutory seed versions are DISABLED and unverified. Enable only after a compliance owner pastes official sources into `source_citation`.
 - ZKTeco and Matrix are protocol foundations, not certified hardware.
 - In-memory rate limits are per process. Use an edge/WAF limit in multi-instance production.
@@ -69,11 +69,11 @@ Do not treat this as launch-ready. Phase 4 attendance is not started. Physical b
 
 Synthetic fixtures only. No real employee or production financial data.
 
-| Journey | Automated | Phase 4 |
+| Journey | Automated | Notes |
 |---|---|---|
-| A Join → salary → leave → payroll | Yes (engine/formula/attendance summary) | Attendance calc skipped and flagged |
-| B Punch ingest → map/unmap → retry duplicate | Yes (adapter + identity) | Day calc not claimed |
-| C Leave unpaid → LOP in payroll summary | Yes | Punch LOP not claimed |
+| A Join → salary → leave → payroll | Yes (engine/formula/attendance summary) | Unmarked days paid until recalculated |
+| B Punch ingest → map/unmap → retry duplicate | Yes (adapter + identity) | Day calc is a separate engine |
+| C Leave unpaid → LOP in payroll summary | Yes | ABSENT working days are also unpaid |
 | D Loan EMI in payroll quote | Yes | |
 | E Finalize → lock → process immutability | Yes (workflow) | |
 | F Exit before period excluded from ordinary payroll | Yes | |

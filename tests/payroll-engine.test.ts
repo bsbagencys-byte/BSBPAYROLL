@@ -26,7 +26,7 @@ test("periodBounds returns calendar month inclusive dates", () => {
   assert.equal(periodBounds("2024-02").daysInMonth, 29);
 });
 
-test("summarizeAttendance treats unmarked working days as paid until Phase 4", () => {
+test("summarizeAttendance treats unmarked working days as paid until recalculated", () => {
   const summary = summarizeAttendance({
     from: "2026-01-01",
     to: "2026-01-07",
@@ -50,7 +50,7 @@ test("summarizeAttendance treats unmarked working days as paid until Phase 4", (
   assert.equal(summary.weeklyOffDays, 1);
   assert.equal(summary.lopDays, 1);
   assert.ok(summary.paidDays > 0);
-  assert.ok(summary.presentDays >= 3, "unmarked weekdays remain paid without Phase 4");
+  assert.ok(summary.presentDays >= 3, "unmarked weekdays remain paid until recalculated");
 });
 
 test("eligibleEmployee rejects inactive and post-period joiners", () => {

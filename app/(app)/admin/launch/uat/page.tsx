@@ -17,7 +17,7 @@ export default async function LaunchUatPage() {
     <div>
       <PageHeader
         title="Customer acceptance testing"
-        description="Record PASS/FAIL with tester and evidence. Shift/attendance journeys stay BLOCKED until Phase 4. Screenshots are stored as notes, not secrets."
+        description="Record PASS/FAIL with tester and evidence. Screenshots are stored as notes, not secrets."
       />
       <LaunchSubnav />
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">

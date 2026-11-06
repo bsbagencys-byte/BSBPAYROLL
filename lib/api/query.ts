@@ -52,7 +52,7 @@ export async function apiAttendanceSummaries(organizationId: string, from?: stri
     to: end,
     present_days: byEmployee.get(employee.id)?.present ?? 0,
     leave_days: byEmployee.get(employee.id)?.leave ?? 0,
-    note: "Punch-based present/absent is not calculated until Phase 4.",
+    note: "Present days come from calculated attendance_days. Recalculate after new punches.",
   }));
 }
 

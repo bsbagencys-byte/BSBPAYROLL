@@ -24,9 +24,8 @@ Required:
 7. Statutory configuration with source citation (leave DISABLED if unverified)
 8. Non-final parallel payroll comparison for at least two representative periods
 
-Optional / blocked:
+Optional:
 
-- Shifts and attendance rules (Phase 4 not started)
 - Physical biometric connection (record SIMULATED or API_TESTED until a device is verified)
 
 ## Payroll parallel run
@@ -35,7 +34,7 @@ Compare BSB net against independently verified records. Document every mismatch.
 
 ## UAT roles
 
-ADMIN, HR, PAYROLL, EMPLOYEE, ACCOUNTANT. Shift/attendance journeys remain BLOCKED until Phase 4.
+ADMIN, HR, PAYROLL, EMPLOYEE, ACCOUNTANT. Recalculate attendance after ingesting punches.
 
 ## Sign-off
 

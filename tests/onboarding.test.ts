@@ -34,6 +34,8 @@ function facts(overrides: Partial<OnboardingFacts> = {}): OnboardingFacts {
     biometricDeviceCount: 1,
     userCount: 4,
     skippedAttendance: false,
+    shiftCount: 1,
+    attendancePolicyConfigured: true,
     ...overrides,
   };
 }
@@ -56,12 +58,14 @@ test("onboarding is complete only when required steps have stored data", () => {
   assert.equal(empty.find((step) => step.step_key === "COMPANY")?.status, "NOT_STARTED");
 });
 
-test("opening attendance does not complete onboarding and skip stays optional", () => {
-  const blocked = evaluateOnboarding(facts());
-  const attendance = blocked.find((step) => step.step_key === "ATTENDANCE");
-  assert.equal(attendance?.status, "BLOCKED");
+test("attendance is optional and skip does not complete onboarding", () => {
+  const ready = evaluateOnboarding(facts());
+  const attendance = ready.find((step) => step.step_key === "ATTENDANCE");
+  assert.equal(attendance?.status, "COMPLETE");
   assert.equal(attendance?.required, false);
-  const skipped = evaluateOnboarding(facts({ skippedAttendance: true }));
+  const empty = evaluateOnboarding(facts({ shiftCount: 0, attendancePolicyConfigured: false }));
+  assert.equal(empty.find((step) => step.step_key === "ATTENDANCE")?.status, "NOT_STARTED");
+  const skipped = evaluateOnboarding(facts({ skippedAttendance: true, shiftCount: 0, attendancePolicyConfigured: false }));
   assert.equal(skipped.find((step) => step.step_key === "ATTENDANCE")?.status, "SKIPPED");
   assert.equal(onboardingComplete(evaluateOnboarding(facts({ employeeCount: 0, skippedAttendance: true }))), false);
 });

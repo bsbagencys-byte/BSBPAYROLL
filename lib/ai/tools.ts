@@ -59,7 +59,7 @@ export async function runAnalyticsTools(organizationId: string, timezone: string
     } else if (name === "biometric_health") {
       results.push({
         name,
-        text: `Unmapped punches: ${snapshot.unmappedCount}. Failed ingest: ${snapshot.failedCount}. Punch-based late/OT/LOP is not calculated until Phase 4.`,
+        text: `Unmapped punches: ${snapshot.unmappedCount}. Failed ingest: ${snapshot.failedCount}. Late/OT come from calculated attendance_days.`,
       });
     } else if (name === "payroll_variance") {
       const movers = snapshot.variance

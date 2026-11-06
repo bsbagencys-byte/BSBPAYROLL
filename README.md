@@ -1,8 +1,8 @@
 # BSB Payroll
 
-Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, Phase 12 employee exit, full & final settlement and contractor payroll, Phase 13 employee self-service, Phase 14 reports, accounting exports and salary payments, Phase 15 automation, notifications, scheduled jobs, signed webhooks and scoped APIs, Phase 16 explainable analytics, anomaly detection, optional AI assistant and biometric vendor expansion, and Phase 17 production-readiness overlay. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
+Phase 1 foundation, Phase 2 employee and organisation management, Phase 3 universal biometric ingest, Phase 4 attendance calculation, Phase 5 leave and holiday management, Phase 6 salary and compensation, Phase 7 benefits, reimbursements, TA/DA and claims, Phase 8 loans and advances, Phase 9 payroll and compliance, Phase 10 review, approval, finalization and payslip foundation, Phase 11 versioned India statutory and tax engine, Phase 12 employee exit, full & final settlement and contractor payroll, Phase 13 employee self-service, Phase 14 reports, accounting exports and salary payments, Phase 15 automation, notifications, scheduled jobs, signed webhooks and scoped APIs, Phase 16 explainable analytics, anomaly detection, optional AI assistant and biometric vendor expansion, and Phase 17 production-readiness overlay. TypeScript, Next.js App Router, Tailwind, Supabase Auth + PostgreSQL + RLS.
 
-This app does **not** implement full attendance calculation, Face, QR, GPS or mobile attendance. Approved leave writes a thin `attendance_days` mark; punches stay in Phase 3 ingest. Payroll treats unmarked working days as paid until Phase 4.
+Attendance calculation pairs punches into daily results with shifts, late/OT, leave overlays and calendar marks. Raw punches are never rewritten. Face matching is not implemented. Payroll treats unmarked working days as paid until recalculated; ABSENT working days are unpaid.
 
 ## Stack
 
@@ -266,7 +266,7 @@ Demo mode is for local preview only. Production must use real Supabase credentia
 - `POST /api/internal/jobs`
 - `GET /api/internal/jobs`
 
-Attendance calculation (Phase 4) remains Coming Soon.
+Attendance calculation lives at `/attendance`. Recalculate after new punches. Job `ATTENDANCE_RECALC`.
 
 ## Leave
 
@@ -318,7 +318,7 @@ Attendance calculation (Phase 4) remains Coming Soon.
 
 - One run per calendar month. Workflow: draft, calculate, lock, process, mark paid.
 - Net pay uses salary snapshot, approved variable/reimbursement, approved claims and loan EMI, minus PF/ESI/PT/TDS.
-- Unmarked working days count as paid until Phase 4 attendance calculation exists.
+- Unmarked working days count as paid until attendance is recalculated. ABSENT working days are unpaid.
 - Payslips issue on process. Compliance filings (PF, ESI, PT, TDS) are generated from included employees.
 - Exited employees whose last working date is before the period are excluded from ordinary payroll.
 
@@ -373,4 +373,4 @@ npm test
 
 ## Later phases
 
-Attendance calculation (Phase 4). New biometric vendors add an adapter, not a rewrite. Physical ZKTeco/Matrix hardware is not certified.
+Face attendance provider. New biometric vendors add an adapter, not a rewrite. Physical ZKTeco/Matrix hardware is not certified.

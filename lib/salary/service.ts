@@ -25,6 +25,7 @@ import {
   updateSalaryStructure,
   updateVariableEarning,
 } from "@/lib/salary/repository";
+import { attendanceLateOtTotals } from "@/lib/attendance/service";
 import { listAttendanceDays } from "@/lib/leave/attendance";
 import { listRequests } from "@/lib/leave/repository";
 import { loadOrgCatalog } from "@/lib/org-data";
@@ -85,9 +86,10 @@ export async function loadAttendanceInputs(
   const month = date.slice(0, 7);
   const from = `${month}-01`;
   const to = date;
-  const [days, requests] = await Promise.all([
+  const [days, requests, lateOt] = await Promise.all([
     listAttendanceDays(organizationId, from, to),
     listRequests(organizationId),
+    attendanceLateOtTotals(organizationId, employeeId, from, to),
   ]);
   const mine = days.filter((item) => item.employee_id === employeeId);
   const workingDays = mine.filter((item) => item.status !== "WEEKLY_OFF" && item.status !== "HOLIDAY").length;
@@ -106,8 +108,8 @@ export async function loadAttendanceInputs(
     presentDays,
     unpaidLeaveDays: unpaidLeaveDays || approvedLop,
     paidLeaveDays,
-    lateCount: 0,
-    otMinutes: 0,
+    lateCount: lateOt.lateCount,
+    otMinutes: lateOt.otMinutes,
   };
 }
 

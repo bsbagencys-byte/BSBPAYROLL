@@ -19,7 +19,7 @@ export default async function SmartAttendancePage() {
     <div>
       <PageHeader
         title="Smart Attendance"
-        description="Geofence overlay that feeds the existing punch pipeline. The app never decides validity. Phase 4 attendance calculation is not started."
+        description="Geofence overlay that feeds the existing punch pipeline. The app never decides validity. Recalculate attendance to turn punches into day results."
       />
       <SmartAttendanceSubnav />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

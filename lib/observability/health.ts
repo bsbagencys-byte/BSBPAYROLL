@@ -33,7 +33,7 @@ export function collectHealth() {
       paymentProviderConfigured,
     },
     limitations: {
-      attendanceCalculation: false,
+      attendanceCalculation: true,
       statutoryRatesVerified: false,
       biometricHardwareCertified: false,
       billingChargesVerified: false,
