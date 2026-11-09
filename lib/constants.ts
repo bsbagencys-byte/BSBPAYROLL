@@ -2182,6 +2182,7 @@ export const JOB_TYPES = [
   "DATA_EXPORT_EXPIRE",
   "INCIDENT_SLA",
   "SMART_QR_EXPIRE",
+  "SMART_RETENTION_PURGE",
   "ATTENDANCE_RECALC",
 ] as const;
 export type JobType = (typeof JOB_TYPES)[number];
@@ -2200,6 +2201,7 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
   DATA_EXPORT_EXPIRE: "Expire completed data exports",
   INCIDENT_SLA: "Open incident SLA reminders",
   SMART_QR_EXPIRE: "Expire unused smart attendance QR sessions",
+  SMART_RETENTION_PURGE: "Purge expired smart attendance evidence (never punches or days)",
   ATTENDANCE_RECALC: "Recalculate attendance days from punches",
 };
 
@@ -3078,6 +3080,9 @@ export const DEFAULT_SMART_SETTINGS = {
   qrTtlSeconds: 90,
   entryWindowStart: "00:00",
   entryWindowEnd: "23:59",
+  exitWindowStart: "00:00",
+  exitWindowEnd: "23:59",
+  duplicateIntervalSeconds: 120,
   faceProviderKind: "NONE" as FaceProviderKind,
   retentionDays: 365,
 };

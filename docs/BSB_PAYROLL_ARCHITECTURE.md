@@ -289,7 +289,7 @@ Do not implement these until the named phase:
 - **Phase 18:** SaaS subscription and billing (implemented). Additive overlay. Separate from salary payment batches. Unconfigured provider cannot mark paid.
 - **Phase 19:** customer onboarding, CSV migration, support, platform ops, data export (implemented). Additive overlay. Attendance step optional/blocked. No silent XLSX. No auto-delete.
 - **Phase 20:** pilot launch control (implemented). Additive overlay. Computed decision is NOT READY without evidence.
-- **Phase 21:** smart auto attendance overlay (implemented). Feeds punches; does not calculate days. Face matching not implemented.
+- **Phase 21:** smart auto attendance overlay (implemented). Feeds punches; does not calculate days. Independent exit window and duplicate interval. Delayed events keep original time. Live mobile login. Face matching not implemented. Keystore not wired. Live second-tenant RLS UNVERIFIED.
 - **Later:** Face attendance provider.
 
 ## Production readiness — IMPLEMENTED (limited)
@@ -334,11 +334,13 @@ Do not implement these until the named phase:
 ## Smart Auto Attendance — IMPLEMENTED (overlay)
 
 - Admin: `/attendance/smart`, settings, workplaces, trusted devices, events. ESS: `/my/smart-attendance`.
-- Server evaluates geofence, trusted device, freshness, accuracy, window, mock-location and integrity. App never decides validity.
-- Accepted events write `attendance_punches` through virtual GENERIC device serial `BSB-SMART`. Duplicate idempotency keys do not create a second punch.
-- Dynamic QR is a short-lived HMAC token. Permanent static QR is rejected. Job `SMART_QR_EXPIRE`.
+- Server evaluates geofence, trusted device, freshness, accuracy, entry/exit windows, duplicate interval, mock-location and integrity. App never decides validity.
+- Accepted events write `attendance_punches` through virtual GENERIC device serial `BSB-SMART`. Duplicate idempotency keys and same-direction events inside `duplicate_interval_seconds` do not create a second punch.
+- Delayed geofence delivery keeps original `occurred_at` and opens MISSING_IN/MISSING_OUT for regularization. Timestamps are never fabricated.
+- Dynamic QR is a short-lived HMAC token. Permanent static QR is rejected. Jobs `SMART_QR_EXPIRE` and `SMART_RETENTION_PURGE` (evidence only; never punches or days).
 - Face provider is `UnconfiguredFaceProvider`. Health flags: `smartAttendanceHardwareFree`, `faceMatchingImplemented: false`.
-- Android sources under `android/` call `/api/mobile/*`. No separate mobile database.
+- Android sources under `android/` call `/api/mobile/*` via HttpURLConnection. Offline ENTER/EXIT queue keeps original time. HMAC-SHA256 is the signing contract; Android Keystore is not wired.
+- Live `POST /api/mobile/auth/login` uses username lookup + `signInWithPassword` and issues an HMAC mobile token. Demo HMAC login remains.
 - Radius is organization-configured (presets 50/100/150/250 or custom 30–2000m). Background location defaults off.
 
 Keep prompts under 8,000 characters; point agents at `BSB_PAYROLL_PROJECT_STATE.md` instead of restating history.

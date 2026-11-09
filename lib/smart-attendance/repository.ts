@@ -246,6 +246,69 @@ export async function upsertQrSession(row: DynamicQrSession) {
   return upsertTable("dynamic_qr_sessions", row);
 }
 
+export async function purgeExpiredSmartEvidence(organizationId: string, cutoffIso: string) {
+  if (demoEnabled()) {
+    const store = getDemoStore();
+    const beforeEvents = store.smartAttendanceEvents.length;
+    const beforeCandidates = store.geofenceEventCandidates.length;
+    const beforeAssessments = store.deviceSecurityAssessments.length;
+    const beforeVerifications = store.attendanceVerificationRecords.length;
+    store.smartAttendanceEvents = store.smartAttendanceEvents.filter(
+      (row) => row.organization_id !== organizationId || row.occurred_at >= cutoffIso || row.punch_id
+    );
+    store.geofenceEventCandidates = store.geofenceEventCandidates.filter(
+      (row) => row.organization_id !== organizationId || row.occurred_at >= cutoffIso
+    );
+    store.deviceSecurityAssessments = store.deviceSecurityAssessments.filter(
+      (row) => row.organization_id !== organizationId || row.assessed_at >= cutoffIso
+    );
+    store.attendanceVerificationRecords = store.attendanceVerificationRecords.filter(
+      (row) => row.organization_id !== organizationId || row.recorded_at >= cutoffIso
+    );
+    return {
+      events: beforeEvents - store.smartAttendanceEvents.length,
+      candidates: beforeCandidates - store.geofenceEventCandidates.length,
+      assessments: beforeAssessments - store.deviceSecurityAssessments.length,
+      verifications: beforeVerifications - store.attendanceVerificationRecords.length,
+    };
+  }
+  const admin = createAdminClient();
+  if (!admin) return { events: 0, candidates: 0, assessments: 0, verifications: 0 };
+  const [{ data: events }, { data: candidates }, { data: assessments }, { data: verifications }] = await Promise.all([
+    admin
+      .from("smart_attendance_events")
+      .delete()
+      .eq("organization_id", organizationId)
+      .lt("occurred_at", cutoffIso)
+      .is("punch_id", null)
+      .select("id"),
+    admin
+      .from("geofence_event_candidates")
+      .delete()
+      .eq("organization_id", organizationId)
+      .lt("occurred_at", cutoffIso)
+      .select("id"),
+    admin
+      .from("device_security_assessments")
+      .delete()
+      .eq("organization_id", organizationId)
+      .lt("assessed_at", cutoffIso)
+      .select("id"),
+    admin
+      .from("attendance_verification_records")
+      .delete()
+      .eq("organization_id", organizationId)
+      .lt("recorded_at", cutoffIso)
+      .select("id"),
+  ]);
+  return {
+    events: events?.length ?? 0,
+    candidates: candidates?.length ?? 0,
+    assessments: assessments?.length ?? 0,
+    verifications: verifications?.length ?? 0,
+  };
+}
+
 export async function expireQrSessions(nowIso: string) {
   if (demoEnabled()) {
     let count = 0;

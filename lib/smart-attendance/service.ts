@@ -76,9 +76,18 @@ function signingSecret() {
   return "bsb-demo-qr-secret";
 }
 
+function withWindowDefaults(row: SmartAttendanceSettings): SmartAttendanceSettings {
+  return {
+    ...row,
+    exit_window_start: row.exit_window_start || DEFAULT_SMART_SETTINGS.exitWindowStart,
+    exit_window_end: row.exit_window_end || DEFAULT_SMART_SETTINGS.exitWindowEnd,
+    duplicate_interval_seconds: row.duplicate_interval_seconds || DEFAULT_SMART_SETTINGS.duplicateIntervalSeconds,
+  };
+}
+
 export async function ensureSmartSettings(organizationId: string, actorId: string | null) {
   const existing = await getSmartSettings(organizationId);
-  if (existing) return existing;
+  if (existing) return withWindowDefaults(existing);
   const now = stamp();
   return upsertSmartSettings({
     id: organizationId === "11111111-1111-1111-1111-111111111111" ? DEMO_SMART_SETTINGS_ID : crypto.randomUUID(),
@@ -132,10 +141,14 @@ async function ensureEmployeeMapping(device: BiometricDevice, employeeId: string
   });
 }
 
-async function lastPunchDirection(organizationId: string, employeeId: string): Promise<PunchDirection | null> {
+async function lastPunchState(organizationId: string, employeeId: string) {
   const punches = await listPunches(organizationId, 200);
   const mine = punches.filter((row) => row.employee_id === employeeId);
-  return mine[0]?.direction ?? null;
+  const last = mine[0] ?? null;
+  return {
+    direction: (last?.direction ?? null) as PunchDirection | null,
+    occurredAt: last ? new Date(last.punched_at) : null,
+  };
 }
 
 async function promoteAcceptedEvent(input: {
@@ -393,7 +406,7 @@ async function submitSmartEvent(input: EventSubmit) {
   const occurredAt = new Date(input.occurredAt);
   if (Number.isNaN(occurredAt.getTime())) throw new Error("Invalid event timestamp.");
   const receivedAt = new Date();
-  const previous = await lastPunchDirection(input.organizationId, input.employeeId);
+  const previous = await lastPunchState(input.organizationId, input.employeeId);
   const evaluation = evaluateSmartEvent({
     settings,
     employeeActive: employee?.status === "ACTIVE",
@@ -407,7 +420,8 @@ async function submitSmartEvent(input: EventSubmit) {
     receivedAt,
     mockLocation: Boolean(input.mockLocation),
     integrityResult: input.integrityResult ?? "UNAVAILABLE",
-    previousDirection: previous,
+    previousDirection: previous.direction,
+    previousOccurredAt: previous.occurredAt,
     requestedDirection: input.direction,
     duplicate: false,
     timeZone: "Asia/Kolkata",
@@ -488,6 +502,15 @@ async function submitSmartEvent(input: EventSubmit) {
   }
 
   const saved = await upsertSmartEvent(event);
+  if (evaluation.signals.some((item) => item.code === "STALE") && saved.status !== "DUPLICATE") {
+    await openDelayedEventException({
+      organizationId: input.organizationId,
+      employeeId: input.employeeId,
+      occurredAt,
+      eventId: saved.id,
+      direction: input.direction,
+    });
+  }
   await writeAudit({
     organizationId: input.organizationId,
     actorUserId: input.actorId,
@@ -497,6 +520,31 @@ async function submitSmartEvent(input: EventSubmit) {
     metadata: { status: saved.status, risk: saved.risk_level, source: saved.source },
   });
   return saved;
+}
+
+async function openDelayedEventException(input: {
+  organizationId: string;
+  employeeId: string;
+  occurredAt: Date;
+  eventId: string;
+  direction: PunchDirection;
+}) {
+  const { insertExceptionIfAbsent } = await import("@/lib/attendance/repository");
+  const { localParts } = await import("@/lib/attendance/engine");
+  const workDate = localParts(input.occurredAt, "Asia/Kolkata").dateOnly;
+  const code = input.direction === "OUT" ? "MISSING_OUT" : "MISSING_IN";
+  await insertExceptionIfAbsent({
+    id: crypto.randomUUID(),
+    organization_id: input.organizationId,
+    employee_id: input.employeeId,
+    work_date: workDate,
+    attendance_day_id: null,
+    code,
+    status: "OPEN",
+    notes: `Delayed geofence candidate ${input.eventId} kept original occurred_at; HR may regularize without rewriting punches.`,
+    created_at: stamp(),
+    updated_at: stamp(),
+  });
 }
 
 export async function recordGeofenceEvent(input: {
@@ -758,6 +806,13 @@ export async function loadEmployeeSmart(organizationId: string, employeeId: stri
 
 export async function expireSmartQrJob() {
   return expireQrSessions(stamp());
+}
+
+export async function purgeSmartRetentionJob(organizationId: string) {
+  const settings = await ensureSmartSettings(organizationId, null);
+  const cutoff = new Date(Date.now() - settings.retention_days * 24 * 60 * 60 * 1000).toISOString();
+  const { purgeExpiredSmartEvidence } = await import("@/lib/smart-attendance/repository");
+  return purgeExpiredSmartEvidence(organizationId, cutoff);
 }
 
 export {

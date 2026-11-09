@@ -66,6 +66,9 @@ export async function saveSmartSettingsAction(
     qrTtlSeconds: formData.get("qrTtlSeconds"),
     entryWindowStart: formData.get("entryWindowStart"),
     entryWindowEnd: formData.get("entryWindowEnd"),
+    exitWindowStart: formData.get("exitWindowStart"),
+    exitWindowEnd: formData.get("exitWindowEnd"),
+    duplicateIntervalSeconds: formData.get("duplicateIntervalSeconds"),
     retentionDays: formData.get("retentionDays"),
   });
   if (!parsed.success) return { success: false, errors: flattenErrors(parsed.error), message: "Settings are incomplete." };
@@ -85,6 +88,9 @@ export async function saveSmartSettingsAction(
       qr_ttl_seconds: parsed.data.qrTtlSeconds,
       entry_window_start: parsed.data.entryWindowStart,
       entry_window_end: parsed.data.entryWindowEnd,
+      exit_window_start: parsed.data.exitWindowStart,
+      exit_window_end: parsed.data.exitWindowEnd,
+      duplicate_interval_seconds: parsed.data.duplicateIntervalSeconds,
       retention_days: parsed.data.retentionDays,
       face_provider_kind: "NONE",
       face_provider_configured: false,

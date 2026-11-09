@@ -5,32 +5,19 @@ import { getDemoSessionUser } from "@/lib/demo-store";
 import type { SessionUser } from "@/types";
 import { DEFAULT_ROLE_PERMISSIONS, ROLE_LABELS, type PermissionCode, type RoleCode } from "@/lib/constants";
 
-export async function getSessionUser(): Promise<SessionUser | null> {
-  if (!hasSupabaseConfig() || isDemoMode()) {
-    const demoUser = await getDemoSessionUser();
-    if (demoUser?.organization.status === "SUSPENDED") return null;
-    return demoUser;
+async function sessionFromProfile(
+  client: NonNullable<ReturnType<typeof createAdminClient>> | Awaited<ReturnType<typeof createServerSupabase>>,
+  profile: {
+    id: string;
+    auth_user_id: string;
+    username: string;
+    display_name: string;
+    mobile: string | null;
+    photo_url: string | null;
+    status: SessionUser["status"];
   }
-
-  const supabase = await createServerSupabase();
-  if (!supabase) return null;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const admin = createAdminClient();
-  const client = admin ?? supabase;
-
-  const { data: profile } = await client
-    .from("user_profiles")
-    .select("*")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.status === "DISABLED") return null;
-
+): Promise<SessionUser | null> {
+  if (!client || profile.status === "DISABLED") return null;
   const { data: membership } = await client
     .from("organization_users")
     .select("*, roles(*), organizations(*), branches(*)")
@@ -75,6 +62,45 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     branch,
     membershipStatus: membership.status,
   };
+}
+
+export async function loadSessionUserByProfileId(profileId: string): Promise<SessionUser | null> {
+  if (!hasSupabaseConfig() || isDemoMode()) {
+    return (await import("@/lib/demo-store")).buildSessionUser(profileId);
+  }
+  const admin = createAdminClient();
+  if (!admin) return null;
+  const { data: profile } = await admin.from("user_profiles").select("*").eq("id", profileId).maybeSingle();
+  if (!profile) return null;
+  return sessionFromProfile(admin, profile);
+}
+
+export async function getSessionUser(): Promise<SessionUser | null> {
+  if (!hasSupabaseConfig() || isDemoMode()) {
+    const demoUser = await getDemoSessionUser();
+    if (demoUser?.organization.status === "SUSPENDED") return null;
+    return demoUser;
+  }
+
+  const supabase = await createServerSupabase();
+  if (!supabase) return null;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const admin = createAdminClient();
+  const client = admin ?? supabase;
+
+  const { data: profile } = await client
+    .from("user_profiles")
+    .select("*")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  if (!profile) return null;
+  return sessionFromProfile(client, profile);
 }
 
 export function hasPermission(user: SessionUser | null, permission: PermissionCode) {

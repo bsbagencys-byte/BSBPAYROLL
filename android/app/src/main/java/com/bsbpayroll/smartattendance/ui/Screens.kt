@@ -7,4 +7,8 @@ class Screens {
         "BSB Payroll uses precise location only to confirm workplace entry or exit for attendance. Tracking is not continuous."
 
     fun fallbackCopy() = "If GPS is weak, scan a short-lived workplace QR. Permanent static QR codes are rejected."
+
+    fun delayedCopy() = "Delayed ENTER or EXIT keeps the original event time. The phone never decides attendance."
+
+    fun signerCopy() = "HMAC-SHA256 over the idempotency key. Android Keystore is not the current signing contract."
 }

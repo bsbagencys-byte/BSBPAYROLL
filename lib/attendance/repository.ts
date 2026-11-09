@@ -207,6 +207,29 @@ export async function replaceDayExceptions(organizationId: string, employeeId: s
   if (rows.length) await admin.from("attendance_exceptions").insert(rows);
 }
 
+export async function insertExceptionIfAbsent(row: AttendanceException) {
+  const existing = await listExceptions(row.organization_id, row.work_date, row.work_date);
+  const found = existing.find(
+    (item) => item.employee_id === row.employee_id && item.code === row.code && item.status === "OPEN"
+  );
+  if (found) return found;
+  if (demoEnabled()) {
+    getDemoStore().attendanceExceptions.unshift(row);
+    return row;
+  }
+  const admin = createAdminClient();
+  if (!admin) throw new Error("Supabase is not configured.");
+  const { data, error } = await admin.from("attendance_exceptions").insert(row).select("*").single();
+  if (error) {
+    if (error.code === "23505") {
+      const again = await listExceptions(row.organization_id, row.work_date, row.work_date);
+      return again.find((item) => item.employee_id === row.employee_id && item.code === row.code) ?? row;
+    }
+    throw error;
+  }
+  return data as AttendanceException;
+}
+
 export async function updateException(id: string, organizationId: string, patch: Partial<AttendanceException>) {
   if (demoEnabled()) {
     const row = scopedRecord(organizationId, getDemoStore().attendanceExceptions.find((item) => item.id === id));

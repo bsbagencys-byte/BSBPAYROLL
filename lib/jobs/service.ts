@@ -47,6 +47,7 @@ export async function ensureDefaultJobs(organizationId: string, actorId: string 
     { jobType: "DATA_EXPORT_EXPIRE", name: "Expire completed data exports" },
     { jobType: "INCIDENT_SLA", name: "Open incident SLA reminders" },
     { jobType: "SMART_QR_EXPIRE", name: "Expire unused smart attendance QR sessions" },
+    { jobType: "SMART_RETENTION_PURGE", name: "Purge expired smart attendance evidence" },
     { jobType: "ATTENDANCE_RECALC", name: "Recalculate attendance days from punches" },
   ];
   const created: ScheduledJob[] = [];
@@ -207,6 +208,10 @@ async function runJobBody(job: ScheduledJob): Promise<Record<string, unknown>> {
     case "SMART_QR_EXPIRE": {
       const { expireSmartQrJob } = await import("@/lib/smart-attendance/service");
       return expireSmartQrJob();
+    }
+    case "SMART_RETENTION_PURGE": {
+      const { purgeSmartRetentionJob } = await import("@/lib/smart-attendance/service");
+      return purgeSmartRetentionJob(job.organization_id);
     }
     case "ATTENDANCE_RECALC": {
       const { recalculateAttendance } = await import("@/lib/attendance/service");

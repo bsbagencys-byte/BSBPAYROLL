@@ -7408,6 +7408,9 @@ create table if not exists public.smart_attendance_settings (
   qr_ttl_seconds integer not null default 90 check (qr_ttl_seconds between 30 and 300),
   entry_window_start text not null default '00:00',
   entry_window_end text not null default '23:59',
+  exit_window_start text not null default '00:00',
+  exit_window_end text not null default '23:59',
+  duplicate_interval_seconds integer not null default 120 check (duplicate_interval_seconds between 30 and 3600),
   face_provider_kind text not null default 'NONE'
     check (face_provider_kind in ('NONE', 'EXTERNAL')),
   face_provider_configured boolean not null default false,
@@ -7416,6 +7419,13 @@ create table if not exists public.smart_attendance_settings (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.smart_attendance_settings
+  add column if not exists exit_window_start text not null default '00:00';
+alter table public.smart_attendance_settings
+  add column if not exists exit_window_end text not null default '23:59';
+alter table public.smart_attendance_settings
+  add column if not exists duplicate_interval_seconds integer not null default 120;
 
 create table if not exists public.attendance_location_configs (
   id uuid primary key default gen_random_uuid(),

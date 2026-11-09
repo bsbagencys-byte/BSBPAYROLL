@@ -80,6 +80,9 @@ export type EvaluationInput = {
     | "auto_accept_policy"
     | "entry_window_start"
     | "entry_window_end"
+    | "exit_window_start"
+    | "exit_window_end"
+    | "duplicate_interval_seconds"
     | "face_provider_configured"
     | "qr_fallback_enabled"
   >;
@@ -95,6 +98,7 @@ export type EvaluationInput = {
   mockLocation: boolean;
   integrityResult: string | null;
   previousDirection: PunchDirection | null;
+  previousOccurredAt?: Date | null;
   requestedDirection: PunchDirection;
   duplicate: boolean;
   timeZone?: string;
@@ -163,15 +167,38 @@ export function evaluateSmartEvent(input: EvaluationInput): EvaluationResult {
   if (lagMs < -30_000) {
     signals.push({ code: "FUTURE", message: "Event timestamp is in the future.", weight: "HIGH" });
   }
+  const windowStart =
+    input.requestedDirection === "OUT"
+      ? input.settings.exit_window_start || input.settings.entry_window_start
+      : input.settings.entry_window_start;
+  const windowEnd =
+    input.requestedDirection === "OUT"
+      ? input.settings.exit_window_end || input.settings.entry_window_end
+      : input.settings.entry_window_end;
+  if (!inEntryWindow(input.occurredAt, windowStart, windowEnd, input.timeZone)) {
+    signals.push({
+      code: "WINDOW",
+      message:
+        input.requestedDirection === "OUT"
+          ? "Event is outside the configured exit window."
+          : "Event is outside the configured entry window.",
+      weight: "MEDIUM",
+    });
+  }
   if (
-    !inEntryWindow(
-      input.occurredAt,
-      input.settings.entry_window_start,
-      input.settings.entry_window_end,
-      input.timeZone
-    )
+    input.previousOccurredAt &&
+    input.previousDirection === input.requestedDirection &&
+    input.requestedDirection !== "UNKNOWN"
   ) {
-    signals.push({ code: "WINDOW", message: "Event is outside the configured attendance window.", weight: "MEDIUM" });
+    const intervalMs = Math.abs(input.occurredAt.getTime() - input.previousOccurredAt.getTime());
+    const minMs = (input.settings.duplicate_interval_seconds || DEFAULT_SMART_SETTINGS.duplicateIntervalSeconds) * 1000;
+    if (intervalMs < minMs) {
+      signals.push({
+        code: "DUPLICATE_INTERVAL",
+        message: `Same-direction event within ${Math.round(minMs / 1000)}s is treated as a duplicate interval, not a second punch.`,
+        weight: "HIGH",
+      });
+    }
   }
   if (input.mockLocation) {
     signals.push({
@@ -205,7 +232,7 @@ export function evaluateSmartEvent(input: EvaluationInput): EvaluationResult {
   for (const signal of signals) risk = worse(risk, signal.weight);
   const reasons = signals.map((item) => item.message);
 
-  if (input.duplicate) {
+  if (input.duplicate || signals.some((item) => item.code === "DUPLICATE_INTERVAL")) {
     return {
       status: "DUPLICATE",
       risk,
@@ -310,6 +337,9 @@ export function defaultSettingsRow(
     qr_ttl_seconds: DEFAULT_SMART_SETTINGS.qrTtlSeconds,
     entry_window_start: DEFAULT_SMART_SETTINGS.entryWindowStart,
     entry_window_end: DEFAULT_SMART_SETTINGS.entryWindowEnd,
+    exit_window_start: DEFAULT_SMART_SETTINGS.exitWindowStart,
+    exit_window_end: DEFAULT_SMART_SETTINGS.exitWindowEnd,
+    duplicate_interval_seconds: DEFAULT_SMART_SETTINGS.duplicateIntervalSeconds,
     face_provider_kind: DEFAULT_SMART_SETTINGS.faceProviderKind,
     face_provider_configured: false,
     retention_days: DEFAULT_SMART_SETTINGS.retentionDays,

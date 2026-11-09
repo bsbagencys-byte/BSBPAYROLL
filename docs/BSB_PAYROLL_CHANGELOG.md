@@ -32,19 +32,21 @@ Entries record what landed in git, not planned work.
 
 ## Phase 21 — Smart Auto Attendance
 
-- **Date:** 2026-11-01
+- **Date:** 2026-11-08
 - **Status:** implemented on `261015-feat-ess-portal`
 - **Go-live:** NOT READY
 
 ### Implemented
 
-- Additive overlay. Phases 1–20 unchanged. Phase 4 attendance still not started.
-- Server-side geofence, trusted device, freshness, accuracy and window checks. The Android app never decides validity.
+- Additive overlay. Phases 1–20 unchanged. Historical note below that Phase 4 was not started remains as originally recorded.
+- Server-side geofence, trusted device, freshness, accuracy, entry/exit windows and duplicate-interval checks. The Android app never decides validity.
 - Accepted events enter existing `attendance_punches` via virtual GENERIC device `BSB-SMART`.
-- Dynamic short-lived signed QR fallback. Permanent static QR rejected. Job `SMART_QR_EXPIRE`.
+- Delayed geofence candidates keep original `occurred_at` and open MISSING_IN/MISSING_OUT; regularization never rewrites raw punches.
+- Dynamic short-lived signed QR fallback. Permanent static QR rejected. Jobs `SMART_QR_EXPIRE` and `SMART_RETENTION_PURGE`.
 - Face provider is an unconfigured stub. Mock location / Play Integrity are risk signals, not fraud proof.
-- Admin `/attendance/smart*`, ESS `/my/smart-attendance`, mobile `/api/mobile/*`, Android Compose/MVVM sources in `android/`.
-- Tests: `tests/smart-attendance.test.ts`.
+- Live mobile login against username lookup + Supabase password auth. HMAC mobile token for `/api/mobile/*`.
+- Admin `/attendance/smart*`, ESS `/my/smart-attendance`, Android Compose/MVVM sources in `android/` (HttpURLConnection, offline queue, EXIT). HMAC-SHA256 is the signing contract; Keystore is not wired.
+- Tests: `tests/smart-attendance.test.ts`, dedicated regularization tests in `tests/attendance.test.ts`, demo second-tenant isolation in `tests/tenancy.test.ts`.
 
 ### Database
 
@@ -53,7 +55,8 @@ Entries record what landed in git, not planned work.
 
 ### Not claimed
 
-- Phase 4 day calculation, late/OT, continuous tracking, facial matching, physical-device certification, production launch.
+- Continuous tracking, facial matching, Android Keystore, live second-tenant RLS proof, physical-device certification, production launch.
+- Retention never deletes `attendance_punches` or `attendance_days`. Events with `punch_id` are kept.
 
 ---
 

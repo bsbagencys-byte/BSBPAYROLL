@@ -1,7 +1,4 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { buildSessionUser } from "@/lib/demo-store";
-import { getSessionUser } from "@/lib/auth/session";
-import { hasSupabaseConfig, isDemoMode } from "@/lib/supabase/env";
 import type { SessionUser } from "@/types";
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -38,11 +35,12 @@ export function parseMobileToken(token: string): { userId: string; issuedAt: num
 }
 
 export async function getMobileSessionUser(request: Request): Promise<SessionUser | null> {
+  const { getSessionUser, loadSessionUserByProfileId } = await import("@/lib/auth/session");
   const header = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   if (header) {
     const parsed = parseMobileToken(header);
-    if (parsed && (!hasSupabaseConfig() || isDemoMode())) {
-      const user = buildSessionUser(parsed.userId);
+    if (parsed) {
+      const user = await loadSessionUserByProfileId(parsed.userId);
       if (!user || user.status === "DISABLED" || user.membershipStatus === "DISABLED") return null;
       if (user.organization.status === "SUSPENDED") return null;
       return user;

@@ -18,6 +18,9 @@ export const smartSettingsSchema = z.object({
   qrTtlSeconds: z.coerce.number().int().min(30).max(300),
   entryWindowStart: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
   entryWindowEnd: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  exitWindowStart: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  exitWindowEnd: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  duplicateIntervalSeconds: z.coerce.number().int().min(30).max(3600),
   retentionDays: z.coerce.number().int().min(30).max(2555),
 });
 

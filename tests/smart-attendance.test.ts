@@ -26,6 +26,9 @@ function base(overrides: Partial<EvaluationInput> = {}): EvaluationInput {
       auto_accept_policy: "LOW_RISK_ONLY",
       entry_window_start: "00:00",
       entry_window_end: "23:59",
+      exit_window_start: "00:00",
+      exit_window_end: "23:59",
+      duplicate_interval_seconds: 120,
       face_provider_configured: false,
       qr_fallback_enabled: true,
     },
@@ -160,4 +163,128 @@ test("smart attendance rows remain organization-scoped", () => {
     { id: "b", organization_id: ORG_B },
   ];
   assert.deepEqual(belongsToOrganization(ORG_A, rows).map((row) => row.id), ["a"]);
+});
+
+test("exit window flags OUT events independently of entry window", () => {
+  const outside = evaluateSmartEvent(
+    base({
+      requestedDirection: "OUT",
+      settings: {
+        ...base().settings,
+        entry_window_start: "00:00",
+        entry_window_end: "23:59",
+        exit_window_start: "17:00",
+        exit_window_end: "20:00",
+      },
+      occurredAt: new Date("2026-01-15T10:00:00+05:30"),
+      receivedAt: new Date("2026-01-15T10:00:05+05:30"),
+    })
+  );
+  assert.equal(outside.status, "PENDING_VERIFICATION");
+  assert.match(outside.reasons.join(" "), /exit window/);
+});
+
+test("same-direction events inside the duplicate interval are not a second punch", () => {
+  const result = evaluateSmartEvent(
+    base({
+      previousDirection: "IN",
+      previousOccurredAt: new Date("2026-01-15T09:00:00Z"),
+      occurredAt: new Date("2026-01-15T09:00:30Z"),
+      receivedAt: new Date("2026-01-15T09:00:31Z"),
+      requestedDirection: "IN",
+    })
+  );
+  assert.equal(result.status, "DUPLICATE");
+  assert.equal(result.acceptToEngine, false);
+});
+
+test("delayed geofence candidate opens an exception without inventing a punch time", async () => {
+  const { getDemoStore } = await import("@/lib/demo-store");
+  const { signDevicePayload } = await import("@/lib/smart-attendance/mobile-auth");
+  const { recordGeofenceEvent, registerTrustedDevice, setTrustedDeviceStatus } = await import(
+    "@/lib/smart-attendance/service"
+  );
+  const store = getDemoStore();
+  const orgId = store.org.id;
+  const employee = store.employees.find((item) => item.status === "ACTIVE");
+  const workplace = store.attendanceLocationConfigs[0];
+  const actor = store.users[0];
+  assert.ok(employee && workplace && actor);
+  const publicKey = `delayed-device-key-${Date.now()}`;
+  const device = await registerTrustedDevice({
+    organizationId: orgId,
+    employeeId: employee.id,
+    publicKey,
+    deviceModel: "Pixel",
+    osVersion: "16",
+    appVersion: "1.0",
+    actorId: actor.id,
+  });
+  await setTrustedDeviceStatus(orgId, device.id, "ACTIVE", null, actor.id);
+  const punchCount = store.attendancePunches.length;
+  const occurredAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const idempotencyKey = `delayed-${Date.now()}`;
+  const event = await recordGeofenceEvent({
+    organizationId: orgId,
+    employeeId: employee.id,
+    deviceId: device.id,
+    workplaceId: workplace.id,
+    kind: "EXIT",
+    latitude: workplace.latitude,
+    longitude: workplace.longitude,
+    accuracyMeters: 12,
+    occurredAt,
+    permissionStatus: "GRANTED",
+    mockLocation: false,
+    integrityResult: "UNAVAILABLE",
+    idempotencyKey,
+    signature: signDevicePayload(publicKey, idempotencyKey),
+    actorId: actor.id,
+  });
+  assert.notEqual(event.status, "ACCEPTED");
+  assert.equal(event.occurred_at, occurredAt);
+  assert.equal(store.attendancePunches.length, punchCount);
+  const exception = store.attendanceExceptions.find(
+    (row) => row.employee_id === employee.id && row.code === "MISSING_OUT" && row.status === "OPEN"
+  );
+  assert.ok(exception);
+  assert.match(exception.notes ?? "", /Delayed geofence/);
+});
+
+test("retention purge drops stale evidence and never deletes punches or days", async () => {
+  const { getDemoStore } = await import("@/lib/demo-store");
+  const { purgeExpiredSmartEvidence } = await import("@/lib/smart-attendance/repository");
+  const store = getDemoStore();
+  const orgId = store.org.id;
+  const punchCount = store.attendancePunches.length;
+  const dayCount = store.attendanceDays.length;
+  store.smartAttendanceEvents.unshift({
+    id: "evt-old-purge",
+    organization_id: orgId,
+    employee_id: store.employees[0]?.id ?? "emp",
+    device_id: null,
+    workplace_id: null,
+    candidate_id: null,
+    source: "GEOFENCE",
+    direction: "IN",
+    status: "REJECTED",
+    risk_level: "HIGH",
+    risk_reasons: ["stale"],
+    latitude: 1,
+    longitude: 1,
+    accuracy_meters: 10,
+    occurred_at: "2020-01-01T00:00:00.000Z",
+    idempotency_key: "old-purge-key",
+    punch_id: null,
+    notes: null,
+    reviewed_by: null,
+    reviewed_at: null,
+    created_at: "2020-01-01T00:00:00.000Z",
+    updated_at: "2020-01-01T00:00:00.000Z",
+  });
+  const result = await purgeExpiredSmartEvidence(orgId, "2021-01-01T00:00:00.000Z");
+  assert.ok(result.events >= 1);
+  assert.equal(store.smartAttendanceEvents.some((row) => row.id === "evt-old-purge"), false);
+  assert.equal(store.attendancePunches.length, punchCount);
+  assert.equal(store.attendanceDays.length, dayCount);
 });

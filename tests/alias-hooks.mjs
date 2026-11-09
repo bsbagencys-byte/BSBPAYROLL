@@ -14,6 +14,12 @@ function resolveFile(base) {
 }
 
 export async function resolve(specifier, context, nextResolve) {
+  if (specifier === "next/headers") {
+    return {
+      shortCircuit: true,
+      url: pathToFileURL(join(root, "tests/helpers/next-headers.ts")).href,
+    };
+  }
   if (specifier.startsWith("@/")) {
     const target = resolveFile(join(root, specifier.slice(2)));
     return {

@@ -144,3 +144,82 @@ test("attendance rows remain organization-scoped", () => {
   ];
   assert.deepEqual(belongsToOrganization(ORG_A, rows).map((row) => row.id), ["a"]);
 });
+
+test("regularization submit stays pending and never rewrites raw punches", async () => {
+  const { getDemoStore } = await import("@/lib/demo-store");
+  const { listRegularizations } = await import("@/lib/attendance/repository");
+  const { submitRegularization, decideRegularization } = await import("@/lib/attendance/service");
+  const store = getDemoStore();
+  const orgId = store.org.id;
+  const employee = store.employees.find((item) => item.status === "ACTIVE");
+  const actor = store.users[0];
+  assert.ok(employee && actor);
+  const punchCount = store.attendancePunches.length;
+  const workDate = "2026-11-06";
+  const submitted = await submitRegularization(orgId, actor.id, {
+    employeeId: employee.id,
+    workDate,
+    requestedIn: "2026-11-06T03:30:00.000Z",
+    requestedOut: "2026-11-06T12:30:00.000Z",
+    reason: "Missed OUT after delayed geofence delivery.",
+  });
+  assert.equal(submitted.status, "PENDING");
+  assert.equal(store.attendancePunches.length, punchCount);
+  const listed = await listRegularizations(orgId);
+  assert.equal(listed.some((row) => row.id === submitted.id && row.organization_id === orgId), true);
+  const rejected = await decideRegularization(orgId, actor.id, {
+    id: submitted.id,
+    decision: "REJECTED",
+    notes: "Insufficient evidence",
+    timezone: tz,
+    weeklyOff: "SUNDAY",
+  });
+  assert.equal(rejected?.status, "REJECTED");
+  assert.equal(store.attendancePunches.length, punchCount);
+  await assert.rejects(
+    () =>
+      decideRegularization(orgId, actor.id, {
+        id: submitted.id,
+        decision: "APPROVED",
+        timezone: tz,
+        weeklyOff: "SUNDAY",
+      }),
+    /pending/i
+  );
+});
+
+test("approved regularization writes a day result without inventing punch timestamps", async () => {
+  const { getDemoStore } = await import("@/lib/demo-store");
+  const { submitRegularization, decideRegularization } = await import("@/lib/attendance/service");
+  const store = getDemoStore();
+  const orgId = store.org.id;
+  const employee = store.employees.find((item) => item.status === "ACTIVE");
+  const actor = store.users[0];
+  assert.ok(employee && actor);
+  const punchCount = store.attendancePunches.length;
+  const requestedIn = "2026-11-05T03:35:00.000Z";
+  const requestedOut = "2026-11-05T12:40:00.000Z";
+  const submitted = await submitRegularization(orgId, actor.id, {
+    employeeId: employee.id,
+    workDate: "2026-11-05",
+    requestedIn,
+    requestedOut,
+    reason: "Authorized catch-up for delayed EXIT candidate.",
+  });
+  const decided = await decideRegularization(orgId, actor.id, {
+    id: submitted.id,
+    decision: "APPROVED",
+    notes: "HR confirmed original event time",
+    timezone: tz,
+    weeklyOff: "SUNDAY",
+  });
+  assert.equal(decided?.status, "APPROVED");
+  assert.equal(store.attendancePunches.length, punchCount);
+  const day = store.attendanceDays.find(
+    (row) => row.employee_id === employee.id && row.work_date === "2026-11-05" && row.organization_id === orgId
+  );
+  assert.ok(day);
+  assert.equal(day.source, "REGULARIZATION");
+  assert.equal(day.first_in, requestedIn);
+  assert.equal(day.last_out, requestedOut);
+});

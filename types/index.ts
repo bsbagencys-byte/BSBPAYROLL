@@ -3629,6 +3629,9 @@ export interface SmartAttendanceSettings {
   qr_ttl_seconds: number;
   entry_window_start: string;
   entry_window_end: string;
+  exit_window_start: string;
+  exit_window_end: string;
+  duplicate_interval_seconds: number;
   face_provider_kind: FaceProviderKind;
   face_provider_configured: boolean;
   retention_days: number;

@@ -18,6 +18,8 @@ Location is collected only as attendance evidence for ENTER/EXIT/QR. Continuous 
 
 ## Build notes
 
-This folder is a source overlay, not a prebuilt APK. Point `BASE_URL` at the same host as the web app. HMAC device signatures use the registered public key over the idempotency key.
+This folder is a source overlay, not a prebuilt APK. Point `BASE_URL` at the same host as the web app. HMAC device signatures use the registered public key over the idempotency key. Android Keystore-backed keys are not wired; HMAC-SHA256 is the current contract.
+
+Offline ENTER/EXIT candidates keep the original `occurredAt`. The server never invents a later timestamp. Duplicate same-direction events inside the organization interval are not a second punch.
 
 Permanent static QR codes are not accepted. Only short-lived signed tokens from `/attendance/smart` work.

@@ -96,6 +96,18 @@ export function SmartSettingsForm({ settings }: { settings: SmartAttendanceSetti
             <Label htmlFor="entryWindowEnd">Entry window end</Label>
             <Input id="entryWindowEnd" name="entryWindowEnd" className="mt-1" defaultValue={settings.entry_window_end} />
           </div>
+          <div>
+            <Label htmlFor="exitWindowStart">Exit window start</Label>
+            <Input id="exitWindowStart" name="exitWindowStart" className="mt-1" defaultValue={settings.exit_window_start} />
+          </div>
+          <div>
+            <Label htmlFor="exitWindowEnd">Exit window end</Label>
+            <Input id="exitWindowEnd" name="exitWindowEnd" className="mt-1" defaultValue={settings.exit_window_end} />
+          </div>
+          <div>
+            <Label htmlFor="duplicateIntervalSeconds">Duplicate interval (seconds)</Label>
+            <Input id="duplicateIntervalSeconds" name="duplicateIntervalSeconds" type="number" min={30} max={3600} className="mt-1" defaultValue={settings.duplicate_interval_seconds} />
+          </div>
           <div className="sm:col-span-2">
             <Label htmlFor="autoAcceptPolicy">Auto-accept policy</Label>
             <Select id="autoAcceptPolicy" name="autoAcceptPolicy" className="mt-1" defaultValue={settings.auto_accept_policy}>

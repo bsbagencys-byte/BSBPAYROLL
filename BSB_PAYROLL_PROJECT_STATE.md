@@ -40,7 +40,7 @@ Status is from code, not README.
 | 18 SaaS subscription and billing | **COMPLETE** overlay on P1–P17 | Configurable plans, trial/lifecycle, entitlements, usage, invoices, provider-neutral payments. Separate from salary payment batches. Unconfigured provider cannot mark paid. |
 | 19 Onboarding, migration, support, ops, export | **COMPLETE** overlay on P1–P18 | Checklist from stored data, CSV preview/confirm import, org-isolated support, SUPER_ADMIN ops, data export with 72h TTL. Attendance step optional from shifts/policy. No silent XLSX. No auto-delete. |
 | 20 Pilot launch control | **COMPLETE** overlay on P1–P19 | Readiness register, isolated pilots, biometric matrix, parallel payroll compare, UAT, incidents, feedback. Computed launch decision is NOT READY. |
-| 21 Smart Auto Attendance | **COMPLETE** overlay on P3/P13/P20 | Geofence + trusted device + server validation + dynamic QR. Accepted events write `attendance_punches` via virtual GENERIC device `BSB-SMART`. App never decides validity. Face matching not implemented. Recalculate attendance to turn punches into day results. |
+| 21 Smart Auto Attendance | **COMPLETE** overlay on P3/P13/P20 | Geofence + trusted device + server validation + dynamic QR. Independent exit window; same-direction events inside `duplicate_interval_seconds` are DUPLICATE. Delayed geofence keeps original `occurred_at` and opens MISSING_IN/OUT. Retention purges evidence only. Live mobile login via username lookup + password. Accepted events write `attendance_punches` via virtual GENERIC device `BSB-SMART`. App never decides validity. Face matching not implemented. Recalculate attendance to turn punches into day results. |
 
 ---
 
@@ -102,8 +102,12 @@ Disabled nav (no pages): none. Smart Attendance lives at `/attendance/smart` and
 
 - `/attendance/smart`, `/attendance/smart-settings`, `/attendance/locations`, `/attendance/trusted-devices`, `/attendance/smart-events`, `/my/smart-attendance`
 - `POST /api/mobile/auth/login`, `GET /api/mobile/me`, `POST /api/mobile/devices/register`, `POST /api/mobile/events/geofence`, `POST /api/mobile/qr/scan`
+- Live login: username lookup + `signInWithPassword`; HMAC mobile token. Demo HMAC login remains. No cookie session required for Bearer tokens.
+- Settings: `exit_window_start` / `exit_window_end`, `duplicate_interval_seconds` (default 120). Independent exit window; same-direction events inside the interval are `DUPLICATE` (`acceptToEngine: false`), not `REJECTED`.
+- Delayed geofence (`STALE`) keeps original `occurred_at` and opens `MISSING_IN`/`MISSING_OUT` via `insertExceptionIfAbsent`. Timestamps are never fabricated.
+- Jobs: `SMART_QR_EXPIRE`, `SMART_RETENTION_PURGE` (stale events without `punch_id`, candidates, assessments, verifications only; never punches or days).
 - Permissions: `attendance.smart.view|manage`, `attendance.device.manage`, `attendance.correct`
-- Android overlay: `android/` (Kotlin Compose/MVVM sources against existing backend)
+- Android overlay: `android/` (Kotlin Compose/MVVM, HttpURLConnection, ENTER/EXIT, offline queue with original `occurredAt`). HMAC-SHA256 over the idempotency key is the signing contract; Android Keystore is not wired.
 
 ### Leave (P5)
 
@@ -221,7 +225,7 @@ Disabled nav (no pages): none. Smart Attendance lives at `/attendance/smart` and
 
 ### Employee profile tabs
 
-Overview, employment, statutory, bank, documents, history, attendance (later P4 copy), leave, salary, benefits, claims, loans, payroll.
+Overview, employment, statutory, bank, documents, history, attendance, leave, salary, benefits, claims, loans, payroll.
 
 ---
 
@@ -271,9 +275,11 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 **P20:** `launch_decisions`, `module_readiness`, `release_blockers`, `pilot_organizations`, `pilot_checklist_items`, `biometric_verifications`, `parallel_payroll_runs`, `uat_checklist_items`, `incident_records`, `pilot_feedback`, `release_gates`. Platform SUPER_ADMIN RLS only.
 
-**P21:** `smart_attendance_settings`, `attendance_location_configs`, `trusted_employee_devices`, `geofence_event_candidates`, `smart_attendance_events`, `attendance_verification_records`, `device_security_assessments`, `dynamic_qr_sessions`. Org-scoped RLS. Does not add attendance_days calculation tables.
+**P21:** `smart_attendance_settings` (includes `exit_window_start`/`end`, `duplicate_interval_seconds`), `attendance_location_configs`, `trusted_employee_devices`, `geofence_event_candidates`, `smart_attendance_events`, `attendance_verification_records`, `device_security_assessments`, `dynamic_qr_sessions`. Org-scoped RLS (`current_org_ids()`, no `using (true)`). Does not add attendance_days calculation tables.
 
-**Not present:** shifts, attendance rules, overtime, LOP calc from punches.
+**P4 verification (2026-11-06):** unit tests pass. Physical biometric hardware remains UNVERIFIED. Live second-tenant RLS remains UNVERIFIED.
+
+**P21 verification (2026-11-08):** unit tests for engine policy, delayed-event exceptions, retention, regularization, and demo second-tenant isolation. Live second-tenant RLS UNVERIFIED. Android Keystore UNWIRED. No PHYSICAL_DEVICE_VERIFIED. Face matching remains `UnconfiguredFaceProvider`.
 
 `login_attempts` and `username_lookup` are service-role only. Biometric raw insert from the client is denied; ingest uses admin/demo store.
 
@@ -281,14 +287,15 @@ All listed public tables have RLS enabled. Helpers: `current_profile_id()`, `cur
 
 ## APIs / Services
 
-Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salary,claims,loans,exits,ess,accounting,payments,reports,notifications,automation,developers,analytics,billing,onboarding,launch}.ts`.
+Server actions in `actions/{auth,setup,users,org,employees,biometric,attendance,smart-attendance,leave,salary,claims,loans,exits,ess,accounting,payments,reports,notifications,automation,developers,analytics,billing,onboarding,launch}.ts`.
 
 | Area | Code |
 |---|---|
 | Session / RBAC | `lib/auth/session.ts`, `lib/auth/guards.ts` |
 | Audit | `lib/audit.ts` (free-form action strings) |
-| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, `loanTypes`, `statutoryRules`, `payrollExceptions`, `statutoryRuleVersions`, `employeeExits`, `accountingAccounts`, `domainEvents`, `analyticsAlerts`, `subscriptionPlans`, `onboardingProgress` or `moduleReadiness` missing |
+| Demo twin | `lib/demo-store.ts` — recreates if `employees`, `biometricDevices`, `leaveTypes`, `salaryComponents`, `benefitTypes`, `loanTypes`, `statutoryRules`, `payrollExceptions`, `statutoryRuleVersions`, `employeeExits`, `accountingAccounts`, `domainEvents`, `analyticsAlerts`, `subscriptionPlans`, `onboardingProgress`, `moduleReadiness` or `attendancePolicies` missing |
 | Biometric | `lib/biometric/{gateway,repository,query,hash,time}.ts`, `lib/biometric/adapters/{essl,zkteco,matrix,generic,index,types}.ts` |
+| Attendance | `lib/attendance/{engine,repository,service}.ts`, `lib/validations/attendance.ts` |
 | Leave | `lib/leave/{engine,service,repository,query,csv,dates,attendance}.ts` |
 | Salary | `lib/salary/{formula,engine,service,repository,query,csv}.ts` |
 | Benefits/Claims | `lib/claims/{engine,service,repository,query,csv}.ts`, `lib/validations/benefits.ts` |
@@ -301,7 +308,8 @@ Server actions in `actions/{auth,setup,users,org,employees,biometric,leave,salar
 | Billing | `lib/billing/{engine,provider,repository,entitlements,usage,service,pdf,query}.ts`, `lib/validations/billing.ts` |
 | Onboarding / migration / support | `lib/onboarding/{engine,repository,service}.ts`, `lib/validations/onboarding.ts`, `actions/onboarding.ts` |
 | Launch control | `lib/launch/{engine,repository,service}.ts`, `lib/validations/launch.ts`, `actions/launch.ts` |
-| Proxy | `proxy.ts` — public prefixes for login/reset, biometric ingest, `/api/v1`, `/api/internal/jobs`, `/api/health` and `/api/billing/webhook` |
+| Smart attendance | `lib/smart-attendance/{engine,service,repository,mobile-api,mobile-auth,face-provider}.ts`, `actions/smart-attendance.ts` |
+| Proxy | `proxy.ts` — public prefixes for login/reset, biometric ingest, `/api/v1`, `/api/internal/jobs`, `/api/health`, `/api/billing/webhook` and `/api/mobile` |
 
 Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getApprovedPayrollClaimLines` (`lib/claims/service.ts`); `getEmployeeLoanDeductions` / `recordLoanRepayment` (`lib/loans/service.ts`); leave-written `attendance_days`; `employeeExcludedFromOrdinaryPayroll` (`lib/exits/service.ts`).
 
@@ -315,7 +323,7 @@ Payroll consumes: `getEmployeeSalaryForDate` (`lib/salary/service.ts`); `getAppr
 - Flow: raw event -> adapter parse -> normalized event -> identity map -> `attendance_punches`. Dedupes. Unmapped punches stay UNMAPPED.
 - UI: devices, mapping, punches, live (poll), logs, simulator, compatibility.
 - ZKTeco and Matrix are documented PUSH/JSON adapters (`PROTOCOL_FOUNDATION`). Physical-device testing is not claimed.
-- Not implemented: Face, QR, GPS, mobile attendance, vendor-specific pull sync, attendance day calculation from punches.
+- Not implemented in P3: Face matching, vendor-specific pull sync, physical-device certification. Day calculation is P4. Mobile/QR/GPS are P21 overlay.
 
 ---
 
@@ -456,7 +464,7 @@ Scheduled jobs are claimed uniquely on `(job_id, scheduled_for)` with locking. L
 
 Webhooks: HMAC + timestamp + event id, secret rotation, retry/backoff, HTTPS in production, SSRF block of localhost/private/metadata. Payloads never include passwords, tokens, full bank numbers or Aadhaar.
 
-API keys: prefix `bsb_live_`, sha256 hashed, org-scoped, granular scopes `employees|organization|attendance|leave|payroll|payslips.read`, expiry/revoke/rotate, rate limited, request IDs. Plaintext shown only at create. Keys cannot bypass RLS, approvals or finalized payroll. Attendance summaries do not claim Phase 4 punch calculation.
+API keys: prefix `bsb_live_`, sha256 hashed, org-scoped, granular scopes `employees|organization|attendance|leave|payroll|payslips.read`, expiry/revoke/rotate, rate limited, request IDs. Plaintext shown only at create. Keys cannot bypass RLS, approvals or finalized payroll. Attendance summaries read calculated `attendance_days`.
 
 Permissions: `notifications.view|manage`, `automation.view|manage`, `automation.jobs.view|retry`, `developers.view`, `developers.webhooks.manage|replay`, `developers.api_keys.manage`, `developers.logs.view`. HR gets notification/automation manage + job retry. PAYROLL view jobs. ACCOUNTANT/MANAGER/EMPLOYEE get `notifications.view` only. Developer screens are ADMIN/SUPER_ADMIN.
 
@@ -480,15 +488,38 @@ Demo seed: `createAutomationSeed()` — templates, one leave-approval rule, dail
 - Backup restore was documented, not executed against a staging project here.
 - Pilot parallel payroll must not be finalized or paid. Current launch decision is NOT READY.
 - Smart attendance does not calculate PRESENT/ABSENT/late/OT by itself. Accepted events write punches; Phase 4 recalc produces day results.
-- Face matching is an unconfigured stub. Mock location / Play Integrity are risk signals, not fraud proof.
+- Face matching is an unconfigured stub (`UnconfiguredFaceProvider`). Mock location / Play Integrity are risk signals, not fraud proof.
+- Live second-tenant RLS for smart-attendance tables is UNVERIFIED (demo-store + SQL-policy tests only).
+- Android HMAC-SHA256 over the idempotency key is the contract; Keystore-backed keys are not wired. No physical Android device PASS.
 
 ---
 
 ## Current Phase
 
-**Phase 4 attendance overlay is complete. Go-live is NOT READY.** Remaining launch gates: hardware certification, statutory source verification, live billing provider, backup restore and pilot sign-off.
+**Phase 4 attendance overlay is COMPLETE. Phase 21 Smart Auto Attendance overlay is COMPLETE. Go-live is NOT READY.** Remaining launch gates: hardware certification, statutory source verification, live billing provider, backup restore, live second-tenant RLS, physical Android/Keystore, and pilot sign-off.
 
 Phase 4 added punch pairing, shifts, late/OT, exceptions and regularization as an overlay on `attendance_punches` and leave-written `attendance_days`. Raw punches are never rewritten. Leave overlays win. Face matching is not implemented.
+
+Phase 21 feeds punches only. Server decides validity. Delayed events keep original time. Retention never deletes punches or days.
+
+### Phase 4 verification (2026-11-06)
+
+- `tests/attendance.test.ts`: 11/11 pass (FIRST_LAST, PAIRWISE, overnight work-date, leave overlay, weekly-off/holiday, ABSENT, late/OT, missing OUT, OT rounding, permissions, org-scope).
+- Related: `tests/biometric.test.ts` 5/5, `tests/journeys.test.ts` 7/7, `tests/tenancy.test.ts` 4/4, `tests/payroll-engine.test.ts` 5/5, `tests/launch.test.ts` 7/7, `tests/onboarding.test.ts` 9/9, `tests/crypto-health.test.ts` 3/3. Combined 51/51 pass, 0 fail.
+- Full suite previously 98/98. `npx tsc --noEmit` pass. `npm run build` pass.
+- RLS: `phase4.sql` enables RLS and org-scoped policies on policies/shifts/assignments/exceptions/regularizations. Live second-tenant RLS UNVERIFIED.
+- Real biometric hardware: not tested. No PHYSICAL_DEVICE_VERIFIED model.
+
+### Phase 21 verification (2026-11-08)
+
+- Engine: independent exit window; same-direction events inside `duplicate_interval_seconds` → `DUPLICATE` (`acceptToEngine: false`).
+- Delayed geofence (`STALE`) opens `MISSING_IN`/`MISSING_OUT` via `insertExceptionIfAbsent`; original `occurred_at` kept.
+- Job `SMART_RETENTION_PURGE` / `purgeExpiredSmartEvidence` drops stale events without `punch_id`, candidates, assessments, verifications only.
+- Regularization (`tests/attendance.test.ts`): pending submit never rewrites punches; approved writes a `REGULARIZATION` day using requested times; rejected cannot be re-approved.
+- Second-tenant (`tests/tenancy.test.ts`): demo-store isolation for events/devices/workplaces; `supabase/phase21.sql` RLS enables + `current_org_ids()` and no `using (true)`. Live RLS UNVERIFIED.
+- Live `POST /api/mobile/auth/login` uses `username_lookup` + `signInWithPassword`. `loadSessionUserByProfileId` in `lib/auth/session.ts`. `mobile-auth` lazily imports session so HMAC tests stay free of `next/headers`.
+- Android overlay: HttpURLConnection, ENTER/EXIT, offline queue with original `occurredAt`. HMAC-SHA256 contract; Keystore not wired.
+- `npx tsc --noEmit` pass. Face matching remains `UnconfiguredFaceProvider`. No PHYSICAL_DEVICE_VERIFIED.
 
 See `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 
@@ -496,13 +527,14 @@ See `docs/PRODUCTION_GO_LIVE_CHECKLIST.md`.
 
 ## Next Dependencies
 
-Do not rebuild Phases 1–3 or 5–21. Remaining work is launch evidence, not another attendance engine:
+Do not rebuild Phases 1–21 or the P4 engine. Remaining work is launch evidence, not another attendance engine:
 
 - Physical biometric hardware certification
 - Qualified statutory source citation and enablement
-- Staging backup restore and live second-tenant RLS proof
+- Staging backup restore and live second-tenant RLS proof (including P21 tables)
 - Isolated pilot sign-off without finalizing pilot payroll
 - Face attendance provider (unconfigured stub)
+- Android Keystore-backed HMAC keys and physical-device PASS for the smart-attendance overlay
 
 ---
 
